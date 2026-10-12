@@ -55,6 +55,31 @@
   }
   ::-webkit-scrollbar { display: none; }
   * { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Desktop full screen - fix */
+@media (min-width: 1024px){
+  /* Main container full width */
+  #root > div > div {
+    max-width: 1280px !important;
+    width: 100% !important;
+  }
+  /* Make cards grid on desktop */
+  .desktop-home-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .desktop-home-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+/* Ensure body background for desktop */
+@media (min-width: 768px){
+  body { background: #F9F1E7; }
+}
+
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2038,7 +2063,7 @@ function App(){
   }
 
   return h('div', {className:'min-h-screen w-full bg-[#FFFBF7] text-[#2D2A26] flex justify-center'},
-    h('div', {className:'w-full max-w-[460px] md:max-w-[720px] lg:max-w-[1200px] xl:max-w-[1280px] mx-auto bg-[#FFFBF7] min-h-screen relative pb-[96px]'},
+    h('div', {className:'w-full max-w-[460px] md:max-w-[720px] lg:max-w-[1280px] xl:max-w-[1400px] mx-auto bg-[#FFFBF7] min-h-screen relative pb-[96px] lg:px-8 lg:pb-8'},
       h('div', {className:'sticky top-0 z-30 bg-[#FFFBF7]/95 backdrop-blur-md px-5 pt-[calc(env(safe-area-inset-top,0px)+14px)] pb-4 border-b border-[#F3E8D3]/60'},
         h('div', {className:'flex items-center justify-between'},
           h('div', {className:'flex items-center gap-3'},
@@ -2069,9 +2094,23 @@ function App(){
         )
       ),
       toast ? h('div', {className:'fixed top-20 left-1/2 -translate-x-1/2 z-[80] bg-[#2D2A26] text-white text-[12px] font-bold px-4 py-2 rounded-full'}, toast) : null,
-      h('div', {className:'px-5'}, pageContent),
 
-      h('div', {className:'fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[460px] z-50'},
+      h('div', {className:'hidden lg:flex fixed top-0 left-0 right-0 h-[64px] bg-white border-b border-[#F3E8D3] z-40 px-8 items-center justify-between'},
+        h('div', {className:'flex items-center gap-8'},
+          h('p', {className:'font-extrabold text-[18px]'}, 'Lifestyle'),
+          h('div', {className:'flex items-center gap-2'},
+            h('button', {onClick:()=>setPage('home'), className:'px-4 py-2 rounded-full text-[13px] font-bold ' + (page==='home'?'bg-[#2D2A26] text-white':'bg-[#F9F5EB]')}, t.home),
+            h('button', {onClick:()=>setPage('history'), className:'px-4 py-2 rounded-full text-[13px] font-bold ' + (page==='history'?'bg-[#2D2A26] text-white':'bg-[#F9F5EB]')}, t.history),
+            h('button', {onClick:()=>setPage('reports'), className:'px-4 py-2 rounded-full text-[13px] font-bold ' + (page==='reports'?'bg-[#2D2A26] text-white':'bg-[#F9F5EB]')}, t.reports),
+            h('button', {onClick:()=>setPage('profile'), className:'px-4 py-2 rounded-full text-[13px] font-bold ' + (page==='profile'?'bg-[#2D2A26] text-white':'bg-[#F9F5EB]')}, t.profile)
+          )
+        ),
+        h('button', {onClick:()=>setAddSheetOpen(true), className:'px-5 py-2.5 rounded-full bg-[#C9A86A] text-white text-[13px] font-bold'}, '+ Add')
+      ),
+
+      h('div', {className:'px-5 lg:px-0 lg:pt-[80px]'}, pageContent),
+
+      h('div', {className:'fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[460px] lg:max-w-[1280px] xl:max-w-[1400px] z-50 lg:hidden'},
         h('div', {className:'bg-white border-t border-[#F3E8D3] px-2 pt-2 pb-[calc(8px+env(safe-area-inset-bottom,0px))]'},
           h('div', {className:'flex items-center justify-around relative'},
             h('button', {onClick:()=>setPage('home'), className:'flex flex-col items-center justify-center w-[64px] py-2'},
