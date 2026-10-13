@@ -437,7 +437,7 @@ const T = {
     totalTaken:'Total Taken', totalRepaid:'Repaid', addIncome:'Add Income', addExpense:'Add Expense',
     giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', addNew:'Add New', history:'History',
     reports:'Reports', profile:'Profile', home:'HOME', searchPlaceholder:'Search transactions...',
-    noData:'No data yet', backup:'Backup Data', clearData:'Clear Data', save:'Save', cancel:'Cancel',
+    noData:'No data yet', backup:'', clearData:'', save:'Save', cancel:'Cancel',
     edit:'Edit', delete:'Delete', amount:'Amount', date:'Date', category:'Category', note:'Note',
     medium:'Medium', name:'Name', mobile:'Mobile No', addPayment:'+ Add Payment', addLoan:'+ Add Loan',
     addPerson:'+ Add Person', people:'People', balance:'Balance', given:'Given', taken:'Taken',
@@ -2069,15 +2069,7 @@ function App(){
           h('span', {className:'text-[10px] text-[#C9A86A]'}, '\u25CF Active')
         )
       ),
-      h('div', {className:'grid grid-cols-2 gap-3'},
-        h('button', {onClick:()=>{
-          const blob = new Blob([JSON.stringify({transactions, peopleGiven, peopleTaken, bankLoans, lang}, null, 2)], {type:'application/json'});
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = 'lifestyle-backup-' + today() + '.json'; a.click();
-        }, className:'bg-white border border-[#F3E8D3] rounded-[16px] py-3 text-[12px] font-bold'}, t.backup),
-        h('button', {onClick:()=>{ setConfirmClearOpen(true); }, className:'bg-white border border-[#FFCDD2] rounded-[16px] py-3 text-[12px] font-bold text-[#B71C1C]'}, t.clearData)
-      )
+      null
     );
   }
 
