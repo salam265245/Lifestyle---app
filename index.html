@@ -161,27 +161,50 @@ try { firebase.initializeApp(firebaseConfig); } catch(e) {}
     }
     setFavicon(icon32);
 
-    if('serviceWorker' in navigator){
+    if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v8-logo';
-        self.addEventListener('install', e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./']).catch(()=>{}))); });
-        self.addEventListener('activate', e=>{ e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
-        self.addEventListener('fetch', e=>{ 
+        const CACHE='lifestyle-v10-offline-final';
+        self.addEventListener('install', e=>{
+          self.skipWaiting();
+          e.waitUntil(
+            caches.open(CACHE).then(c=>{
+              return c.addAll(['./','./index.html','/']).catch(err=>{
+                return fetch('./').then(r=>c.put('./', r)).catch(()=>{});
+              });
+            })
+          );
+        });
+        self.addEventListener('activate', e=>{
+          e.waitUntil(
+            caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
+          );
+        });
+        self.addEventListener('fetch', e=>{
           if(e.request.method!=='GET') return;
           const url=new URL(e.request.url);
-          if(url.hostname.includes('firestore')||url.hostname.includes('firebase')||url.hostname.includes('googleapis')||url.hostname.includes('gstatic')) return;
+          if(url.hostname.includes('firestore')||url.hostname.includes('firebase')||url.hostname.includes('googleapis')||url.hostname.includes('gstatic')||url.hostname.includes('firebaseio')) return;
+          if(e.request.mode==='navigate' || e.request.destination==='document'){
+            e.respondWith(
+              fetch(e.request).then(resp=>{
+                if(resp && resp.ok){ caches.open(CACHE).then(cache=>{ try{ cache.put(e.request, resp.clone()); }catch(e){} }); }
+                return resp;
+              }).catch(()=>{
+                return caches.match('./').then(r=>r || caches.match('/')).then(r=>r || caches.match('./index.html')).then(r=>{ if(r) return r; return caches.match(e.request); });
+              })
+            );
+            return;
+          }
           e.respondWith(
             caches.match(e.request).then(cached=>{
               const fetchPromise = fetch(e.request).then(resp=>{
-                if(resp && resp.ok){
-                  try{ const clone=resp.clone(); caches.open(CACHE).then(cache=>cache.put(e.request, clone)); }catch(err){}
-                }
+                if(resp && resp.ok){ try{ const clone=resp.clone(); caches.open(CACHE).then(cache=>cache.put(e.request, clone)); }catch(err){} }
                 return resp;
-              }).catch(()=>cached || caches.match('./'));
+              }).catch(()=>cached || caches.match('./').then(r=>r || caches.match('/')));
               return cached || fetchPromise;
             })
           );
         });
+
       `;
       const swBlob = new Blob([swCode], {type: "text/javascript"});
       const swUrl = URL.createObjectURL(swBlob);
