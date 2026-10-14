@@ -560,11 +560,11 @@ function BottomSheet(props){
   return h('div', {className:'fixed inset-0 z-[70] flex items-end justify-center'},
     h('div', {className:'absolute inset-0 bg-black/50 backdrop-blur-sm', onClick: props.onClose}),
     h('div', {className:'relative w-full max-w-[460px] bg-[#FFFBF7] rounded-t-[32px] max-h-[88vh] overflow-y-auto border border-[#F3E8D3] shadow-[0_-12px_40px_rgba(0,0,0,0.2)]'},
-      h('div', {className:'sticky top-0 bg-[#FFFBF7] p-5 border-b border-[#F3E8D3] flex items-center justify-between z-10'},
-        h('h3', {className:'font-bold text-[18px]'}, props.title),
+      h('div', {className:'sticky top-0 bg-[#FFFBF7] px-5 pt-2 pb-2 border-b border-[#F3E8D3] flex items-center justify-between z-10'},
+        h('h3', {className:'font-bold text-[18px] leading-tight'}, props.title),
         h(IconBtn, {onClick: props.onClose}, '\u2715')
       ),
-      h('div', {className:'p-5'}, props.children)
+      h('div', {className:'p-5 pt-1.5'}, props.children)
     )
   );
 }
@@ -587,24 +587,36 @@ function ConfirmModal(props){
 function CategoryPicker({ t, lang, type, value, onChange }){
   const [q, setQ] = useState('');
   const flat = useMemo(()=>{
-    if(type === 'income') return INCOME_CATEGORIES;
-    return EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => Object.assign({}, it, {group: g.en})));
-  }, [type]);
+    if(type === 'income'){
+      const copy = [...INCOME_CATEGORIES];
+      copy.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en, 'en') : a.bn.localeCompare(b.bn, 'bn'));
+      return copy;
+    }
+    const all = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => Object.assign({}, it, {group: g.en, groupBn: g.bn})));
+    all.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en, 'en') : a.bn.localeCompare(b.bn, 'bn'));
+    return all;
+  }, [type, lang]);
   const filtered = useMemo(()=>{
     if(!q) return flat;
     const ql = q.toLowerCase();
-    return flat.filter(a => { const en = (a.en||'').toLowerCase(); const bn = (a.bn||'').toLowerCase(); const ql = q.toLowerCase(); return en.includes(ql) || bn.includes(ql) || (a.en||'').includes(q) || (a.bn||'').includes(q); });
+    return flat.filter(a => { const en = (a.en||'').toLowerCase(); const bn = (a.bn||'').toLowerCase(); return en.includes(ql) || bn.includes(ql); });
   }, [flat, q]);
+  function hideKeyboard(){ try{ if(document.activeElement) document.activeElement.blur(); }catch(e){} }
   return h('div', null,
-    h('input', {
-      value: q, onChange: e=>setQ(e.target.value),
-      placeholder: t.selectCategory + '...',
-      className:'w-full bg-white rounded-full border border-[#F3E8D3] px-4 py-2.5 outline-none text-[13px] mb-2'
-    }),
-    h('div', {className:'grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto p-1'},
+    h('div', {className:'flex items-center gap-2 mb-2'},
+      h('input', {
+        value: q, onChange: e=>setQ(e.target.value),
+        placeholder: t.selectCategory + '...',
+        className:'flex-1 bg-white rounded-full border border-[#F3E8D3] px-4 py-2.5 outline-none text-[13px]',
+        onFocus: e=>{ try{ setTimeout(()=>{ e.target.scrollIntoView({block:'center', behavior:'smooth'}); }, 300); }catch(_){} }
+      }),
+      q ? h('button', {type:'button', onClick: ()=>{ setQ(''); hideKeyboard(); }, className:'w-[38px] h-[38px] rounded-full bg-white border border-[#F3E8D3] flex items-center justify-center text-[14px]'}, '✕') : null,
+      h('button', {type:'button', onClick: hideKeyboard, className:'px-3 h-[38px] rounded-full bg-[#2D2A26] text-white text-[11px] font-bold whitespace-nowrap'}, lang==='en' ? 'Hide ⌨️' : 'কীবোর্ড লুকান')
+    ),
+    h('div', {className:'grid grid-cols-2 gap-2 max-h-[50dvh] overflow-y-auto p-1 overscroll-contain', style:{WebkitOverflowScrolling:'touch'}},
       filtered.map((a,i)=> h('button', {
         key: a.en+i, type:'button',
-        onClick: ()=>onChange(a),
+        onClick: ()=>{ hideKeyboard(); onChange(a); },
         className: 'flex items-center gap-2 p-3 rounded-[14px] border text-left ' + (value && value.en===a.en ? 'bg-[#2D2A26] text-white border-[#2D2A26]' : 'bg-white border-[#F3E8D3]')
       },
         h('span', {className:'text-[16px]'}, a.icon),
@@ -632,11 +644,11 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
     });
   }
   return h('div', null,
-    h('div', {className:'sticky top-0 z-20 bg-[#FFFBF7] -mx-5 -mt-5 px-5 py-3 border-b border-[#F3E8D3] flex gap-2'},
+    h('div', {className:'sticky z-20 bg-[#FFFBF7] -mx-5 px-5 pt-2 pb-3 border-b border-[#F3E8D3] flex gap-2 -mt-1.5', style:{top:'38px'}},
       h('button', {onClick:submit, disabled: !amount || !cat, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveTransaction + (amount ? ' \u2022 ' + fmtMoney(parseFloat(amount)||0) : '')),
       h('button', {type:'button', className:'px-5 py-3.5 rounded-[14px] font-bold text-[14px] bg-white border border-[#F3E8D3]'}, t.cancel)
     ),
-    h('div', {className:'pt-4'},
+    h('div', {className:'pt-3'},
       h(Field, {label: t.amount + ' (\u09F3)'}, h(TextInput, {type:'number', value:amount, onChange:e=>setAmount(e.target.value), placeholder:'0'})),
       h(Field, {label: t.category}, h(CategoryPicker, {t, lang, type, value:cat, onChange:setCat})),
       h('div', {className:'grid grid-cols-2 gap-3'},
@@ -710,7 +722,7 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
     onSave({ name: name.trim(), mobile: '', amount: parseFloat(amount)||0, date, medium, note, expectedReturnDate, returnDate: expectedReturnDate });
   }
   return h('div', null,
-    h('div', {className:'sticky top-0 z-20 bg-[#FFFBF7] -mx-5 -mt-5 px-5 py-3 border-b border-[#F3E8D3] flex gap-2'},
+    h('div', {className:'sticky z-20 bg-[#FFFBF7] -mx-5 px-5 pt-2 pb-3 border-b border-[#F3E8D3] flex gap-2 -mt-1.5', style:{top:'38px'}},
       h('button', {onClick:submit, disabled: !name || !amount, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveLoan),
       h('button', {type:'button', className:'px-5 py-3.5 rounded-[14px] font-bold text-[14px] bg-white border border-[#F3E8D3]'}, t.cancel)
     ),
@@ -786,7 +798,7 @@ function BankLoanForm({ t, lang, initial, onSave }){
     rows.push({ idx:i, date: ds, paid: !!(paidEmis[i]) });
   }
   return h('div', null,
-    h('div', {className:'sticky top-0 z-20 bg-[#FFFBF7] -mx-5 -mt-5 px-5 py-3 border-b border-[#F3E8D3] flex gap-2'},
+    h('div', {className:'sticky z-20 bg-[#FFFBF7] -mx-5 px-5 pt-2 pb-3 border-b border-[#F3E8D3] flex gap-2 -mt-1.5', style:{top:'38px'}},
       h('button', {onClick:submit, disabled: !amount || !term, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveLoan),
       h('button', {type:'button', className:'px-5 py-3.5 rounded-[14px] font-bold text-[14px] bg-white border border-[#F3E8D3]'}, t.cancel)
     ),
