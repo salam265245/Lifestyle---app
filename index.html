@@ -389,63 +389,16 @@ const MEDIUMS = [
 const BANKS = ['ইসলামী ব্যাংক','BRAC Bank','City Bank','Sonali Bank','Janata Bank','Dutch-Bangla','Eastern Bank','Custom'];
 
 const EXPENSE_CATEGORIES = [
-  {key:'food', en:'Food & Grocery', bn:'খাবার ও বাজার', icon:'🛒', items:[
-    {en:'Groceries', bn:'মুদি', icon:'🧺'},{en:'Fresh Market', bn:'কাঁচা বাজার', icon:'🥬'},
-    {en:'Fish', bn:'মাছ', icon:'🐟'},{en:'Meat', bn:'মাংস', icon:'🍖'},
-    {en:'Milk', bn:'দুধ', icon:'🥛'},{en:'Fruits', bn:'ফলমূল', icon:'🍎'},
-    {en:'Tea/Coffee', bn:'চা/কফি', icon:'☕'},{en:'Restaurant', bn:'রেস্টুরেন্ট', icon:'🍽️'},
-    {en:'Fast Food', bn:'ফাস্ট ফুড', icon:'🍔'},{en:'Cigarettes', bn:'সিগারেট', icon:'🚬'}
-  ]},
-  {key:'home', en:'Home & Household', bn:'বাসা ও গৃহস্থালি', icon:'🏠', items:[
-    {en:'House Rent', bn:'বাসা ভাড়া', icon:'🏘️'},{en:'Electricity Bill', bn:'বিদ্যুৎ বিল', icon:'💡'},
-    {en:'Gas Bill', bn:'গ্যাস বিল', icon:'🔥'},{en:'Water Bill', bn:'পানির বিল', icon:'💧'},
-    {en:'Internet Bill', bn:'ইন্টারনেট বিল', icon:'🌐'},{en:'Mobile Recharge', bn:'মোবাইল রিচার্জ', icon:'📲'},
-    {en:'Home Repair', bn:'বাসার মেরামত', icon:'🔧'},{en:'Furniture', bn:'আসবাবপত্র', icon:'🛋️'},
-    {en:'Crockery', bn:'ক্রোকারিজ', icon:'🍽️'},{en:'Electronics', bn:'ইলেকট্রনিক্স', icon:'🔌'}
-  ]},
-  {key:'personal', en:'Personal', bn:'ব্যক্তিগত', icon:'👤', items:[
-    {en:'Clothing', bn:'পোশাক', icon:'👕'},{en:'Shoes', bn:'জুতা', icon:'👟'},
-    {en:'Cosmetics', bn:'প্রসাধনী', icon:'💄'},{en:'Salon/Parlor', bn:'সেলুন/পার্লার', icon:'💈'}
-  ]},
-  {key:'transport', en:'Transport & Vehicle', bn:'যাতায়াত ও যানবাহন', icon:'🏍️', items:[
-    {en:'Fuel/Petrol', bn:'জ্বালানি/পেট্রোল', icon:'⛽'},{en:'Motorcycle Maintenance', bn:'মোটরসাইকেল রক্ষণাবেক্ষণ', icon:'🔧'},
-    {en:'Transportation', bn:'যাতায়াত', icon:'🚌'}
-  ]},
-  {key:'family_edu', en:'Family & Education', bn:'পরিবার ও শিক্ষা', icon:'👨‍👩‍👦', items:[
-    {en:'Child Expenses', bn:'সন্তানের খরচ', icon:'🧒'},{en:'Family Expenses', bn:'পরিবারের খরচ', icon:'❤️'},
-    {en:'Education', bn:'শিক্ষা', icon:'🎓'},{en:'School Fees', bn:'স্কুল ফি', icon:'🏫'},
-    {en:'Books & Stationery', bn:'বই ও খাতা', icon:'📚'},{en:'Coaching', bn:'কোচিং', icon:'📝'},
-    {en:'Tuition', bn:'টিউশন', icon:'✏️'},{en:"Relatives' Expenses", bn:'আত্মীয়স্বজনের খরচ', icon:'🤝'},
-    {en:'Gifts', bn:'উপহার', icon:'🎁'}
-  ]},
-  {key:'medical', en:'Medical & Healthcare', bn:'চিকিৎসা', icon:'🏥', items:[
-    {en:'Medical Treatment', bn:'চিকিৎসা', icon:'🩺'},{en:"Doctor's Fee", bn:'ডাক্তার ফি', icon:'👨‍⚕️'},
-    {en:'Medicine', bn:'ওষুধ', icon:'💊'},{en:'Medical Tests', bn:'পরীক্ষা-নিরীক্ষা', icon:'🧪'},
-    {en:'Hospital', bn:'হাসপাতাল', icon:'🏥'}
-  ]},
-  {key:'loans_finance', en:'Loans & Finance', bn:'ঋণ ও আর্থিক', icon:'💰', items:[
-    {en:'Loan Installment', bn:'ঋণের কিস্তি', icon:'🏦'},{en:'Insurance', bn:'বীমা', icon:'🛡️'}
-  ]},
-  {key:'savings', en:'Savings & Investment', bn:'সঞ্চয় ও বিনিয়োগ', icon:'💵', items:[
-    {en:'Savings', bn:'সঞ্চয়', icon:'🐖'},{en:'DPS', bn:'ডিপিএস', icon:'📊'},
-    {en:'FDR', bn:'এফডিআর', icon:'📈'},{en:'Investment', bn:'বিনিয়োগ', icon:'📈'}
-  ]},
-  {key:'religious_social', en:'Religious & Social', bn:'ধর্মীয় ও সামাজিক', icon:'🕌', items:[
-    {en:'Donation', bn:'দান', icon:'🤲'},{en:'Zakat', bn:'যাকাত', icon:'🕌'},
-    {en:'Religious Expenses', bn:'ধর্মীয় খরচ', icon:'📿'},{en:'Social Events', bn:'সামাজিক অনুষ্ঠান', icon:'🎉'},
-    {en:'Wedding Expenses', bn:'বিয়ের খরচ', icon:'💍'},{en:'Eid', bn:'ঈদ', icon:'🌙'}
-  ]},
-  {key:'entertainment_shopping', en:'Entertainment & Shopping', bn:'বিনোদন ও কেনাকাটা', icon:'🎮', items:[
-    {en:'Entertainment', bn:'বিনোদন', icon:'🎬'},{en:'Sports', bn:'খেলাধুলা', icon:'⚽'},
-    {en:'Online Shopping', bn:'অনলাইন কেনাকাটা', icon:'🛍️'}
-  ]},
-  {key:'technology', en:'Technology', bn:'প্রযুক্তি', icon:'💻', items:[
-    {en:'Mobile Purchase or Servicing', bn:'মোবাইল ক্রয় বা সার্ভিসিং', icon:'📱'},
-    {en:'Computer Purchase or Servicing', bn:'কম্পিউটার ক্রয় বা সার্ভিসিং', icon:'💻'}
-  ]},
-  {key:'others', en:'Others', bn:'অন্যান্য', icon:'📌', items:[
-    {en:'Other', bn:'অন্যান্য', icon:'📦'}
-  ]}
+  {"key": "baby", "en": "Baby & Mother", "bn": "শিশু ও মা", "icon": "👶", "items": [{"en": "Pregnancy & Childbirth", "bn": "গর্ভাবস্থা ও প্রসব", "icon": "🤰"}, {"en": "Baby Food", "bn": "শিশুর খাবার", "icon": "🍼"}, {"en": "Baby Clothing", "bn": "শিশুর পোশাক", "icon": "👶"}, {"en": "Baby Toys", "bn": "শিশুর খেলনা", "icon": "🧸"}]},
+  {"key": "food", "en": "Food & Grocery", "bn": "খাবার ও বাজার", "icon": "🛒", "items": [{"en": "Grocery Store", "bn": "মুদি দোকান", "icon": "🛒"}, {"en": "Vegetable Market", "bn": "কাঁচা বাজার", "icon": "🥬"}, {"en": "Fish", "bn": "মাছ", "icon": "🐟"}, {"en": "Meat", "bn": "মাংস", "icon": "🥩"}, {"en": "Milk", "bn": "দুধ", "icon": "🥛"}, {"en": "Eggs", "bn": "ডিম", "icon": "🥚"}, {"en": "Fruits", "bn": "ফল", "icon": "🍎"}, {"en": "Sweets", "bn": "মিষ্টি", "icon": "🍬"}, {"en": "Tea, Coffee & Juice", "bn": "চা/কফি ও জুস", "icon": "☕"}, {"en": "Restaurant & Hotel", "bn": "রেস্টুরেন্ট ও হোটেল", "icon": "🍽️"}, {"en": "Fast Food & Biryani", "bn": "ফাস্ট ফুড ও বিরিয়ানি", "icon": "🍔"}, {"en": "Betel Leaf & Nut", "bn": "পান-সুপারি", "icon": "🍃"}, {"en": "Cigarettes", "bn": "সিগারেট", "icon": "🚬"}]},
+  {"key": "home", "en": "Home & Bills", "bn": "বাসা ও বিল", "icon": "🏠", "items": [{"en": "House Rent", "bn": "বাড়ি ভাড়া", "icon": "🏠"}, {"en": "Electricity Bill", "bn": "বিদ্যুৎ বিল", "icon": "💡"}, {"en": "Gas Bill", "bn": "গ্যাস বিল", "icon": "🔥"}, {"en": "Water Bill", "bn": "পানি বিল", "icon": "💧"}, {"en": "Waste / Garbage Bill", "bn": "ময়লা বিল", "icon": "🗑️"}, {"en": "Internet Bill", "bn": "ইন্টারনেট বিল", "icon": "🌐"}, {"en": "Dish / Cable TV Bill", "bn": "ডিস বিল", "icon": "📺"}, {"en": "Mobile Recharge", "bn": "মোবাইল রিচার্জ", "icon": "📱"}, {"en": "Mobile Purchase / Servicing", "bn": "মোবাইল ক্রয়/সার্ভিসিং", "icon": "📱"}, {"en": "Furniture", "bn": "ফার্নিচার", "icon": "🪑"}, {"en": "Crockery", "bn": "ক্রোকারিজ", "icon": "🍽️"}, {"en": "Hardware", "bn": "হার্ডওয়্যার", "icon": "🔧"}, {"en": "Electric & Electronics Purchase / Servicing", "bn": "ইলেকট্রিক, ইলেক্ট্রনিক্স ক্রয়/সার্ভিসিং", "icon": "🔌"}, {"en": "House Construction & Repair", "bn": "বাড়ি নির্মাণ ও মেরামত", "icon": "🏗️"}, {"en": "Maid & Security Guard", "bn": "কাজের বুয়া ও দারোয়ান", "icon": "🧹"}, {"en": "Mobile Purchase & Servicing", "bn": "মোবাইল ক্রয় ও সার্ভিসিং", "icon": "📱"}, {"en": "Computer & Laptop Purchase / Servicing", "bn": "কম্পিউটার, ল্যাপটপ ক্রয় ও সার্ভিসিং", "icon": "💻"}, {"en": "Courier & Parcel", "bn": "কুরিয়ার ও পার্সেল", "icon": "📦"}, {"en": "Subscriptions", "bn": "সাবস্ক্রিপশন", "icon": "🔁"}]},
+  {"key": "personal", "en": "Personal & Clothing", "bn": "ব্যক্তিগত ও পোশাক", "icon": "👤", "items": [{"en": "Clothing", "bn": "পোশাক", "icon": "👕"}, {"en": "Shoes, Bags & Umbrella", "bn": "জুতা,ব্যাগ,ছাতা", "icon": "👟"}, {"en": "Winter Clothing", "bn": "শীতের কাপড়", "icon": "🧥"}, {"en": "Tailors", "bn": "টেইলার্স", "icon": "✂️"}, {"en": "Needle, Thread & Sequins", "bn": "সুই-সুতা, চুমকি", "icon": "🧵"}, {"en": "Bedding Items", "bn": "বেডিং আইটেম", "icon": "🛏️"}, {"en": "Cosmetics", "bn": "কসমেটিকস", "icon": "💄"}, {"en": "Salon / Parlor", "bn": "সেলুন/পার্লার", "icon": "💈"}, {"en": "Laundry", "bn": "লন্ড্রি", "icon": "🧺"}, {"en": "Jewelry & Gold", "bn": "জুয়েলারি ও স্বর্ণ", "icon": "💍"}, {"en": "Watch & Glasses", "bn": "ঘড়ি, চশমা", "icon": "⌚"}]},
+  {"key": "transport", "en": "Transport & Vehicle", "bn": "যাতায়াত ও যানবাহন", "icon": "🏍️", "items": [{"en": "Transport Fare - Rickshaw, Auto, Bus, Train, Launch, Flight", "bn": "রিকশা, অটো, বাস, ট্রেন, লঞ্চ, বিমান ভাড়া", "icon": "🚌"}, {"en": "Bike / Car Purchase", "bn": "বাইক/গাড়ি ক্রয়", "icon": "🏍️"}, {"en": "Bike / Car Fuel & Engine Oil", "bn": "বাইক/গাড়ি জ্বালানি ও মবিল", "icon": "⛽"}, {"en": "Bike / Car Servicing & Wash", "bn": "বাইক/গাড়ি সার্ভিসিং ও ধোয়া", "icon": "🧽"}, {"en": "Loan Installment & Credit Card", "bn": "ঋণের কিস্তি ও ক্রেডিট কার্ড", "icon": "💳"}]},
+  {"key": "education", "en": "Education", "bn": "শিক্ষা", "icon": "🎓", "items": [{"en": "School / College Admission Fee", "bn": "স্কুল/কলেজ/ভর্তি ফি", "icon": "🎓"}, {"en": "Exam Fee & Online Application", "bn": "পরীক্ষা ফি ও অনলাইন আবেদন", "icon": "📝"}, {"en": "Private Tutor / Coaching", "bn": "প্রাইভেট/কোচিং ও টিউশন", "icon": "📚"}, {"en": "Books, Stationery & Library", "bn": "বই, খাতা, স্টেশনারি, লাইব্রেরি", "icon": "📚"}, {"en": "School, College, Madrasa Expenses", "bn": "স্কুল, কলেজ, মাদ্রাসা খরচ", "icon": "🏫"}, {"en": "Photocopy", "bn": "ফটোকপি", "icon": "🖨️"}, {"en": "Office Expenses", "bn": "অফিস খরচ", "icon": "🏢"}]},
+  {"key": "medical", "en": "Medical", "bn": "চিকিৎসা", "icon": "🏥", "items": [{"en": "Doctor Fee", "bn": "ডাক্তার ফি", "icon": "🩺"}, {"en": "Medicine", "bn": "ওষুধ", "icon": "💊"}, {"en": "Hospital & Ambulance", "bn": "হাসপাতাল ও অ্যাম্বুলেন্স", "icon": "🏥"}, {"en": "Medical Test", "bn": "মেডিকেল টেস্ট", "icon": "🧪"}, {"en": "Dentist & Eye Doctor", "bn": "দাঁত ও চোখের ডাক্তার", "icon": "🦷"}, {"en": "Vaccine & Physiotherapy", "bn": "টিকা ও ফিজিওথেরাপি", "icon": "💉"}, {"en": "Gym & Fitness", "bn": "জিম ও শরীরচর্চা", "icon": "🏋️"}]},
+  {"key": "finance", "en": "Finance & Savings", "bn": "ঋণ ও সঞ্চয়", "icon": "💰", "items": [{"en": "Cattle & Poultry Feed", "bn": "গরু, ছাগল, হাঁস-মুরগি পশু ও মাছের খাবার", "icon": "🐄"}, {"en": "Seeds, Fertilizer & Pesticides", "bn": "বীজ, সার, কীটনাশক", "icon": "🌱"}, {"en": "Farming, Irrigation & Labor", "bn": "জমি চাষ, সেচ ও লেবার", "icon": "🚜"}, {"en": "Pets & Gardening", "bn": "পোষা প্রাণী ও বাগান", "icon": "🐾"}, {"en": "Insurance, Savings, DPS, FDR", "bn": "বীমা, সঞ্চয়, DPS, FDR", "icon": "🏦"}, {"en": "Investment", "bn": "বিনিয়োগ", "icon": "📈"}, {"en": "Staff Salary", "bn": "কর্মচারীর বেতন", "icon": "💰"}, {"en": "Government Fee - Passport, Visa, NID, Driving License, BRTA, Vehicle Papers", "bn": "সরকারি ফি - পাসপোর্ট, ভিসা, NID, ড্রাইভিং লাইসেন্স, BRTA গাড়ির কাগজপত্র - ফিটনেস, ট্যাক্স টোকেন, ইন্স্যুরেন্স", "icon": "🏛️"}, {"en": "Legal Expense - Lawyer, Deed", "bn": "আইনি খরচ - উকিল, দলিল", "icon": "⚖️"}, {"en": "Land Deed / Documents", "bn": "জমির দলিল", "icon": "📜"}, {"en": "Lost / Damage", "bn": "হারানো/ক্ষতি", "icon": "⚠️"}]},
+  {"key": "social", "en": "Social & Religious", "bn": "সামাজিক ও ধর্মীয়", "icon": "🕌", "items": [{"en": "Wedding & Reception", "bn": "বিয়ে ও বৌভাত", "icon": "💒"}, {"en": "Birthday & Social Events", "bn": "জন্মদিন ও সামাজিক অনুষ্ঠান", "icon": "🎂"}, {"en": "Eid Shopping", "bn": "ঈদ বাজার", "icon": "🌙"}, {"en": "Qurbani, Zakat & Fitra", "bn": "কোরবানি, যাকাত, ফিতরা", "icon": "🐐"}, {"en": "Donation & Mosque/Madrasa", "bn": "দান ও মসজিদ/মাদ্রাসা", "icon": "🕌"}, {"en": "Milad / Religious Gathering", "bn": "মিলাদ", "icon": "📖"}, {"en": "Gifts", "bn": "উপহার প্রদান", "icon": "🎁"}, {"en": "Relatives Expenses", "bn": "আত্মীয় খরচ", "icon": "👨‍👩‍👧‍👦"}, {"en": "Travel & Hotel", "bn": "ভ্রমণ ও হোটেল", "icon": "✈️"}, {"en": "Park, Resort & Cinema", "bn": "পার্ক, রিসোর্ট, সিনেমা", "icon": "🎡"}, {"en": "Death & Burial / Funeral", "bn": "মৃত্যু ও কাফন-দাফন", "icon": "⚰️"}, {"en": "Graveyard, Kulkhani, Chollisha", "bn": "কবরস্থান, কুলখানি, চল্লিশা", "icon": "🪦"}, {"en": "Hajj / Umrah", "bn": "হজ্জ / ওমরাহ", "icon": "🕋"}]},
+  {"key": "others", "en": "Others", "bn": "অন্যান্য", "icon": "📌", "items": [{"en": "Sports & Toys", "bn": "খেলাধুলা ও খেলনা", "icon": "⚽"}, {"en": "Online Shopping", "bn": "অনলাইন শপিং", "icon": "🛒"}, {"en": "Others", "bn": "অন্যান্য", "icon": "📦"}]}
 ];
 const INCOME_CATEGORIES = [
   {en:'Salary', bn:'বেতন', icon:'💼'},{en:'Business', bn:'ব্যবসা', icon:'🏢'},
@@ -640,7 +593,7 @@ function CategoryPicker({ t, lang, type, value, onChange }){
   const filtered = useMemo(()=>{
     if(!q) return flat;
     const ql = q.toLowerCase();
-    return flat.filter(a => (a.en && a.en.toLowerCase().includes(ql)) || (a.bn && a.bn.includes(q)));
+    return flat.filter(a => { const en = (a.en||'').toLowerCase(); const bn = (a.bn||'').toLowerCase(); const ql = q.toLowerCase(); return en.includes(ql) || bn.includes(ql) || (a.en||'').includes(q) || (a.bn||'').includes(q); });
   }, [flat, q]);
   return h('div', null,
     h('input', {
