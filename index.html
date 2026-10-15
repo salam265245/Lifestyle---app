@@ -532,7 +532,9 @@ function TextInput(props){
 }
 function TextArea(props){
   return h('textarea', Object.assign({
-    className:'w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[13px] outline-none focus:border-[#C9A86A] resize-none h-[70px]'
+    maxLength: 500,
+    rows: 5,
+    className:'w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[13px] outline-none focus:border-[#C9A86A] resize-y min-h-[120px] max-h-[240px]'
   }, props));
 }
 function Select(props){
@@ -1148,8 +1150,45 @@ function renderReportPages(o){
   function fit(str, maxW){
     str = String(str == null ? '' : str);
     if(!maxW || ctx.measureText(str).width <= maxW) return str;
+    // For long notes, don't truncate with ellipsis, allow wrapping via wrapLines
+    // Fallback truncate only if single word too long
+    if(str.length > 500){
+      // still truncate very long single token to avoid infinite loop
+      while(str.length > 1 && ctx.measureText(str + '\u2026').width > maxW) str = str.slice(0,-1);
+      return str + '\u2026';
+    }
     while(str.length > 1 && ctx.measureText(str + '\u2026').width > maxW) str = str.slice(0,-1);
     return str + '\u2026';
+  }
+  function wrapLines(str, maxW){
+    str = String(str == null ? '' : str);
+    if(!maxW) return [str];
+    const words = str.split(/\s+/);
+    const lines = [];
+    let cur = '';
+    for(let i=0;i<words.length;i++){
+      const test = cur ? cur + ' ' + words[i] : words[i];
+      if(ctx.measureText(test).width <= maxW){
+        cur = test;
+      } else {
+        if(cur) lines.push(cur);
+        // If single word too long, break it
+        let w = words[i];
+        if(ctx.measureText(w).width > maxW){
+          let part = '';
+          for(let ch of w){
+            if(ctx.measureText(part + ch).width <= maxW) part += ch;
+            else { lines.push(part); part = ch; }
+          }
+          cur = part;
+        } else {
+          cur = w;
+        }
+      }
+    }
+    if(cur) lines.push(cur);
+    if(lines.length===0) lines.push('');
+    return lines;
   }
   function txt(str, x, size, bold, color, align, maxW){
     font(size, bold); ctx.fillStyle = color || '#2D2A26'; ctx.textAlign = align || 'left';
@@ -1161,12 +1200,35 @@ function renderReportPages(o){
     ensure(110); y += 30; txt(str, M, 32, true, color || '#2D2A26'); y += 16; line('#C9A86A'); y += 36;
   }
   function row(cells, size, bold, color){
-    ensure(46);
-    cells.forEach(c => {
-      const right = c.align === 'right';
-      txt(c.t, right ? c.x + c.w : c.x, size || 24, bold, c.color || color, right ? 'right' : 'left', c.w);
+    // Wrap for large text columns (note)
+    let maxLines = 1;
+    const cellLines = cells.map(c => {
+      const w = c.w || 0;
+      if(w >= 280){
+        const ls = wrapLines(c.t, w);
+        if(ls.length > maxLines) maxLines = ls.length;
+        return ls;
+      } else {
+        return [fit(c.t, w)];
+      }
     });
-    y += 44;
+    const lineH = 30;
+    const totalH = Math.max(46, maxLines * lineH + 16);
+    ensure(totalH);
+    const baseY = y;
+    for(let li=0; li<maxLines; li++){
+      cells.forEach((c, idx) => {
+        const lines = cellLines[idx];
+        if(li >= lines.length) return;
+        const right = c.align === 'right';
+        const drawY = baseY + li * lineH;
+        const saveY = y;
+        y = drawY;
+        txt(lines[li], right ? c.x + c.w : c.x, size || 24, bold, c.color || color, right ? 'right' : 'left', c.w);
+        y = saveY;
+      });
+    }
+    y = baseY + totalH;
   }
   function muted(str){ ensure(46); txt(str, M, 22, false, '#8B7355'); y += 44; }
   function inRange(d){ return d && d >= from && d <= to; }
@@ -1291,11 +1353,12 @@ function renderPersonLoanPages(o){
   function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; }
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
+  function wrapLines(str, maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
   function txt(str,x,size,bold,color,align,maxW){ font(size,bold); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign=align||'left'; ctx.fillText(fit(str,maxW),x,y); }
   function ensure(hh){ if(y+hh>H-M-30) newPage(); }
   function line(c){ ctx.strokeStyle=c||'#F3E8D3'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); }
   function heading(str,color){ ensure(110); y+=30; txt(str,M,32,true,color||'#2D2A26'); y+=16; line('#C9A86A'); y+=36; }
-  function row(cells,size,bold,color){ ensure(46); cells.forEach(c=>{ const right=c.align==='right'; txt(c.t,right?c.x+c.w:c.x,size||24,bold,c.color||color,right?'right':'left',c.w); }); y+=44; }
+  function row(cells,size,bold,color){ let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=280){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } }); const lineH=30; const totalH=Math.max(46, maxLines*lineH+16); ensure(totalH); const baseY=y; for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txt(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); } y=baseY+totalH; }
   function muted(str){ ensure(46); txt(str,M,22,false,'#8B7355'); y+=44; }
   newPage();
   txt(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken),M,44,true); y+=48;
