@@ -712,6 +712,8 @@ function PaymentForm({ t, lang, initial, onSave }){
 function NewPersonForm({ t, lang, existingPeople, onSave }){
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
+  const [contactNumbers, setContactNumbers] = useState([]);
+  const [showNumberPicker, setShowNumberPicker] = useState(false);
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(today());
@@ -719,6 +721,7 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
   const [note, setNote] = useState('');
   const [contactMsg, setContactMsg] = useState('');
   function pickExisting(p){ setName(p.name); if(p.mobile) setMobile(p.mobile); }
+  function selectNumber(num){ setMobile(num); setShowNumberPicker(false); setContactNumbers([]); }
   async function handlePickContact(){
     setContactMsg('');
     try{
@@ -729,7 +732,14 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
         if(contacts && contacts.length>0){
           const c = contacts[0];
           if(c.name && c.name[0]) setName(c.name[0]);
-          if(c.tel && c.tel[0]) setMobile(c.tel[0]);
+          if(c.tel && c.tel.length>0){
+            if(c.tel.length===1){
+              setMobile(c.tel[0]);
+            } else {
+              setContactNumbers(c.tel);
+              setShowNumberPicker(true);
+            }
+          }
         }
       } else {
         setContactMsg(t.contactUnsupported || (lang==='bn' ? 'এখানে কন্টাক্ট সাপোর্ট নেই' : 'Contact not supported'));
@@ -774,6 +784,27 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
           contactMsg ? h('p', {className:'text-[11px] text-[#8B7355] mt-1.5'}, contactMsg) : null
         )
       ),
+      showNumberPicker ? h('div', {className:'fixed inset-0 z-[85] flex items-end justify-center'},
+        h('div', {className:'absolute inset-0 bg-black/40', onClick:()=>{ setShowNumberPicker(false); }}),
+        h('div', {className:'relative w-full max-w-[460px] bg-white rounded-t-[24px] border border-[#F3E8D3] max-h-[70vh] overflow-y-auto'},
+          h('div', {className:'sticky top-0 bg-white px-5 py-3 border-b border-[#F3E8D3] flex items-center justify-between'},
+            h('p', {className:'font-bold text-[15px]'}, lang==='bn' ? 'নম্বর বাছুন' : 'Select Number'),
+            h('button', {type:'button', onClick:()=>setShowNumberPicker(false), className:'w-8 h-8 rounded-full bg-[#F3E8D3] flex items-center justify-center'}, '✕')
+          ),
+          h('div', {className:'p-3 grid grid-cols-1 gap-2'},
+            contactNumbers.map((num, i) => h('button', {
+              key:i, type:'button',
+              onClick:()=>selectNumber(num),
+              className:'w-full text-left px-4 py-4 rounded-[14px] border-2 bg-[#FFFBF7] border-[#F3E8D3] hover:border-[#2D2A26] hover:bg-white transition-all'
+            },
+              h('div', {className:'flex items-center gap-3'},
+                h('span', {className:'w-10 h-10 rounded-full bg-[#2D2A26] text-white flex items-center justify-center text-[16px] font-bold'}, i+1),
+                h('span', {className:'text-[18px] font-extrabold tracking-wide text-[#2D2A26]'}, num)
+              )
+            ))
+          )
+        )
+      ) : null,
       h(Field, {label: lang==='bn'?'ফেরত দেওয়ার সম্ভাব্য তারিখ':'Expected Return Date'},
         h(TextInput, {type:'date', value:expectedReturnDate, onChange:e=>setExpectedReturnDate(e.target.value)})
       ),
