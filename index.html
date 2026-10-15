@@ -710,16 +710,23 @@ function PaymentForm({ t, lang, initial, onSave }){
 
 /* ---------- New person + first loan form ---------- */
 function NewPersonForm({ t, lang, existingPeople, onSave }){
-  const [name, setName] = useState('');
-  const [mobile, setMobile] = useState('');
+  const [name, setName] = useState(loadLS('lifestyle_draft_np_name', ''));
+  const [mobile, setMobile] = useState(loadLS('lifestyle_draft_np_mobile', ''));
   const [contactNumbers, setContactNumbers] = useState([]);
   const [showNumberPicker, setShowNumberPicker] = useState(false);
-  const [expectedReturnDate, setExpectedReturnDate] = useState('');
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(today());
-  const [medium, setMedium] = useState('Cash');
-  const [note, setNote] = useState('');
+  const [expectedReturnDate, setExpectedReturnDate] = useState(loadLS('lifestyle_draft_np_expectedReturnDate', ''));
+  const [amount, setAmount] = useState(loadLS('lifestyle_draft_np_amount', ''));
+  const [date, setDate] = useState(loadLS('lifestyle_draft_np_date', today()));
+  const [medium, setMedium] = useState(loadLS('lifestyle_draft_np_medium', 'Cash'));
+  const [note, setNote] = useState(loadLS('lifestyle_draft_np_note', ''));
   const [contactMsg, setContactMsg] = useState('');
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_name', name); }catch(e){} }, [name]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_mobile', mobile); }catch(e){} }, [mobile]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_expectedReturnDate', expectedReturnDate); }catch(e){} }, [expectedReturnDate]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_amount', amount); }catch(e){} }, [amount]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_date', date); }catch(e){} }, [date]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_medium', medium); }catch(e){} }, [medium]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_note', note); }catch(e){} }, [note]);
   function pickExisting(p){ setName(p.name); if(p.mobile) setMobile(p.mobile); }
   function selectNumber(num){ setMobile(num); setShowNumberPicker(false); setContactNumbers([]); }
   async function handlePickContact(){
@@ -752,6 +759,15 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
   }
   function submit(){
     if(!name || !amount) return;
+    try{
+      saveLS('lifestyle_draft_np_name', '');
+      saveLS('lifestyle_draft_np_mobile', '');
+      saveLS('lifestyle_draft_np_expectedReturnDate', '');
+      saveLS('lifestyle_draft_np_amount', '');
+      saveLS('lifestyle_draft_np_date', '');
+      saveLS('lifestyle_draft_np_medium', '');
+      saveLS('lifestyle_draft_np_note', '');
+    }catch(e){}
     onSave({ name: name.trim(), mobile: mobile.trim(), amount: parseFloat(amount)||0, date, medium, note, expectedReturnDate, returnDate: expectedReturnDate });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
@@ -1078,7 +1094,8 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
 
 /* ---------- People List Page ---------- */
 function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson }){
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(loadLS('lifestyle_adding_' + kind, false));
+  useEffect(()=>{ try{ saveLS('lifestyle_adding_' + kind, adding); }catch(e){} }, [adding, kind]);
   return h('div', {className:'pt-5 pb-6 space-y-4'},
     h('div', {className:'flex items-center justify-between'},
       h('h2', {className:'text-[18px] font-bold'}, kind==='given' ? t.loansGiven : t.loansTaken),
@@ -1418,10 +1435,11 @@ function EmailAuthForm({t, onAuth}){
 function App(){
   const initial = loadInitialState();
   const [lang, setLang] = useState(loadLS('lifestyle_lang', 'bn'));
-  const [page, setPage] = useState('home'); // home, history, given, taken, personDetail, reports, profile
-  const [historyFilter, setHistoryFilter] = useState('all');
-  const [openPersonKind, setOpenPersonKind] = useState(null);
-  const [openPersonId, setOpenPersonId] = useState(null);
+  const [page, setPage] = useState(loadLS('lifestyle_last_page', 'home')); // home, history, given, taken, personDetail, reports, profile
+  const [historyFilter, setHistoryFilter] = useState(loadLS('lifestyle_last_historyFilter', 'all'));
+  const [openPersonKind, setOpenPersonKind] = useState(loadLS('lifestyle_last_openPersonKind', null));
+  const [openPersonId, setOpenPersonId] = useState(loadLS('lifestyle_last_openPersonId', null));
+  const [addType, setAddType] = useState(loadLS('lifestyle_last_addType', null));
 
   const [transactions, setTransactions] = useState(initial.transactions);
   const [peopleGiven, setPeopleGiven] = useState(initial.peopleGiven);
@@ -1431,6 +1449,11 @@ function App(){
   const [userName, setUserName] = useState(loadLS('lifestyle_user_name', ''));
   const [profilePhoto, setProfilePhoto] = useState(loadLS('lifestyle_profile_photo', null));
   const [googleUser, setGoogleUser] = useState(loadLS('lifestyle_google_user', null));
+  useEffect(()=>{ try{ saveLS('lifestyle_last_page', page); }catch(e){} }, [page]);
+  useEffect(()=>{ try{ saveLS('lifestyle_last_addType', addType); }catch(e){} }, [addType]);
+  useEffect(()=>{ try{ saveLS('lifestyle_last_historyFilter', historyFilter); }catch(e){} }, [historyFilter]);
+  useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonKind', openPersonKind); }catch(e){} }, [openPersonKind]);
+  useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonId', openPersonId); }catch(e){} }, [openPersonId]);
   const photoInputRef = useRef(null);
   function handlePhotoChange(e){
     const file = e.target.files && e.target.files[0];
@@ -1589,8 +1612,7 @@ function App(){
 
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
-  const [addType, setAddType] = useState(null); // income, expense, bankLoan
-  const [editingTx, setEditingTx] = useState(null);
+    const [editingTx, setEditingTx] = useState(null);
   const [confirmDelTx, setConfirmDelTx] = useState(null);
   const [editingBankLoan, setEditingBankLoan] = useState(null);
   const [confirmDelBank, setConfirmDelBank] = useState(null);
