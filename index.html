@@ -774,12 +774,9 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
           const c = contacts[0];
           if(c.name && c.name[0]) setName(c.name[0]);
           if(c.tel && c.tel.length>0){
-            if(c.tel.length===1){
-              setMobile(c.tel[0]);
-            } else {
-              setContactNumbers(c.tel);
-              setShowNumberPicker(true);
-            }
+            // ALWAYS show custom Select Number sheet - consistent behavior, no Done, no small popup
+            setContactNumbers(c.tel);
+            setShowNumberPicker(true);
           }
         }
       } else {
