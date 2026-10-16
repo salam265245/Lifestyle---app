@@ -1105,8 +1105,8 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
       )
     ),
     h('div', {className:'flex items-center justify-end gap-2'},
-      h('button', {onClick:()=>setAddingLoan(true), className:'px-4 py-2 rounded-full bg-[#2D2A26] text-white text-[12px] font-bold'}, t.addLoan),
-      h('button', {onClick:()=>setAddingPayment(true), className:'px-4 py-2 rounded-full bg-[#2D2A26] text-white text-[12px] font-bold'}, t.addPayment)
+      h('button', {onClick:()=>setAddingLoan(true), className:'px-4 py-2 rounded-full bg-black text-white text-[12px] font-bold border border-black'}, t.addLoan),
+      h('button', {onClick:()=>setAddingPayment(true), className:'px-4 py-2 rounded-full bg-black text-white text-[12px] font-bold border border-black'}, t.addPayment)
     ),
     h('div', null,
       h('div', {className:'flex items-center justify-between mb-2'},
@@ -1313,14 +1313,35 @@ function renderReportPages(o){
   const money = fmtMoney;
 
   newPage();
-  // --- Header with App, Developer, User, DateTime ---
-  txt(t.appName + ' \u2022 ' + t.reportHeading, M, 44, true); y += 42;
-  txt((o.lang==='en'?'App: ':'অ্যাপস: ')+t.appName, M, 22, true, '#2D2A26'); y += 32;
-  txt((o.lang==='en'?'Developer: Md. Abdus Salam | Mobile: +8801737265245 | Email: salamwgp@gmail.com | Address: Bantra, Jalalabad, Kalaroa, Satkhira' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | মোবাইল: +8801737265245 | ইমেইল: salamwgp@gmail.com | ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা'), M, 18, false, '#8B7355'); y += 28;
-  const genDT = (o.generatedAt || new Date().toLocaleString(o.lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
-  if(o.userName){ txt((o.lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName, M, 22, true, '#8B6B3A'); y += 30; }
+  (function(){
+    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
+    const dd = String(genDateObj.getDate()).padStart(2,'0');
+    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
+    const yyyy = genDateObj.getFullYear();
+    const dateStr = dd+'/'+mm+'/'+yyyy;
+    const timeStr = genDateObj.toLocaleTimeString(o.lang==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+    const isEn = o.lang==='en';
+    const leftX = M;
+    let ly = y;
+    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText(fit(isEn ? 'Lifestyle' : 'লাইফস্টাইল', 400), leftX, ly); ly+=34;
+    font(18, false); ctx.fillStyle='#2D2A26';
+    ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
+    const rightX = W-M;
+    let ry = y;
+    const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+    const devLinesBn = ['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
+    const devLines = isEn ? devLinesEn : devLinesBn;
+    devLines.forEach((dl,i)=>{
+      font(i===0?18:16, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
+      ctx.fillText(fit(dl, 520), rightX, ry);
+      ry+=22;
+    });
+    y = Math.max(ly, ry) + 16; line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
+  })();
   txt(t.period + ': ' + from + '  \u2192  ' + to, M, 24, false, '#8B7355'); y += 30;
-  txt(t.generated + ': ' + genDT, M, 22, false, '#8B7355'); y += 20;
 
   // income / expense
   const tx = o.transactions.filter(x => inRange(x.date)).sort((a,b) => a.date.localeCompare(b.date));
@@ -1443,12 +1464,34 @@ function renderPersonLoanPages(o){
   function row(cells,size,bold,color){ let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=280){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } }); const lineH=30; const totalH=Math.max(46, maxLines*lineH+16); ensure(totalH); const baseY=y; for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txt(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); } y=baseY+totalH; }
   function muted(str){ ensure(46); txt(str,M,22,false,'#8B7355'); y+=44; }
   newPage();
-  txt(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken),M,44,true); y+=36;
-  txt((o.lang==='en'?'App: ':'অ্যাপস: ')+t.appName, M, 20, true, '#2D2A26'); y+=28;
-  txt((o.lang==='en'?'Developer: Md. Abdus Salam | +8801737265245 | salamwgp@gmail.com' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | +8801737265245 | salamwgp@gmail.com'), M, 16, false, '#8B7355'); y+=24;
-  const genDT2 = (o.generatedAt || new Date().toLocaleString(o.lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
-  if(o.userName){ txt((o.lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName, M, 20, true, '#8B6B3A'); y+=26; }
-  txt((o.lang==='en'?'Download Time: ':'রিপোর্ট ডাউনলোড সময়: ')+genDT2, M, 18, false, '#8B7355'); y+=28;
+  (function(){
+    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
+    const dd = String(genDateObj.getDate()).padStart(2,'0');
+    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
+    const yyyy = genDateObj.getFullYear();
+    const dateStr = dd+'/'+mm+'/'+yyyy;
+    const timeStr = genDateObj.toLocaleTimeString(o.lang==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+    const isEn = o.lang==='en';
+    const leftX = M;
+    let ly = y;
+    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText(fit(isEn ? 'Lifestyle' : 'লাইফস্টাইল', 400), leftX, ly); ly+=34;
+    font(18, false); ctx.fillStyle='#2D2A26';
+    ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
+    const rightX = W-M;
+    let ry = y;
+    const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+    const devLinesBn = ['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
+    const devLines = isEn ? devLinesEn : devLinesBn;
+    devLines.forEach((dl,i)=>{
+      font(i===0?18:16, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
+      ctx.fillText(fit(dl, 520), rightX, ry);
+      ry+=22;
+    });
+    y = Math.max(ly, ry) + 16; line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
+  })();
   txt(person.name+(person.mobile?' • '+person.mobile:''),M,30,true,'#8B6B3A'); y+=36;
   const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0);
   const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0);
@@ -1506,12 +1549,34 @@ function renderAllLoansPages(o){
   }
   function muted(str){ ensure(46); txtA(str,M,22,false,'#8B7355'); y+=44; }
   newPage();
-  txtA(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken)+' - '+(lang==='en'?'All History':'সবার History একসাথে'),M,36,true); y+=34;
-  txtA((lang==='en'?'App: ':'অ্যাপস: ')+t.appName,M,20,true,'#2D2A26'); y+=28;
-  txtA((lang==='en'?'Developer: Md. Abdus Salam | Mobile: +8801737265245 | Email: salamwgp@gmail.com | Address: Bantra, Jalalabad, Kalaroa, Satkhira' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | মোবাইল: +8801737265245 | ইমেইল: salamwgp@gmail.com | ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা'),M,16,false,'#8B7355'); y+=26;
-  const genDT = (o.generatedAt || new Date().toLocaleString(lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
-  if(o.userName){ txtA((lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName,M,20,true,'#8B6B3A'); y+=26; }
-  txtA((lang==='en'?'Download Time: ':'রিপোর্ট ডাউনলোড সময়: ')+genDT,M,18,false,'#8B7355'); y+=20;
+  (function(){
+    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
+    const dd = String(genDateObj.getDate()).padStart(2,'0');
+    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
+    const yyyy = genDateObj.getFullYear();
+    const dateStr = dd+'/'+mm+'/'+yyyy;
+    const timeStr = genDateObj.toLocaleTimeString((o.lang||'bn')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+    const isEn = (o.lang||'bn')==='en';
+    const leftX = M;
+    let ly = y;
+    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText(fit(isEn ? 'Lifestyle' : 'লাইফস্টাইল', 400), leftX, ly); ly+=34;
+    font(18, false); ctx.fillStyle='#2D2A26';
+    ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
+    const rightX = W-M;
+    let ry = y;
+    const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+    const devLinesBn = ['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
+    const devLines = isEn ? devLinesEn : devLinesBn;
+    devLines.forEach((dl,i)=>{
+      font(i===0?18:16, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
+      ctx.fillText(fit(dl, 520), rightX, ry);
+      ry+=22;
+    });
+    y = Math.max(ly, ry) + 16; line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
+  })();
   const all=[]; people.forEach(p=>{ p.loans.forEach(l=>{ all.push({date:l.date, type:'loan', person:p.name, medium:l.medium||'', note:l.note||'', amount:l.amount}); }); p.payments.forEach(px=>{ all.push({date:px.date, type:'payment', person:p.name, medium:px.method||'', note:px.note||'', amount:px.amount}); }); });
   all.sort((a,b)=>a.date.localeCompare(b.date));
   if(!all.length){ muted(t.noData); } else {
@@ -2132,15 +2197,21 @@ function App(){
       )
     );
   } else if(page === 'given'){
-    pageContent = h(PeopleList, {t, lang, kind:'given', people:peopleGiven, userName, onOpenPerson: (p)=>openPerson('given', p),
+    pageContent = h(PeopleList, {
+      t, lang, kind:'given', people: peopleGiven,
+      onOpenPerson: (p)=>openPerson('given', p),
       onAddPerson: (data)=>addPersonWithLoan('given', data)
     });
   } else if(page === 'taken'){
-    pageContent = h(PeopleList, {t, lang, kind:'taken', people:peopleTaken, userName, onOpenPerson: (p)=>openPerson('taken', p),
+    pageContent = h(PeopleList, {
+      t, lang, kind:'taken', people: peopleTaken,
+      onOpenPerson: (p)=>openPerson('taken', p),
       onAddPerson: (data)=>addPersonWithLoan('taken', data)
     });
   } else if(page === 'personDetail' && currentPerson){
-    pageContent = h(PersonDetail, {t, lang, kind:openPersonKind, person:currentPerson, userName, onBack: ()=>setPage(openPersonKind),
+    pageContent = h(PersonDetail, {
+      t, lang, kind: openPersonKind, person: currentPerson,
+      onBack: ()=>setPage(openPersonKind),
       onUpdatePerson: (p)=>updatePerson(openPersonKind, p),
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
