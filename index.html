@@ -1104,10 +1104,13 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
         }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[12px] font-bold'}, lang==='en' ? '👁️ View' : '👁️ View')
       )
     ),
+    h('div', {className:'flex items-center justify-end gap-2'},
+      h('button', {onClick:()=>setAddingLoan(true), className:'px-4 py-2 rounded-full bg-[#2D2A26] text-white text-[12px] font-bold'}, t.addLoan),
+      h('button', {onClick:()=>setAddingPayment(true), className:'px-4 py-2 rounded-full bg-[#2D2A26] text-white text-[12px] font-bold'}, t.addPayment)
+    ),
     h('div', null,
       h('div', {className:'flex items-center justify-between mb-2'},
-        h('h3', {className:'font-bold text-[14px]'}, t.loanHistory),
-        h('button', {onClick:()=>setAddingLoan(true), className:'text-[12px] font-bold text-[#C9A86A]'}, t.addLoan)
+        h('h3', {className:'font-bold text-[14px]'}, t.loanHistory)
       ),
       person.loans.length === 0 ? h('p', {className:'text-[12px] text-[#8B7355] text-center py-3'}, t.noData) :
       h('div', {className:'space-y-2'},
@@ -1125,8 +1128,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
     ),
     h('div', null,
       h('div', {className:'flex items-center justify-between mb-2'},
-        h('h3', {className:'font-bold text-[14px]'}, t.paymentHistory),
-        h('button', {onClick:()=>setAddingPayment(true), className:'text-[12px] font-bold text-[#C9A86A]'}, t.addPayment)
+        h('h3', {className:'font-bold text-[14px]'}, t.paymentHistory)
       ),
       person.payments.length === 0 ? h('p', {className:'text-[12px] text-[#8B7355] text-center py-3'}, t.noData) :
       h('div', {className:'space-y-2'},
@@ -1226,7 +1228,10 @@ function renderReportPages(o){
   function fit(str, maxW){
     str = String(str == null ? '' : str);
     if(!maxW || ctx.measureText(str).width <= maxW) return str;
+    // For long notes, don't truncate with ellipsis, allow wrapping via wrapLines
+    // Fallback truncate only if single word too long
     if(str.length > 500){
+      // still truncate very long single token to avoid infinite loop
       while(str.length > 1 && ctx.measureText(str + '\u2026').width > maxW) str = str.slice(0,-1);
       return str + '\u2026';
     }
@@ -1245,6 +1250,7 @@ function renderReportPages(o){
         cur = test;
       } else {
         if(cur) lines.push(cur);
+        // If single word too long, break it
         let w = words[i];
         if(ctx.measureText(w).width > maxW){
           let part = '';
@@ -1272,6 +1278,7 @@ function renderReportPages(o){
     ensure(110); y += 30; txt(str, M, 32, true, color || '#2D2A26'); y += 16; line('#C9A86A'); y += 36;
   }
   function row(cells, size, bold, color){
+    // Wrap for large text columns (note)
     let maxLines = 1;
     const cellLines = cells.map(c => {
       const w = c.w || 0;
@@ -1304,44 +1311,26 @@ function renderReportPages(o){
   function muted(str){ ensure(46); txt(str, M, 22, false, '#8B7355'); y += 44; }
   function inRange(d){ return d && d >= from && d <= to; }
   const money = fmtMoney;
+
   newPage();
-  (function(){
-    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const dd = String(genDateObj.getDate()).padStart(2,'0');
-    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
-    const yyyy = genDateObj.getFullYear();
-    const dateStr = dd+'/'+mm+'/'+yyyy;
-    const timeStr = genDateObj.toLocaleTimeString(o.lang==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-    const isEn = o.lang==='en';
-    const leftX = M;
-    let ly = y;
-    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    ctx.fillText(fit(isEn ? 'Lifestyle' : 'লাইফস্টাইল', 400), leftX, ly); ly+=34;
-    font(18, false); ctx.fillStyle='#2D2A26';
-    ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
-    const rightX = W-M;
-    let ry = y;
-    const devLinesEn = ['💻 Developer','👤 Name: Md. Abdus Salam','📍 Address: Bantra, Jalalabad, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
-    const devLinesBn = ['💻 ডেভেলপার','👤 নাম: মোঃ আব্দুস ছালাম','📍 ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','📞 মোবাইল: +8801737265245','✉️ ইমেইল: salamwgp@gmail.com'];
-    const devLines = isEn ? devLinesEn : devLinesBn;
-    devLines.forEach((dl,i)=>{
-      font(i===0?18:16, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(dl, 520), rightX, ry);
-      ry+=22;
-    });
-    y = Math.max(ly, ry) + 16;
-    line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
-  })();
-  txt(t.period + ': ' + from + '  →  ' + to, M, 22, false, '#8B7355'); y += 30;
+  // --- Header with App, Developer, User, DateTime ---
+  txt(t.appName + ' \u2022 ' + t.reportHeading, M, 44, true); y += 42;
+  txt((o.lang==='en'?'App: ':'অ্যাপস: ')+t.appName, M, 22, true, '#2D2A26'); y += 32;
+  txt((o.lang==='en'?'Developer: Md. Abdus Salam | Mobile: +8801737265245 | Email: salamwgp@gmail.com | Address: Bantra, Jalalabad, Kalaroa, Satkhira' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | মোবাইল: +8801737265245 | ইমেইল: salamwgp@gmail.com | ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা'), M, 18, false, '#8B7355'); y += 28;
+  const genDT = (o.generatedAt || new Date().toLocaleString(o.lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+  if(o.userName){ txt((o.lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName, M, 22, true, '#8B6B3A'); y += 30; }
+  txt(t.period + ': ' + from + '  \u2192  ' + to, M, 24, false, '#8B7355'); y += 30;
+  txt(t.generated + ': ' + genDT, M, 22, false, '#8B7355'); y += 20;
+
+  // income / expense
   const tx = o.transactions.filter(x => inRange(x.date)).sort((a,b) => a.date.localeCompare(b.date));
   const inc = tx.filter(x => x.type === 'income'), exp = tx.filter(x => x.type === 'expense');
   const incSum = inc.reduce((a,x)=>a+x.amount,0), expSum = exp.reduce((a,x)=>a+x.amount,0);
-  heading(t.reports + ' — ' + t.income + ' / ' + t.expense);
+  heading(t.reports + ' \u2014 ' + t.income + ' / ' + t.expense);
   row([{t:t.income, x:cDate.x, w:400}, {t:money(incSum), x:cAmt.x, w:cAmt.w, align:'right', color:'#2E7D32'}], 26, true);
   row([{t:t.expense, x:cDate.x, w:400}, {t:money(expSum), x:cAmt.x, w:cAmt.w, align:'right', color:'#B71C1C'}], 26, true);
   row([{t:t.balance, x:cDate.x, w:400}, {t:money(incSum-expSum), x:cAmt.x, w:cAmt.w, align:'right'}], 26, true);
+
   function txSection(title, list, color){
     heading(title, color);
     if(!list.length){ muted(t.noData); return; }
@@ -1355,6 +1344,7 @@ function renderReportPages(o){
   }
   txSection(t.income, inc, '#2E7D32');
   txSection(t.expense, exp, '#B71C1C');
+
   function peopleSection(title, people, loanLabel, payLabel){
     heading(title);
     let any = false, loanSum = 0, paySum = 0;
@@ -1368,11 +1358,11 @@ function renderReportPages(o){
       row([{t:p.name,x:cDate.x,w:560}, {t:t.balance+': '+money(bal),x:cAmt.x-150,w:cAmt.w+150,align:'right'}], 25, true);
       ls.forEach(l => { loanSum += l.amount; row([
         {t:l.date,x:cDate.x,w:cDate.w},{t:loanLabel,x:cMid.x,w:cMid.w},
-        {t:[l.medium,l.note].filter(Boolean).join(' • '),x:cNote.x,w:cNote.w,color:'#8B7355'},
+        {t:[l.medium,l.note].filter(Boolean).join(' \u2022 '),x:cNote.x,w:cNote.w,color:'#8B7355'},
         {t:money(l.amount),x:cAmt.x,w:cAmt.w,align:'right'}], 22, false); });
       ps.forEach(x => { paySum += x.amount; row([
         {t:x.date,x:cDate.x,w:cDate.w},{t:payLabel,x:cMid.x,w:cMid.w,color:'#2E7D32'},
-        {t:[x.method,x.note].filter(Boolean).join(' • '),x:cNote.x,w:cNote.w,color:'#8B7355'},
+        {t:[x.method,x.note].filter(Boolean).join(' \u2022 '),x:cNote.x,w:cNote.w,color:'#8B7355'},
         {t:money(x.amount),x:cAmt.x,w:cAmt.w,align:'right',color:'#2E7D32'}], 22, false); });
       y += 10;
     });
@@ -1382,6 +1372,7 @@ function renderReportPages(o){
   }
   peopleSection(t.loansGiven, o.peopleGiven, t.given, t.totalReturned);
   peopleSection(t.loansTaken, o.peopleTaken, t.taken, t.totalRepaid);
+
   heading(t.bankLoans);
   if(!o.bankLoans.length) muted(t.noData);
   o.bankLoans.forEach(l => {
@@ -1390,24 +1381,23 @@ function renderReportPages(o){
     const paidCount = paidEmis.filter(Boolean).length;
     ensure(150);
     row([{t:l.bankName,x:cDate.x,w:560},{t:money(calcEMI(l.amount,l.interestRate,n))+' /mo',x:cAmt.x-150,w:cAmt.w+150,align:'right'}], 25, true);
-    row([{t:money(l.amount)+' • '+n+'mo • '+l.interestRate+'%',x:cDate.x,w:700,color:'#8B7355'},{t:paidCount+' / '+n+' '+t.paid,x:cAmt.x-150,w:cAmt.w+150,align:'right'}], 22, false);
+    row([{t:money(l.amount)+' \u2022 '+n+'mo \u2022 '+l.interestRate+'%',x:cDate.x,w:700,color:'#8B7355'},{t:paidCount+' / '+n+' '+t.paid,x:cAmt.x-150,w:cAmt.w+150,align:'right'}], 22, false);
+    if(l.emiStartDate) row([{t:t.emiStartDate+': '+l.emiStartDate+'   '+t.emiEndDate.replace(/\s*\(.*\)/,'')+': '+(l.emiEndDate||''),x:cDate.x,w:W-2*M,color:'#8B7355'}], 21, false);
     for(let i=0;i<n;i++){
       const due = l.emiStartDate ? addMonths(l.emiStartDate, i) : '';
       if(!inRange(due)) continue;
       row([{t:due,x:cDate.x,w:cDate.w},{t:t.installment+' '+(i+1),x:cMid.x,w:cMid.w},
-        {t:paidEmis[i]?(String.fromCharCode(10003)+' '+t.paid):t.unpaid,x:cAmt.x,w:cAmt.w,align:'right',color:paidEmis[i]?'#2E7D32':'#B71C1C'}], 22, false);
+        {t:paidEmis[i]?('\u2713 '+t.paid):t.unpaid,x:cAmt.x,w:cAmt.w,align:'right',color:paidEmis[i]?'#2E7D32':'#B71C1C'}], 22, false);
     }
     y += 12;
   });
+
   pages.forEach((c,i) => {
     const g = c.getContext('2d'); g.font = '400 20px ' + PDF_FONT; g.fillStyle = '#8B7355'; g.textAlign = 'center';
-    g.fillText(t.appName + '  •  ' + (i+1) + ' / ' + pages.length, W/2, H - 40);
+    g.fillText(t.appName + '  \u2022  ' + (i+1) + ' / ' + pages.length, W/2, H - 40);
   });
   return pages;
 }
-
-
-
 
 function buildPdfFromJpegs(jpegs){
   const enc = new TextEncoder(), chunks = [], offsets = [];
@@ -1453,35 +1443,12 @@ function renderPersonLoanPages(o){
   function row(cells,size,bold,color){ let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=280){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } }); const lineH=30; const totalH=Math.max(46, maxLines*lineH+16); ensure(totalH); const baseY=y; for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txt(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); } y=baseY+totalH; }
   function muted(str){ ensure(46); txt(str,M,22,false,'#8B7355'); y+=44; }
   newPage();
-  (function(){
-    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const dd = String(genDateObj.getDate()).padStart(2,'0');
-    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
-    const yyyy = genDateObj.getFullYear();
-    const dateStr = dd+'/'+mm+'/'+yyyy;
-    const timeStr = genDateObj.toLocaleTimeString(o.lang==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-    const isEn = o.lang==='en';
-    const leftX = M;
-    let ly = y;
-    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    ctx.fillText(fit(isEn ? 'Lifestyle' : 'লাইফস্টাইল', 400), leftX, ly); ly+=34;
-    font(18, false); ctx.fillStyle='#2D2A26';
-    ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
-    const rightX = W-M;
-    let ry = y;
-    const devLinesEn = ['💻 Developer','👤 Name: Md. Abdus Salam','📍 Address: Bantra, Jalalabad, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
-    const devLinesBn = ['💻 ডেভেলপার','👤 নাম: মোঃ আব্দুস ছালাম','📍 ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','📞 মোবাইল: +8801737265245','✉️ ইমেইল: salamwgp@gmail.com'];
-    const devLines = isEn ? devLinesEn : devLinesBn;
-    devLines.forEach((dl,i)=>{
-      font(i===0?18:16, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(dl, 520), rightX, ry);
-      ry+=22;
-    });
-    y = Math.max(ly, ry) + 16;
-    line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
-  })();
+  txt(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken),M,44,true); y+=36;
+  txt((o.lang==='en'?'App: ':'অ্যাপস: ')+t.appName, M, 20, true, '#2D2A26'); y+=28;
+  txt((o.lang==='en'?'Developer: Md. Abdus Salam | +8801737265245 | salamwgp@gmail.com' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | +8801737265245 | salamwgp@gmail.com'), M, 16, false, '#8B7355'); y+=24;
+  const genDT2 = (o.generatedAt || new Date().toLocaleString(o.lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+  if(o.userName){ txt((o.lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName, M, 20, true, '#8B6B3A'); y+=26; }
+  txt((o.lang==='en'?'Download Time: ':'রিপোর্ট ডাউনলোড সময়: ')+genDT2, M, 18, false, '#8B7355'); y+=28;
   txt(person.name+(person.mobile?' • '+person.mobile:''),M,30,true,'#8B6B3A'); y+=36;
   const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0);
   const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0);
@@ -1507,9 +1474,6 @@ function renderPersonLoanPages(o){
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='400 20px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+'  •  '+(i+1)+' / '+pages.length,W/2,H-40); });
   return pages;
 }
-
-
-
 function buildPersonLoanPdfBlob(o){
   const pages=renderPersonLoanPages(o);
   const jpegs=pages.map(c=>{
@@ -1542,35 +1506,12 @@ function renderAllLoansPages(o){
   }
   function muted(str){ ensure(46); txtA(str,M,22,false,'#8B7355'); y+=44; }
   newPage();
-  (function(){
-    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const dd = String(genDateObj.getDate()).padStart(2,'0');
-    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
-    const yyyy = genDateObj.getFullYear();
-    const dateStr = dd+'/'+mm+'/'+yyyy;
-    const timeStr = genDateObj.toLocaleTimeString((o.lang||'bn')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-    const isEn = (o.lang||'bn')==='en';
-    const leftX = M;
-    let ly = y;
-    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    ctx.fillText(fit(isEn ? 'Lifestyle' : 'লাইফস্টাইল', 400), leftX, ly); ly+=34;
-    font(18, false); ctx.fillStyle='#2D2A26';
-    ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
-    const rightX = W-M;
-    let ry = y;
-    const devLinesEn = ['💻 Developer','👤 Name: Md. Abdus Salam','📍 Address: Bantra, Jalalabad, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
-    const devLinesBn = ['💻 ডেভেলপার','👤 নাম: মোঃ আব্দুস ছালাম','📍 ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','📞 মোবাইল: +8801737265245','✉️ ইমেইল: salamwgp@gmail.com'];
-    const devLines = isEn ? devLinesEn : devLinesBn;
-    devLines.forEach((dl,i)=>{
-      font(i===0?18:16, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(dl, 520), rightX, ry);
-      ry+=22;
-    });
-    y = Math.max(ly, ry) + 16;
-    line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
-  })();
+  txtA(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken)+' - '+(lang==='en'?'All History':'সবার History একসাথে'),M,36,true); y+=34;
+  txtA((lang==='en'?'App: ':'অ্যাপস: ')+t.appName,M,20,true,'#2D2A26'); y+=28;
+  txtA((lang==='en'?'Developer: Md. Abdus Salam | Mobile: +8801737265245 | Email: salamwgp@gmail.com | Address: Bantra, Jalalabad, Kalaroa, Satkhira' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | মোবাইল: +8801737265245 | ইমেইল: salamwgp@gmail.com | ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা'),M,16,false,'#8B7355'); y+=26;
+  const genDT = (o.generatedAt || new Date().toLocaleString(lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+  if(o.userName){ txtA((lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName,M,20,true,'#8B6B3A'); y+=26; }
+  txtA((lang==='en'?'Download Time: ':'রিপোর্ট ডাউনলোড সময়: ')+genDT,M,18,false,'#8B7355'); y+=20;
   const all=[]; people.forEach(p=>{ p.loans.forEach(l=>{ all.push({date:l.date, type:'loan', person:p.name, medium:l.medium||'', note:l.note||'', amount:l.amount}); }); p.payments.forEach(px=>{ all.push({date:px.date, type:'payment', person:p.name, medium:px.method||'', note:px.note||'', amount:px.amount}); }); });
   all.sort((a,b)=>a.date.localeCompare(b.date));
   if(!all.length){ muted(t.noData); } else {
@@ -1584,9 +1525,6 @@ function renderAllLoansPages(o){
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='400 20px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+'  •  '+(i+1)+' / '+pages.length,W/2,H-40); });
   return pages;
 }
-
-
-
 function buildAllLoansPdfBlob(o){
   const pages=renderAllLoansPages(o);
   const jpegs=pages.map(c=>{
@@ -1985,68 +1923,9 @@ function App(){
     });
     setAddType(null); setEditingBankLoan(null);
   }
-function deleteBankLoan(id){
+  function deleteBankLoan(id){
     setBankLoans(list=>list.filter(x=>x.id!==id));
     setConfirmDelBank(null);
-  }
-  // --- History Edit/Delete Helpers ---
-  const [editingHistoryLoan, setEditingHistoryLoan] = useState(null); // {personId, personKind, loan}
-  const [editingHistoryPayment, setEditingHistoryPayment] = useState(null); // {personId, personKind, payment}
-  const [confirmDelHistory, setConfirmDelHistory] = useState(null); // {type, id, personId, personKind}
-
-  function handleHistoryEdit(item){
-    if(item.kind==='tx'){
-      const tx = transactions.find(x=>x.id===item.id);
-      if(tx) setEditingTx(tx);
-    } else if(item.type==='loan_given' || item.type==='loan_taken'){
-      setEditingHistoryLoan({personId:item.personId, personKind:item.personKind, loan:item.loanData});
-    } else if(item.type==='return_received' || item.type==='repayment'){
-      setEditingHistoryPayment({personId:item.personId, personKind:item.personKind, payment:item.paymentData});
-    } else if(item.type==='bank_loan'){
-      const bl = bankLoans.find(b=>b.id===item.id);
-      if(bl) setEditingBankLoan(bl);
-    }
-  }
-  function handleHistoryDelete(item){
-    setConfirmDelHistory({type:item.type, id:item.id, personId:item.personId, personKind:item.personKind, category:item.category});
-  }
-  function confirmHistoryDelete(){
-    if(!confirmDelHistory) return;
-    const {type, id, personId, personKind} = confirmDelHistory;
-    if(type==='loan_given'){
-      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.filter(l=>l.id!==id)} : p));
-    } else if(type==='loan_taken'){
-      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.filter(l=>l.id!==id)} : p));
-    } else if(type==='return_received'){
-      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.filter(x=>x.id!==id)} : p));
-    } else if(type==='repayment'){
-      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.filter(x=>x.id!==id)} : p));
-    } else if(type==='bank_loan'){
-      setBankLoans(list=>list.filter(x=>x.id!==id));
-    } else if(type==='income' || type==='expense'){
-      setTransactions(list=>list.filter(x=>x.id!==id));
-    }
-    setConfirmDelHistory(null);
-  }
-  function saveHistoryLoan(updatedLoan){
-    if(!editingHistoryLoan) return;
-    const {personId, personKind} = editingHistoryLoan;
-    if(personKind==='given'){
-      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.map(l=> l.id===updatedLoan.id ? updatedLoan : l)} : p));
-    } else {
-      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.map(l=> l.id===updatedLoan.id ? updatedLoan : l)} : p));
-    }
-    setEditingHistoryLoan(null);
-  }
-  function saveHistoryPayment(updatedPay){
-    if(!editingHistoryPayment) return;
-    const {personId, personKind} = editingHistoryPayment;
-    if(personKind==='given'){
-      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.map(x=> x.id===updatedPay.id ? updatedPay : x)} : p));
-    } else {
-      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.map(x=> x.id===updatedPay.id ? updatedPay : x)} : p));
-    }
-    setEditingHistoryPayment(null);
   }
   async function handleReportPdf(mode){
       mode = mode || 'share';
@@ -2092,12 +1971,12 @@ function deleteBankLoan(id){
       all.push({id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, kind:'tx'});
     });
     peopleGiven.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_given', personName:p.name, personId:p.id, personKind:'given', loanData:l}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'return', personName:p.name, personId:p.id, personKind:'given', paymentData:pay}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_given', personName:p.name}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'return', personName:p.name}));
     });
     peopleTaken.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_taken', personName:p.name, personId:p.id, personKind:'taken', loanData:l}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'repayment', personName:p.name, personId:p.id, personKind:'taken', paymentData:pay}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_taken', personName:p.name}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'repayment', personName:p.name}));
     });
     bankLoans.forEach(b=>{
       all.push({id:b.id, date:b.loanDate||b.disbursementDate||'', type:'bank_loan', amount:b.amount, category:b.bankName, categoryBn:b.bankName, note:b.termMonths+'mo • '+b.interestRate+'%', kind:'bank'});
@@ -2237,26 +2116,19 @@ function deleteBankLoan(id){
       filteredHistory.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
         h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)
       ) : h('div', {className:'space-y-2.5'},
-        filteredHistory.map(x => {
-          const isIncome = x.type==='income' || x.type==='return_received';
-          const badge = x.type==='loan_given' ? (lang==='en'?'Given':'প্রদান') : x.type==='loan_taken' ? (lang==='en'?'Taken':'গ্রহণ') : x.type==='return_received' ? (lang==='en'?'Return':'ফেরত') : x.type==='repayment' ? (lang==='en'?'Repayment':'পরিশোধ') : x.type==='bank_loan' ? (lang==='en'?'Bank':'ব্যাংক') : (lang==='en'?x.type:x.type);
-          return h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
-            h('div', {className:'flex-1 min-w-0'},
-              h('div', {className:'flex items-center gap-2'},
-                h('p', {className:'font-semibold text-[13px] truncate'}, lang==='en'?x.category:x.categoryBn),
-                h('span', {className:'text-[9px] px-2 py-0.5 rounded-full bg-[#FFF8E1] border border-[#FFE082] text-[#8B7355]'}, badge)
-              ),
-              h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' \u2022 '+x.note:'') + (x.personName && x.kind!=='tx' ? '' : ''))
-            ),
-            h('div', {className:'text-right'},
-              h('p', {className:'font-bold text-[14px] ' + (isIncome?'text-[#2E7D32]':'text-[#B71C1C]')}, (isIncome?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
-              h('div', {className:'flex gap-2 justify-end mt-1'},
-                h('button', {onClick:()=>handleHistoryEdit(x), className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
-                h('button', {onClick:()=>handleHistoryDelete(x), className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
-              )
+        filteredHistory.map(x => h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
+          h('div', {className:'flex-1 min-w-0'},
+            h('p', {className:'font-semibold text-[13px] truncate'}, lang==='en'?x.category:x.categoryBn),
+            h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' \u2022 '+x.note:''))
+          ),
+          h('div', {className:'text-right'},
+            h('p', {className:'font-bold text-[14px] ' + (x.type==='income'?'text-[#2E7D32]':'text-[#B71C1C]')}, (x.type==='income'?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
+            h('div', {className:'flex gap-2 justify-end mt-1'},
+              h('button', {onClick:()=>setEditingTx(x), className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
+              h('button', {onClick:()=>setConfirmDelTx(x.id), className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
             )
-          );
-        })
+          )
+        ))
       )
     );
   } else if(page === 'given'){
@@ -2608,18 +2480,6 @@ function deleteBankLoan(id){
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
         onCancel: ()=>setConfirmDelTx(null), onConfirm: ()=>deleteTransaction(confirmDelTx)
       }),
-      h(ConfirmModal, {
-        open: !!confirmDelHistory, title: t.confirmDeleteTitle, message: (confirmDelHistory ? (lang==='en' ? 'Delete ' + confirmDelHistory.category + '?' : confirmDelHistory.category + ' মুছে ফেলবেন?') : t.confirmDeleteMsg),
-        cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-        onCancel: ()=>setConfirmDelHistory(null), onConfirm: confirmHistoryDelete
-      }),
-      editingHistoryLoan ? h(BottomSheet, {title: t.editLoan, onClose:()=>setEditingHistoryLoan(null)},
-        h(LoanEntryForm, {t, lang, initial: editingHistoryLoan.loan, onSave: saveHistoryLoan})
-      ) : null,
-      editingHistoryPayment ? h(BottomSheet, {title: t.editPayment, onClose:()=>setEditingHistoryPayment(null)},
-        h(PaymentForm, {t, lang, initial: editingHistoryPayment.payment, onSave: saveHistoryPayment})
-      ) : null,
-
       h(ConfirmModal, {
         open: !!confirmDelBank, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
