@@ -1335,7 +1335,6 @@ function renderReportPages(o){
     line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
   })();
   txt(t.period + ': ' + from + '  →  ' + to, M, 22, false, '#8B7355'); y += 30;
-  // income / expense
   const tx = o.transactions.filter(x => inRange(x.date)).sort((a,b) => a.date.localeCompare(b.date));
   const inc = tx.filter(x => x.type === 'income'), exp = tx.filter(x => x.type === 'expense');
   const incSum = inc.reduce((a,x)=>a+x.amount,0), expSum = exp.reduce((a,x)=>a+x.amount,0);
@@ -1986,9 +1985,68 @@ function App(){
     });
     setAddType(null); setEditingBankLoan(null);
   }
-  function deleteBankLoan(id){
+function deleteBankLoan(id){
     setBankLoans(list=>list.filter(x=>x.id!==id));
     setConfirmDelBank(null);
+  }
+  // --- History Edit/Delete Helpers ---
+  const [editingHistoryLoan, setEditingHistoryLoan] = useState(null); // {personId, personKind, loan}
+  const [editingHistoryPayment, setEditingHistoryPayment] = useState(null); // {personId, personKind, payment}
+  const [confirmDelHistory, setConfirmDelHistory] = useState(null); // {type, id, personId, personKind}
+
+  function handleHistoryEdit(item){
+    if(item.kind==='tx'){
+      const tx = transactions.find(x=>x.id===item.id);
+      if(tx) setEditingTx(tx);
+    } else if(item.type==='loan_given' || item.type==='loan_taken'){
+      setEditingHistoryLoan({personId:item.personId, personKind:item.personKind, loan:item.loanData});
+    } else if(item.type==='return_received' || item.type==='repayment'){
+      setEditingHistoryPayment({personId:item.personId, personKind:item.personKind, payment:item.paymentData});
+    } else if(item.type==='bank_loan'){
+      const bl = bankLoans.find(b=>b.id===item.id);
+      if(bl) setEditingBankLoan(bl);
+    }
+  }
+  function handleHistoryDelete(item){
+    setConfirmDelHistory({type:item.type, id:item.id, personId:item.personId, personKind:item.personKind, category:item.category});
+  }
+  function confirmHistoryDelete(){
+    if(!confirmDelHistory) return;
+    const {type, id, personId, personKind} = confirmDelHistory;
+    if(type==='loan_given'){
+      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.filter(l=>l.id!==id)} : p));
+    } else if(type==='loan_taken'){
+      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.filter(l=>l.id!==id)} : p));
+    } else if(type==='return_received'){
+      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.filter(x=>x.id!==id)} : p));
+    } else if(type==='repayment'){
+      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.filter(x=>x.id!==id)} : p));
+    } else if(type==='bank_loan'){
+      setBankLoans(list=>list.filter(x=>x.id!==id));
+    } else if(type==='income' || type==='expense'){
+      setTransactions(list=>list.filter(x=>x.id!==id));
+    }
+    setConfirmDelHistory(null);
+  }
+  function saveHistoryLoan(updatedLoan){
+    if(!editingHistoryLoan) return;
+    const {personId, personKind} = editingHistoryLoan;
+    if(personKind==='given'){
+      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.map(l=> l.id===updatedLoan.id ? updatedLoan : l)} : p));
+    } else {
+      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, loans:p.loans.map(l=> l.id===updatedLoan.id ? updatedLoan : l)} : p));
+    }
+    setEditingHistoryLoan(null);
+  }
+  function saveHistoryPayment(updatedPay){
+    if(!editingHistoryPayment) return;
+    const {personId, personKind} = editingHistoryPayment;
+    if(personKind==='given'){
+      setPeopleGiven(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.map(x=> x.id===updatedPay.id ? updatedPay : x)} : p));
+    } else {
+      setPeopleTaken(list=>list.map(p=> p.id===personId ? {...p, payments:p.payments.map(x=> x.id===updatedPay.id ? updatedPay : x)} : p));
+    }
+    setEditingHistoryPayment(null);
   }
   async function handleReportPdf(mode){
       mode = mode || 'share';
@@ -2034,12 +2092,12 @@ function App(){
       all.push({id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, kind:'tx'});
     });
     peopleGiven.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_given', personName:p.name}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'return', personName:p.name}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_given', personName:p.name, personId:p.id, personKind:'given', loanData:l}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'return', personName:p.name, personId:p.id, personKind:'given', paymentData:pay}));
     });
     peopleTaken.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_taken', personName:p.name}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'repayment', personName:p.name}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_taken', personName:p.name, personId:p.id, personKind:'taken', loanData:l}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'repayment', personName:p.name, personId:p.id, personKind:'taken', paymentData:pay}));
     });
     bankLoans.forEach(b=>{
       all.push({id:b.id, date:b.loanDate||b.disbursementDate||'', type:'bank_loan', amount:b.amount, category:b.bankName, categoryBn:b.bankName, note:b.termMonths+'mo • '+b.interestRate+'%', kind:'bank'});
@@ -2179,37 +2237,38 @@ function App(){
       filteredHistory.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
         h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)
       ) : h('div', {className:'space-y-2.5'},
-        filteredHistory.map(x => h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
-          h('div', {className:'flex-1 min-w-0'},
-            h('p', {className:'font-semibold text-[13px] truncate'}, lang==='en'?x.category:x.categoryBn),
-            h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' \u2022 '+x.note:''))
-          ),
-          h('div', {className:'text-right'},
-            h('p', {className:'font-bold text-[14px] ' + (x.type==='income'?'text-[#2E7D32]':'text-[#B71C1C]')}, (x.type==='income'?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
-            h('div', {className:'flex gap-2 justify-end mt-1'},
-              h('button', {onClick:()=>setEditingTx(x), className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
-              h('button', {onClick:()=>setConfirmDelTx(x.id), className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
+        filteredHistory.map(x => {
+          const isIncome = x.type==='income' || x.type==='return_received';
+          const badge = x.type==='loan_given' ? (lang==='en'?'Given':'প্রদান') : x.type==='loan_taken' ? (lang==='en'?'Taken':'গ্রহণ') : x.type==='return_received' ? (lang==='en'?'Return':'ফেরত') : x.type==='repayment' ? (lang==='en'?'Repayment':'পরিশোধ') : x.type==='bank_loan' ? (lang==='en'?'Bank':'ব্যাংক') : (lang==='en'?x.type:x.type);
+          return h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
+            h('div', {className:'flex-1 min-w-0'},
+              h('div', {className:'flex items-center gap-2'},
+                h('p', {className:'font-semibold text-[13px] truncate'}, lang==='en'?x.category:x.categoryBn),
+                h('span', {className:'text-[9px] px-2 py-0.5 rounded-full bg-[#FFF8E1] border border-[#FFE082] text-[#8B7355]'}, badge)
+              ),
+              h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' \u2022 '+x.note:'') + (x.personName && x.kind!=='tx' ? '' : ''))
+            ),
+            h('div', {className:'text-right'},
+              h('p', {className:'font-bold text-[14px] ' + (isIncome?'text-[#2E7D32]':'text-[#B71C1C]')}, (isIncome?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
+              h('div', {className:'flex gap-2 justify-end mt-1'},
+                h('button', {onClick:()=>handleHistoryEdit(x), className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
+                h('button', {onClick:()=>handleHistoryDelete(x), className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
+              )
             )
-          )
-        ))
+          );
+        })
       )
     );
   } else if(page === 'given'){
-    pageContent = h(PeopleList, {
-      t, lang, kind:'given', people: peopleGiven,
-      onOpenPerson: (p)=>openPerson('given', p),
+    pageContent = h(PeopleList, {t, lang, kind:'given', people:peopleGiven, userName, onOpenPerson: (p)=>openPerson('given', p),
       onAddPerson: (data)=>addPersonWithLoan('given', data)
     });
   } else if(page === 'taken'){
-    pageContent = h(PeopleList, {
-      t, lang, kind:'taken', people: peopleTaken,
-      onOpenPerson: (p)=>openPerson('taken', p),
+    pageContent = h(PeopleList, {t, lang, kind:'taken', people:peopleTaken, userName, onOpenPerson: (p)=>openPerson('taken', p),
       onAddPerson: (data)=>addPersonWithLoan('taken', data)
     });
   } else if(page === 'personDetail' && currentPerson){
-    pageContent = h(PersonDetail, {
-      t, lang, kind: openPersonKind, person: currentPerson,
-      onBack: ()=>setPage(openPersonKind),
+    pageContent = h(PersonDetail, {t, lang, kind:openPersonKind, person:currentPerson, userName, onBack: ()=>setPage(openPersonKind),
       onUpdatePerson: (p)=>updatePerson(openPersonKind, p),
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
@@ -2549,6 +2608,18 @@ function App(){
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
         onCancel: ()=>setConfirmDelTx(null), onConfirm: ()=>deleteTransaction(confirmDelTx)
       }),
+      h(ConfirmModal, {
+        open: !!confirmDelHistory, title: t.confirmDeleteTitle, message: (confirmDelHistory ? (lang==='en' ? 'Delete ' + confirmDelHistory.category + '?' : confirmDelHistory.category + ' মুছে ফেলবেন?') : t.confirmDeleteMsg),
+        cancelLabel: t.cancel, confirmLabel: t.yesDelete,
+        onCancel: ()=>setConfirmDelHistory(null), onConfirm: confirmHistoryDelete
+      }),
+      editingHistoryLoan ? h(BottomSheet, {title: t.editLoan, onClose:()=>setEditingHistoryLoan(null)},
+        h(LoanEntryForm, {t, lang, initial: editingHistoryLoan.loan, onSave: saveHistoryLoan})
+      ) : null,
+      editingHistoryPayment ? h(BottomSheet, {title: t.editPayment, onClose:()=>setEditingHistoryPayment(null)},
+        h(PaymentForm, {t, lang, initial: editingHistoryPayment.payment, onSave: saveHistoryPayment})
+      ) : null,
+
       h(ConfirmModal, {
         open: !!confirmDelBank, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
