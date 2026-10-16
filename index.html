@@ -1034,7 +1034,7 @@ function EmiChecklist({ t, lang, loan, onToggle }){
 }
 
 /* ---------- Person Detail Page ---------- */
-function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeletePerson }){
+function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeletePerson, userName }){
   const [addingLoan, setAddingLoan] = useState(false);
   const [addingPayment, setAddingPayment] = useState(false);
   const [editingLoan, setEditingLoan] = useState(null);
@@ -1087,12 +1087,22 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
         h('span', null, t.total + ': ' + fmtMoney(totalLoaned)),
         h('span', null, (kind==='given'?t.totalReturned:t.totalRepaid) + ': ' + fmtMoney(totalPaid))
       ),
-      h('button', {onClick: async ()=>{
-        try{
-          const blob = buildPersonLoanPdfBlob({t, lang, person, kind});
-          await shareOrDownloadPdf(blob, person.name + '-loan-history.pdf', person.name + ' Loan History');
-        }catch(e){ alert('PDF Error'); }
-      }, className:'mt-3 w-full py-2.5 rounded-full bg-white text-[#2D2A26] text-[12px] font-bold'}, '📄 PDF ডাউনলোড / শেয়ার')
+      h('div', {className:'mt-3 grid grid-cols-2 gap-2'},
+        h('button', {onClick: ()=>{
+          try{
+            const genAt = new Date().toLocaleString(lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: (typeof userName!=='undefined'?userName:''), generatedAt: genAt});
+            downloadPdfBlob(blob, person.name + '-loan-history.pdf');
+          }catch(e){ alert('PDF Error'); }
+        }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[12px] font-bold'}, lang==='en' ? '📄 Download PDF' : '📄 Download PDF'),
+        h('button', {onClick: ()=>{
+          try{
+            const genAt = new Date().toLocaleString(lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: (typeof userName!=='undefined'?userName:''), generatedAt: genAt});
+            viewPdfBlob(blob);
+          }catch(e){ alert('PDF Error'); }
+        }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[12px] font-bold'}, lang==='en' ? '👁️ View' : '👁️ View')
+      )
     ),
     h('div', null,
       h('div', {className:'flex items-center justify-between mb-2'},
@@ -1148,14 +1158,27 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
 }
 
 /* ---------- People List Page ---------- */
-function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson }){
+function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName }){
   const [adding, setAdding] = useState(loadLS('lifestyle_adding_' + kind, false));
   useEffect(()=>{ try{ saveLS('lifestyle_adding_' + kind, adding); }catch(e){} }, [adding, kind]);
+  function handleCombinedPdf(isView){
+    try{
+      const genAt = new Date().toLocaleString(lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      const blob = buildAllLoansPdfBlob({t, lang, kind, people, userName, generatedAt: genAt, appName: t.appName});
+      const fname = (kind==='given'?'all-given-history':'all-taken-history') + '.pdf';
+      if(isView) viewPdfBlob(blob); else downloadPdfBlob(blob, fname);
+    }catch(e){ alert('PDF Error: '+e.message); }
+  }
   return h('div', {className:'pt-5 pb-6 space-y-4'},
     h('div', {className:'flex items-center justify-between'},
       h('h2', {className:'text-[18px] font-bold'}, kind==='given' ? t.loansGiven : t.loansTaken),
       h('button', {onClick:()=>setAdding(true), className:'text-[12px] font-bold px-3 py-2 rounded-full bg-[#2D2A26] text-white'}, t.addPerson)
     ),
+    h('div', {className:'bg-white rounded-[16px] p-3 border border-[#F3E8D3] flex gap-2'},
+      h('button', {onClick:()=>handleCombinedPdf(false), className:'flex-1 py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[12px] font-bold'}, lang==='en' ? '📄 Download PDF - All History' : '📄 Download PDF - সবার History'),
+      h('button', {onClick:()=>handleCombinedPdf(true), className:'flex-1 py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[12px] font-bold'}, lang==='en' ? '👁️ View - All History' : '👁️ View - সবার History')
+    ),
+
     people.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
       h('p', {className:'text-[13px] text-[#8B7355]'}, t.noPeopleGiven)
     ) : h('div', {className:'space-y-2.5'},
@@ -1288,10 +1311,14 @@ function renderReportPages(o){
   const money = fmtMoney;
 
   newPage();
-  txt(t.appName + ' \u2022 ' + t.reportHeading, M, 44, true); y += 48;
-  if(o.userName){ txt(o.userName, M, 28, true, '#8B6B3A'); y += 40; }
-  txt(t.period + ': ' + from + '  \u2192  ' + to, M, 24, false, '#8B7355'); y += 36;
-  txt(t.generated + ': ' + today(), M, 22, false, '#8B7355'); y += 20;
+  // --- Header with App, Developer, User, DateTime ---
+  txt(t.appName + ' \u2022 ' + t.reportHeading, M, 44, true); y += 42;
+  txt((o.lang==='en'?'App: ':'অ্যাপস: ')+t.appName, M, 22, true, '#2D2A26'); y += 32;
+  txt((o.lang==='en'?'Developer: Md. Abdus Salam | Mobile: +8801737265245 | Email: salamwgp@gmail.com | Address: Bantra, Jalalabad, Kalaroa, Satkhira' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | মোবাইল: +8801737265245 | ইমেইল: salamwgp@gmail.com | ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা'), M, 18, false, '#8B7355'); y += 28;
+  const genDT = (o.generatedAt || new Date().toLocaleString(o.lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+  if(o.userName){ txt((o.lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName, M, 22, true, '#8B6B3A'); y += 30; }
+  txt(t.period + ': ' + from + '  \u2192  ' + to, M, 24, false, '#8B7355'); y += 30;
+  txt(t.generated + ': ' + genDT, M, 22, false, '#8B7355'); y += 20;
 
   // income / expense
   const tx = o.transactions.filter(x => inRange(x.date)).sort((a,b) => a.date.localeCompare(b.date));
@@ -1414,12 +1441,17 @@ function renderPersonLoanPages(o){
   function row(cells,size,bold,color){ let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=280){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } }); const lineH=30; const totalH=Math.max(46, maxLines*lineH+16); ensure(totalH); const baseY=y; for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txt(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); } y=baseY+totalH; }
   function muted(str){ ensure(46); txt(str,M,22,false,'#8B7355'); y+=44; }
   newPage();
-  txt(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken),M,44,true); y+=48;
-  txt(person.name+(person.mobile?' • '+person.mobile:''),M,30,true,'#8B6B3A'); y+=40;
+  txt(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken),M,44,true); y+=36;
+  txt((o.lang==='en'?'App: ':'অ্যাপস: ')+t.appName, M, 20, true, '#2D2A26'); y+=28;
+  txt((o.lang==='en'?'Developer: Md. Abdus Salam | +8801737265245 | salamwgp@gmail.com' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | +8801737265245 | salamwgp@gmail.com'), M, 16, false, '#8B7355'); y+=24;
+  const genDT2 = (o.generatedAt || new Date().toLocaleString(o.lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+  if(o.userName){ txt((o.lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName, M, 20, true, '#8B6B3A'); y+=26; }
+  txt((o.lang==='en'?'Download Time: ':'রিপোর্ট ডাউনলোড সময়: ')+genDT2, M, 18, false, '#8B7355'); y+=28;
+  txt(person.name+(person.mobile?' • '+person.mobile:''),M,30,true,'#8B6B3A'); y+=36;
   const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0);
   const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0);
   const balance=totalLoaned-totalPaid;
-  txt((kind==='given'?t.youWillGet:t.youOwe)+': '+fmtMoney(balance),M,26,true); y+=36;
+  txt((kind==='given'?t.youWillGet:t.youOwe)+': '+fmtMoney(balance),M,26,true); y+=32;
   txt(t.total+': '+fmtMoney(totalLoaned)+' • '+(kind==='given'?t.totalReturned:t.totalRepaid)+': '+fmtMoney(totalPaid),M,22,false,'#8B7355'); y+=20;
   heading(t.loanHistory);
   if(!person.loans.length) muted(t.noData);
@@ -1450,6 +1482,72 @@ function buildPersonLoanPdfBlob(o){
   });
   return buildPdfFromJpegs(jpegs);
 }
+
+function renderAllLoansPages(o){
+  const t=o.t, lang=o.lang||'bn', kind=o.kind, people=o.people||[];
+  const W=1240,H=1754,M=70;
+  const pages=[]; let cv,ctx,y=0;
+  const cDate={x:M,w:170}, cMid={x:M+185,w:280}, cName={x:M+480,w:300}, cAmt={x:W-M-230,w:230};
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; }
+  function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function txtA(str,x,size,bold,color,align,maxW){ font(size,bold); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign=align||'left'; ctx.fillText(fit(str,maxW),x,y); }
+  function ensure(hh){ if(y+hh>H-M-30) newPage(); }
+  function line(c){ ctx.strokeStyle=c||'#F3E8D3'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); }
+  function heading(str,color){ ensure(110); y+=30; txtA(str,M,32,true,color||'#2D2A26'); y+=16; line('#C9A86A'); y+=36; }
+  function row(cells,size,bold,color){
+    let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=200){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } });
+    const lineH=30; const totalH=Math.max(46, maxLines*lineH+16); ensure(totalH); const baseY=y;
+    for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txtA(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); }
+    y=baseY+totalH;
+  }
+  function muted(str){ ensure(46); txtA(str,M,22,false,'#8B7355'); y+=44; }
+  newPage();
+  txtA(t.appName+' • '+(kind==='given'?t.loansGiven:t.loansTaken)+' - '+(lang==='en'?'All History':'সবার History একসাথে'),M,36,true); y+=34;
+  txtA((lang==='en'?'App: ':'অ্যাপস: ')+t.appName,M,20,true,'#2D2A26'); y+=28;
+  txtA((lang==='en'?'Developer: Md. Abdus Salam | Mobile: +8801737265245 | Email: salamwgp@gmail.com | Address: Bantra, Jalalabad, Kalaroa, Satkhira' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | মোবাইল: +8801737265245 | ইমেইল: salamwgp@gmail.com | ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা'),M,16,false,'#8B7355'); y+=26;
+  const genDT = (o.generatedAt || new Date().toLocaleString(lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+  if(o.userName){ txtA((lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName,M,20,true,'#8B6B3A'); y+=26; }
+  txtA((lang==='en'?'Download Time: ':'রিপোর্ট ডাউনলোড সময়: ')+genDT,M,18,false,'#8B7355'); y+=20;
+  const all=[]; people.forEach(p=>{ p.loans.forEach(l=>{ all.push({date:l.date, type:'loan', person:p.name, medium:l.medium||'', note:l.note||'', amount:l.amount}); }); p.payments.forEach(px=>{ all.push({date:px.date, type:'payment', person:p.name, medium:px.method||'', note:px.note||'', amount:px.amount}); }); });
+  all.sort((a,b)=>a.date.localeCompare(b.date));
+  if(!all.length){ muted(t.noData); } else {
+    heading((lang==='en'?'Date wise all history':'দিন অনুযায়ী সবার History'), '#2D2A26');
+    row([{t:t.date,x:cDate.x,w:cDate.w},{t:(lang==='en'?'Person':'নাম'),x:cMid.x,w:cMid.w},{t:(lang==='en'?'Details':'বিবরণ'),x:cName.x,w:cName.w},{t:t.amount,x:cAmt.x,w:cAmt.w,align:'right'}],20,true,'#8B7355');
+    all.forEach(item=>{
+      const isPay = item.type==='payment';
+      row([{t:item.date,x:cDate.x,w:cDate.w},{t:item.person,x:cMid.x,w:cMid.w},{t:[item.medium,item.note].filter(Boolean).join(' • '),x:cName.x,w:cName.w,color:'#8B7355'},{t:(isPay?'+':'')+fmtMoney(item.amount),x:cAmt.x,w:cAmt.w,align:'right',color:isPay?'#2E7D32':'#2D2A26'}],22,false);
+    });
+  }
+  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='400 20px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+'  •  '+(i+1)+' / '+pages.length,W/2,H-40); });
+  return pages;
+}
+function buildAllLoansPdfBlob(o){
+  const pages=renderAllLoansPages(o);
+  const jpegs=pages.map(c=>{
+    const b64=c.toDataURL('image/jpeg',0.92).split(',')[1];
+    const bin=atob(b64), bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return {bytes,w:c.width,h:c.height};
+  });
+  return buildPdfFromJpegs(jpegs);
+}
+function downloadPdfBlob(blob, filename){
+  try{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 4000);
+  }catch(e){ window.open(URL.createObjectURL(blob), '_blank'); }
+}
+function viewPdfBlob(blob){
+  try{
+    const url=URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  }catch(e){ alert('View failed'); }
+}
+
 
 function buildReportPdfBlob(o){
   const pages = renderReportPages(o);
@@ -1827,17 +1925,21 @@ function App(){
     setBankLoans(list=>list.filter(x=>x.id!==id));
     setConfirmDelBank(null);
   }
-  async function handleReportPdf(){
-    if(!reportFrom || !reportTo || reportFrom > reportTo){ setToast(t.badRange); return; }
-    setReportBusy(true);
-    try{
-      await new Promise(r => setTimeout(r, 50));
-      const blob = buildReportPdfBlob({ t, lang, from: reportFrom, to: reportTo, userName, transactions, peopleGiven, peopleTaken, bankLoans });
-      const res = await shareOrDownloadPdf(blob, 'Lifestyle-Report-' + reportFrom + '_to_' + reportTo + '.pdf', t.appName + ' ' + t.reportHeading);
-      if(res === 'downloaded') setToast(t.pdfDownloaded);
-    }catch(e){ setToast('PDF error'); }
-    setReportBusy(false);
-  }
+  async function handleReportPdf(mode){
+      mode = mode || 'share';
+      setReportBusy(true);
+      try{
+        const genAt = new Date().toLocaleString(lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        const o = {t, lang, from:reportFrom, to:reportTo, transactions, peopleGiven, peopleTaken, bankLoans, userName, generatedAt: genAt};
+        const filename = 'Lifestyle-Report-' + reportFrom + '-to-' + reportTo + '.pdf';
+        const title = t.reportHeading + ' ' + reportFrom + ' to ' + reportTo;
+        const blob = buildReportPdfBlob(o);
+        if(mode==='download'){ downloadPdfBlob(blob, filename); setToast(t.pdfDownloaded); }
+        else if(mode==='view'){ viewPdfBlob(blob); }
+        else { const res = await shareOrDownloadPdf(blob, filename, title); if(res === 'downloaded') setToast(t.pdfDownloaded); }
+      }catch(e){ setToast('PDF error'); }
+      setReportBusy(false);
+    }
   function toggleEmiPaid(loanId, index){
     setBankLoans(list => list.map(l => {
       if(l.id !== loanId) return l;
@@ -2028,21 +2130,15 @@ function App(){
       )
     );
   } else if(page === 'given'){
-    pageContent = h(PeopleList, {
-      t, lang, kind:'given', people: peopleGiven,
-      onOpenPerson: (p)=>openPerson('given', p),
+    pageContent = h(PeopleList, {t, lang, kind:'given', people:peopleGiven, userName, onOpenPerson: (p)=>openPerson('given', p),
       onAddPerson: (data)=>addPersonWithLoan('given', data)
     });
   } else if(page === 'taken'){
-    pageContent = h(PeopleList, {
-      t, lang, kind:'taken', people: peopleTaken,
-      onOpenPerson: (p)=>openPerson('taken', p),
+    pageContent = h(PeopleList, {t, lang, kind:'taken', people:peopleTaken, userName, onOpenPerson: (p)=>openPerson('taken', p),
       onAddPerson: (data)=>addPersonWithLoan('taken', data)
     });
   } else if(page === 'personDetail' && currentPerson){
-    pageContent = h(PersonDetail, {
-      t, lang, kind: openPersonKind, person: currentPerson,
-      onBack: ()=>setPage(openPersonKind),
+    pageContent = h(PersonDetail, {t, lang, kind:openPersonKind, person:currentPerson, userName, onBack: ()=>setPage(openPersonKind),
       onUpdatePerson: (p)=>updatePerson(openPersonKind, p),
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
@@ -2204,7 +2300,11 @@ function App(){
           h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:reportFrom, onChange:e=>setReportFrom(e.target.value)})),
           h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:reportTo, onChange:e=>setReportTo(e.target.value)}))
         ),
-        h(Button, {onClick:handleReportPdf, disabled:reportBusy}, reportBusy ? t.preparing : ('\uD83D\uDCE4 ' + t.sharePdf))
+        h('div', {className:'grid grid-cols-3 gap-2 mt-3'},
+          h('button', {onClick:()=>handleReportPdf('download'), disabled:reportBusy, className:'py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[12px] font-bold disabled:opacity-50'}, reportBusy ? t.preparing : (lang==='en' ? '📄 Download PDF' : '📄 Download PDF')),
+          h('button', {onClick:()=>handleReportPdf('view'), disabled:reportBusy, className:'py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[12px] font-bold disabled:opacity-50'}, reportBusy ? t.preparing : (lang==='en' ? '👁️ View' : '👁️ View')),
+          h('button', {onClick:()=>handleReportPdf('share'), disabled:reportBusy, className:'py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[12px] font-bold disabled:opacity-50'}, reportBusy ? t.preparing : (lang==='en' ? '📤 Share' : '📤 Share'))
+        )
       )
     );
   } else if(page === 'profile'){
