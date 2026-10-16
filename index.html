@@ -1105,8 +1105,8 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
       )
     ),
     h('div', {className:'flex items-center justify-end gap-2'},
-      h('button', {onClick:()=>setAddingLoan(true), className:'px-4 py-2 rounded-full bg-black text-white text-[12px] font-bold border border-black'}, t.addLoan),
-      h('button', {onClick:()=>setAddingPayment(true), className:'px-4 py-2 rounded-full bg-black text-white text-[12px] font-bold border border-black'}, t.addPayment)
+      h('button', {onClick:()=>setAddingLoan(true), className:'px-4 py-2 rounded-full bg-black text-white text-[12px] font-bold border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addLoan),
+      h('button', {onClick:()=>setAddingPayment(true), className:'px-4 py-2 rounded-full bg-black text-white text-[12px] font-bold border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addPayment)
     ),
     h('div', null,
       h('div', {className:'flex items-center justify-between mb-2'},
@@ -2249,6 +2249,12 @@ function App(){
       ),
       historyFilter==='income' ? h('button', {onClick:()=>setAddType('income'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addIncome) : null,
       historyFilter==='expense' ? h('button', {onClick:()=>setAddType('expense'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addExpense) : null,
+      historyFilter==='all' ? h('button', {onClick:()=>setAddSheetOpen(true), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addNew) : null,
+      historyFilter==='loan_given' ? h('button', {onClick:()=>setPage('given'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Given)' : 'নতুন ব্যক্তি (প্রদান)') : null,
+      historyFilter==='loan_taken' ? h('button', {onClick:()=>setPage('taken'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Taken)' : 'নতুন ব্যক্তি (গ্রহণ)') : null,
+      historyFilter==='return_received' ? h('button', {onClick:()=>setPage('given'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Return)' : 'নতুন ব্যক্তি (ফেরত)') : null,
+      historyFilter==='repayment' ? h('button', {onClick:()=>setPage('taken'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Repayment)' : 'নতুন ব্যক্তি (পরিশোধ)') : null,
+      historyFilter==='bank_loan' ? h('button', {onClick:()=>setAddType('bankLoan'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.bankLoan) : null,
       filteredHistory.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
         h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)
       ) : h('div', {className:'space-y-2.5'},
