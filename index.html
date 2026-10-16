@@ -1311,13 +1311,38 @@ function renderReportPages(o){
   const money = fmtMoney;
 
   newPage();
-  // --- Header with App, Developer, User, DateTime ---
-  txt(t.appName + ' \u2022 ' + t.reportHeading, M, 44, true); y += 42;
-  txt((o.lang==='en'?'App: ':'অ্যাপস: ')+t.appName, M, 22, true, '#2D2A26'); y += 32;
-  txt((o.lang==='en'?'Developer: Md. Abdus Salam | Mobile: +8801737265245 | Email: salamwgp@gmail.com | Address: Bantra, Jalalabad, Kalaroa, Satkhira' : 'ডেভেলপার: মোঃ আব্দুস ছালাম | মোবাইল: +8801737265245 | ইমেইল: salamwgp@gmail.com | ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা'), M, 18, false, '#8B7355'); y += 28;
-  const genDT = (o.generatedAt || new Date().toLocaleString(o.lang==='en'?'en-US':'bn-BD', {year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}));
-  if(o.userName){ txt((o.lang==='en'?'App User: ':'অ্যাপস ব্যবহারকারী: ')+o.userName, M, 22, true, '#8B6B3A'); y += 30; }
-  txt(t.period + ': ' + from + '  \u2192  ' + to, M, 24, false, '#8B7355'); y += 30;
+  (function(){
+    const now = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
+    let genDateObj = now;
+    try{ if(typeof o.generatedAt==='string'){ const d=new Date(o.generatedAt); if(!isNaN(d)) genDateObj=d; } }catch(e){}
+    const dd = String(genDateObj.getDate()).padStart(2,'0');
+    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
+    const yyyy = genDateObj.getFullYear();
+    const dateStr = dd+'/'+mm+'/'+yyyy;
+    const timeStr = genDateObj.toLocaleTimeString(o.lang==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+    const isEn = o.lang==='en';
+    const leftX = M;
+    let ly = y;
+    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText(fit(isEn ? 'Lifestyle' : 'লাইফস্টাইল', 400), leftX, ly); ly+=34;
+    font(18, false); ctx.fillStyle='#2D2A26';
+    ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 400), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 400), leftX, ly); ly+=22;
+    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 400), leftX, ly);
+    const rightX = W-M;
+    let ry = y;
+    const devLinesEn = ['\uD83D\uDCBB Developer','\uD83D\uDC64 Name: Md. Abdus Salam','\uD83D\uDCCD Address: Bantra, Jalalabad, Kalaroa, Satkhira','\uD83D\uDCDE Mobile: +8801737265245','\u2709\uFE0F Email: salamwgp@gmail.com'];
+    const devLinesBn = ['\uD83D\uDCBB ডেভেলপার','\uD83D\uDC64 নাম: মোঃ আব্দুস ছালাম','\uD83D\uDCCD ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','\uD83D\uDCDE মোবাইল: +8801737265245','\u2709\uFE0F ইমেইল: salamwgp@gmail.com'];
+    const devLines = isEn ? devLinesEn : devLinesBn;
+    devLines.forEach((dl,i)=>{
+      font(i===0?18:16, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
+      ctx.fillText(fit(dl, 460), rightX, ry);
+      ry+=20;
+    });
+    y = Math.max(ly, ry) + 16;
+    line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
+  })();
+  txt(t.period + ': ' + from + '  \u2192  ' + to, M, 22, false, '#8B7355'); y += 30;
   txt(t.generated + ': ' + genDT, M, 22, false, '#8B7355'); y += 20;
 
   // income / expense
@@ -2130,15 +2155,21 @@ function App(){
       )
     );
   } else if(page === 'given'){
-    pageContent = h(PeopleList, {t, lang, kind:'given', people:peopleGiven, userName, onOpenPerson: (p)=>openPerson('given', p),
+    pageContent = h(PeopleList, {
+      t, lang, kind:'given', people: peopleGiven,
+      onOpenPerson: (p)=>openPerson('given', p),
       onAddPerson: (data)=>addPersonWithLoan('given', data)
     });
   } else if(page === 'taken'){
-    pageContent = h(PeopleList, {t, lang, kind:'taken', people:peopleTaken, userName, onOpenPerson: (p)=>openPerson('taken', p),
+    pageContent = h(PeopleList, {
+      t, lang, kind:'taken', people: peopleTaken,
+      onOpenPerson: (p)=>openPerson('taken', p),
       onAddPerson: (data)=>addPersonWithLoan('taken', data)
     });
   } else if(page === 'personDetail' && currentPerson){
-    pageContent = h(PersonDetail, {t, lang, kind:openPersonKind, person:currentPerson, userName, onBack: ()=>setPage(openPersonKind),
+    pageContent = h(PersonDetail, {
+      t, lang, kind: openPersonKind, person: currentPerson,
+      onBack: ()=>setPage(openPersonKind),
       onUpdatePerson: (p)=>updatePerson(openPersonKind, p),
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
