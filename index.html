@@ -1897,6 +1897,8 @@ function App(){
   const [confirmDelTx, setConfirmDelTx] = useState(null);
   const [editingBankLoan, setEditingBankLoan] = useState(null);
   const [confirmDelBank, setConfirmDelBank] = useState(null);
+  const [editingHistoryLoan, setEditingHistoryLoan] = useState(null);
+  const [editingHistoryPayment, setEditingHistoryPayment] = useState(null);
   const [checklistLoanId, setChecklistLoanId] = useState(null);
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState('');
@@ -1992,6 +1994,73 @@ function App(){
     setBankLoans(list=>list.filter(x=>x.id!==id));
     setConfirmDelBank(null);
   }
+  function handleHistoryEdit(x){
+    if(x.type==='income' || x.type==='expense'){
+      const orig = transactions.find(t=>t.id===x.id);
+      if(orig) setEditingTx(orig);
+    } else if(x.type==='bank_loan'){
+      const orig = bankLoans.find(b=>b.id===x.id);
+      if(orig) setEditingBankLoan(orig);
+    } else if(x.type==='loan_given' || x.type==='loan_taken'){
+      const kind = x.personKind;
+      const people = kind==='given' ? peopleGiven : peopleTaken;
+      const person = people.find(p=>p.id===x.personId);
+      if(!person) return;
+      const loan = person.loans.find(l=>l.id===x.id);
+      if(loan) setEditingHistoryLoan({kind, personId:x.personId, personName:x.personName, loan});
+    } else if(x.type==='return_received' || x.type==='repayment'){
+      const kind = x.personKind;
+      const people = kind==='given' ? peopleGiven : peopleTaken;
+      const person = people.find(p=>p.id===x.personId);
+      if(!person) return;
+      const pay = person.payments.find(p=>p.id===x.id);
+      if(pay) setEditingHistoryPayment({kind, personId:x.personId, personName:x.personName, payment:pay});
+    }
+  }
+  function saveEditedHistoryLoan(updated){
+    const kind = editingHistoryLoan.kind;
+    const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
+    setPeople(list=> list.map(p=>{
+      if(p.id!==editingHistoryLoan.personId) return p;
+      return Object.assign({}, p, {loans: p.loans.map(l=> l.id===updated.id ? updated : l)});
+    }));
+    setEditingHistoryLoan(null);
+    setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
+  }
+  function saveEditedHistoryPayment(updated){
+    const kind = editingHistoryPayment.kind;
+    const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
+    setPeople(list=> list.map(p=>{
+      if(p.id!==editingHistoryPayment.personId) return p;
+      return Object.assign({}, p, {payments: p.payments.map(pay=> pay.id===updated.id ? updated : pay)});
+    }));
+    setEditingHistoryPayment(null);
+    setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
+  }
+  function deleteHistoryEntry(x){
+    if(x.type==='income' || x.type==='expense'){
+      setTransactions(list=>list.filter(t=>t.id!==x.id));
+    } else if(x.type==='bank_loan'){
+      setBankLoans(list=>list.filter(b=>b.id!==x.id));
+    } else if(x.type==='loan_given' || x.type==='loan_taken'){
+      const kind = x.personKind;
+      const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
+      setPeople(list=> list.map(p=>{
+        if(p.id!==x.personId) return p;
+        return Object.assign({}, p, {loans: p.loans.filter(l=>l.id!==x.id)});
+      }));
+    } else if(x.type==='return_received' || x.type==='repayment'){
+      const kind = x.personKind;
+      const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
+      setPeople(list=> list.map(p=>{
+        if(p.id!==x.personId) return p;
+        return Object.assign({}, p, {payments: p.payments.filter(pay=>pay.id!==x.id)});
+      }));
+    }
+    setConfirmDelTx(null);
+    setConfirmDelBank(null);
+    setToast(lang==='en'?'Deleted':'মুছে ফেলা হয়েছে');
+  }
   async function handleReportPdf(mode){
       mode = mode || 'share';
       setReportBusy(true);
@@ -2036,12 +2105,12 @@ function App(){
       all.push({id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, kind:'tx'});
     });
     peopleGiven.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_given', personName:p.name}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'return', personName:p.name}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_given', personName:p.name, personId:p.id, personKind:'given'}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'return', personName:p.name, personId:p.id, personKind:'given'}));
     });
     peopleTaken.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_taken', personName:p.name}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'repayment', personName:p.name}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||'')+' • '+ (l.medium||''), kind:'loan_taken', personName:p.name, personId:p.id, personKind:'taken'}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||'')+' • '+ (pay.method||''), kind:'repayment', personName:p.name, personId:p.id, personKind:'taken'}));
     });
     bankLoans.forEach(b=>{
       all.push({id:b.id, date:b.loanDate||b.disbursementDate||'', type:'bank_loan', amount:b.amount, category:b.bankName, categoryBn:b.bankName, note:b.termMonths+'mo • '+b.interestRate+'%', kind:'bank'});
@@ -2189,8 +2258,8 @@ function App(){
           h('div', {className:'text-right'},
             h('p', {className:'font-bold text-[14px] ' + (x.type==='income'?'text-[#2E7D32]':'text-[#B71C1C]')}, (x.type==='income'?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
             h('div', {className:'flex gap-2 justify-end mt-1'},
-              h('button', {onClick:()=>setEditingTx(x), className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
-              h('button', {onClick:()=>setConfirmDelTx(x.id), className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
+              h('button', {onClick:()=>handleHistoryEdit(x), className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
+              h('button', {onClick:()=>setConfirmDelTx(x), className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
             )
           )
         ))
@@ -2537,6 +2606,18 @@ function App(){
       },
         h(BankLoanForm, {t, lang, initial: editingBankLoan, onSave: saveBankLoan})
       ) : null,
+      editingHistoryLoan ? h(BottomSheet, {
+        title: (editingHistoryLoan.kind==='given' ? (lang==='en'?'Edit Given - ':'প্রদান সম্পাদনা - ') : (lang==='en'?'Edit Taken - ':'গ্রহণ সম্পাদনা - ')) + editingHistoryLoan.personName,
+        onClose: ()=>setEditingHistoryLoan(null)
+      },
+        h(LoanEntryForm, {t, lang, initial: editingHistoryLoan.loan, onSave: saveEditedHistoryLoan})
+      ) : null,
+      editingHistoryPayment ? h(BottomSheet, {
+        title: (editingHistoryPayment.kind==='given' ? (lang==='en'?'Edit Return - ':'ফেরত সম্পাদনা - ') : (lang==='en'?'Edit Repayment - ':'পরিশোধ সম্পাদনা - ')) + editingHistoryPayment.personName,
+        onClose: ()=>setEditingHistoryPayment(null)
+      },
+        h(PaymentForm, {t, lang, initial: editingHistoryPayment.payment, onSave: saveEditedHistoryPayment})
+      ) : null,
 
       checklistLoanId ? (()=>{
         const loan = bankLoans.find(l=>l.id===checklistLoanId);
@@ -2549,7 +2630,15 @@ function App(){
       h(ConfirmModal, {
         open: !!confirmDelTx, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
         cancelLabel: t.cancel, confirmLabel: t.yesDelete,
-        onCancel: ()=>setConfirmDelTx(null), onConfirm: ()=>deleteTransaction(confirmDelTx)
+        onCancel: ()=>setConfirmDelTx(null), onConfirm: ()=>{
+          const v = confirmDelTx;
+          if(!v) return;
+          if(typeof v === 'object' && v.type){
+            deleteHistoryEntry(v);
+          } else {
+            deleteTransaction(v);
+          }
+        }
       }),
       h(ConfirmModal, {
         open: !!confirmDelBank, title: t.confirmDeleteTitle, message: t.confirmDeleteMsg,
