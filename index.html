@@ -377,6 +377,8 @@ function loadLS(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
 }
 function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+/* UNIVERSAL CONTACT PICKER - reusable everywhere */
+function getContactPickerFlow(){ return { directGooglePicker: true, noDoneButton: true, autoFillSingle: true, bottomSheetForMultiple: true }; }
 
 /* ---------- static data ---------- */
 const MEDIUMS = [
@@ -630,13 +632,27 @@ function CategoryPicker({ t, lang, type, value, onChange }){
 
 /* ---------- Transaction Form (Add / Edit Income or Expense) ---------- */
 function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
-  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
-  const [cat, setCat] = useState(initial ? {en:initial.category, bn:initial.categoryBn} : null);
-  const [date, setDate] = useState(initial ? initial.date : today());
-  const [note, setNote] = useState(initial ? initial.note : '');
-  const [medium, setMedium] = useState(initial ? (initial.medium || 'Cash') : 'Cash');
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_tx_'+type+'_amount', ''));
+  const [cat, setCat] = useState(initial ? {en:initial.category, bn:initial.categoryBn} : loadLS('lifestyle_draft_tx_'+type+'_cat', null));
+  const [date, setDate] = useState(initial ? initial.date : loadLS('lifestyle_draft_tx_'+type+'_date', today()));
+  const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_tx_'+type+'_note', ''));
+  const [medium, setMedium] = useState(initial ? (initial.medium || 'Cash') : loadLS('lifestyle_draft_tx_'+type+'_medium', 'Cash'));
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_amount', amount); }catch(e){} } }, [amount, type, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_cat', cat); }catch(e){} } }, [cat, type, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_date', date); }catch(e){} } }, [date, type, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_note', note); }catch(e){} } }, [note, type, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_medium', medium); }catch(e){} } }, [medium, type, initial]);
   function submit(){
     if(!amount || !cat) return;
+    if(!initial){
+      try{
+        saveLS('lifestyle_draft_tx_'+type+'_amount', '');
+        saveLS('lifestyle_draft_tx_'+type+'_cat', null);
+        saveLS('lifestyle_draft_tx_'+type+'_date', '');
+        saveLS('lifestyle_draft_tx_'+type+'_note', '');
+        saveLS('lifestyle_draft_tx_'+type+'_medium', '');
+      }catch(e){}
+    }
     onSave({
       id: initial ? initial.id : uid(),
       type,
@@ -666,12 +682,24 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
 
 /* ---------- Loan entry form (for a person) ---------- */
 function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
-  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
-  const [date, setDate] = useState(initial ? initial.date : today());
-  const [medium, setMedium] = useState(initial ? initial.medium : 'Cash');
-  const [note, setNote] = useState(initial ? initial.note : '');
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_loanentry_amount', ''));
+  const [date, setDate] = useState(initial ? initial.date : loadLS('lifestyle_draft_loanentry_date', today()));
+  const [medium, setMedium] = useState(initial ? initial.medium : loadLS('lifestyle_draft_loanentry_medium', 'Cash'));
+  const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_loanentry_note', ''));
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_amount', amount); }catch(e){} } }, [amount, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_date', date); }catch(e){} } }, [date, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_medium', medium); }catch(e){} } }, [medium, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_note', note); }catch(e){} } }, [note, initial]);
   function submit(){
     if(!amount) return;
+    if(!initial){
+      try{
+        saveLS('lifestyle_draft_loanentry_amount', '');
+        saveLS('lifestyle_draft_loanentry_date', '');
+        saveLS('lifestyle_draft_loanentry_medium', '');
+        saveLS('lifestyle_draft_loanentry_note', '');
+      }catch(e){}
+    }
     onSave({ id: initial ? initial.id : uid(), amount: parseFloat(amount)||0, date, medium, note });
   }
   return h('div', null,
@@ -689,10 +717,14 @@ function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
 
 /* ---------- Payment form ---------- */
 function PaymentForm({ t, lang, initial, onSave }){
-  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
-  const [date, setDate] = useState(initial ? initial.date : today());
-  const [method, setMethod] = useState(initial ? initial.method : 'Cash');
-  const [note, setNote] = useState(initial ? initial.note : '');
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_payment_amount', ''));
+  const [date, setDate] = useState(initial ? initial.date : loadLS('lifestyle_draft_payment_date', today()));
+  const [method, setMethod] = useState(initial ? initial.method : loadLS('lifestyle_draft_payment_method', 'Cash'));
+  const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_payment_note', ''));
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_amount', amount); }catch(e){} } }, [amount, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_date', date); }catch(e){} } }, [date, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_method', method); }catch(e){} } }, [method, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_note', note); }catch(e){} } }, [note, initial]);
   function submit(){
     if(!amount) return;
     onSave({ id: initial ? initial.id : uid(), amount: parseFloat(amount)||0, date, method, note });
@@ -813,11 +845,14 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
             contactNumbers.map((num, i) => h('button', {
               key:i, type:'button',
               onClick:()=>selectNumber(num),
-              className:'w-full text-left px-4 py-4 rounded-[14px] border-2 bg-[#FFFBF7] border-[#F3E8D3] hover:border-[#2D2A26] hover:bg-white transition-all'
+              className:'w-full text-left px-4 py-3.5 rounded-[14px] border-2 bg-[#FFFBF7] border-[#F3E8D3] hover:border-[#2D2A26] hover:bg-white transition-all flex items-center justify-between'
             },
               h('div', {className:'flex items-center gap-3'},
-                h('span', {className:'w-10 h-10 rounded-full bg-[#2D2A26] text-white flex items-center justify-center text-[16px] font-bold'}, i+1),
+                h('span', {className:'w-8 h-8 rounded-full bg-[#2D2A26] text-white flex items-center justify-center text-[13px] font-bold'}, i+1),
                 h('span', {className:'text-[18px] font-extrabold tracking-wide text-[#2D2A26]'}, num)
+              ),
+              h('span', {className:'w-6 h-6 rounded-full border-2 border-[#8B7355] flex items-center justify-center shrink-0'},
+                h('span', {className:'w-3 h-3 rounded-full bg-[#2D2A26]'})
               )
             ))
           )
@@ -840,13 +875,19 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
 
 /* ---------- Bank loan form ---------- */
 function BankLoanForm({ t, lang, initial, onSave }){
-  const [bankName, setBankName] = useState(initial ? initial.bankName : BANKS[0]);
-  const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
-  const [term, setTerm] = useState(initial ? String(initial.termMonths) : '24');
-  const [rate, setRate] = useState(initial ? String(initial.interestRate) : '9');
-  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || today()) : today());
-  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.loanDate || today()) : today());
+  const [bankName, setBankName] = useState(initial ? initial.bankName : loadLS('lifestyle_draft_bank_bankName', BANKS[0]));
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_bank_amount', ''));
+  const [term, setTerm] = useState(initial ? String(initial.termMonths) : loadLS('lifestyle_draft_bank_term', '24'));
+  const [rate, setRate] = useState(initial ? String(initial.interestRate) : loadLS('lifestyle_draft_bank_rate', '9'));
+  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || today()) : loadLS('lifestyle_draft_bank_disbursementDate', today()));
+  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.loanDate || today()) : loadLS('lifestyle_draft_bank_emiStartDate', today()));
   const [paidEmis, setPaidEmis] = useState(initial && initial.paidEmis ? initial.paidEmis.slice() : []);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_bankName', bankName); }catch(e){} } }, [bankName, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_amount', amount); }catch(e){} } }, [amount, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_term', term); }catch(e){} } }, [term, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_rate', rate); }catch(e){} } }, [rate, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_disbursementDate', disbursementDate); }catch(e){} } }, [disbursementDate, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_emiStartDate', emiStartDate); }catch(e){} } }, [emiStartDate, initial]);
   const emi = calcEMI(parseFloat(amount)||0, parseFloat(rate)||0, parseInt(term)||1);
   const emiEndDate = useMemo(()=>{
     const n = parseInt(term)||1;
