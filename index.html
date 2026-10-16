@@ -774,9 +774,24 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
           const c = contacts[0];
           if(c.name && c.name[0]) setName(c.name[0]);
           if(c.tel && c.tel.length>0){
-            // ALWAYS show custom Select Number sheet - consistent behavior, no Done, no small popup
-            setContactNumbers(c.tel);
-            setShowNumberPicker(true);
+            // FIX: normalize and dedupe numbers - remove duplicates like +880 1779--166553 vs +8801779166553
+            const seen = new Set();
+            const clean = [];
+            c.tel.forEach(raw => {
+              const digits = (raw||'').toString().replace(/\D/g,'');
+              const key = digits.slice(-10); // last 10 digits as unique key
+              if(key && !seen.has(key)){
+                seen.add(key);
+                clean.push(raw.toString().trim());
+              }
+            });
+            if(clean.length===1){
+              // single number -> auto fill directly, no bottom sheet needed
+              setMobile(clean[0]);
+            } else {
+              setContactNumbers(clean);
+              setShowNumberPicker(true);
+            }
           }
         }
       } else {
