@@ -512,6 +512,24 @@ function loadInitialState(){
       termMonths: l.termMonths||12, interestRate: l.interestRate||0, loanDate: l.loanDate || today()
     }));
   }
+  // FIX: Auto-repair transactions with missing date - set to today if empty
+  const tToday = today();
+  transactions = (transactions||[]).map(tx=>{
+    if(!tx.date || tx.date.trim()===''){
+      return Object.assign({}, tx, {date: tToday});
+    }
+    return tx;
+  });
+  // Also fix people loans/payments missing date
+  function fixPeopleDates(arr){
+    return (arr||[]).map(p=>{
+      const loans = (p.loans||[]).map(l=> !l.date ? Object.assign({}, l, {date: tToday}) : l);
+      const payments = (p.payments||[]).map(pay=> !pay.date ? Object.assign({}, pay, {date: tToday}) : pay);
+      return Object.assign({}, p, {loans, payments});
+    });
+  }
+  peopleGiven = fixPeopleDates(peopleGiven||[]);
+  peopleTaken = fixPeopleDates(peopleTaken||[]);
   return {
     transactions: transactions || [],
     peopleGiven: peopleGiven || [],
@@ -1459,6 +1477,26 @@ function renderReportPages(o){
     }
     y += 12;
   });
+  // ===== TOTAL SUMMARY FOR DATE RANGE =====
+  try{
+    ensure(220);
+    y+=10; line('#2D2A26'); y+=14;
+    let rInc=0, rExp=0;
+    // Use the already filtered data from closure: transactions filtered by inRange
+    // We need to recalc from o.transactions
+    if(o.transactions){
+      o.transactions.forEach(tx=>{
+        if(tx.date>=o.from && tx.date<=o.to){
+          if(tx.type==='income') rInc+=tx.amount||0;
+          if(tx.type==='expense') rExp+=tx.amount||0;
+        }
+      });
+    }
+    heading((o.t && o.t.reportHeading ? o.t.reportHeading : 'Report')+' - '+(o.lang==='en'?'Summary':'সারাংশ'));
+    txt((o.lang==='en'?'Total Income in Range: ':'নির্দিষ্ট সময়ে মোট আয়: ')+fmtMoney(rInc), M, 26, true, '#2E7D32'); y+=36;
+    txt((o.lang==='en'?'Total Expense in Range: ':'নির্দিষ্ট সময়ে মোট ব্যয়: ')+fmtMoney(rExp), M, 26, true, '#B71C1C'); y+=36;
+    txt((o.lang==='en'?'Net Balance: ':'নিট ব্যালেন্স: ')+fmtMoney(rInc-rExp), M, 28, true, '#000000'); y+=40;
+  }catch(e){}
 
   pages.forEach((c,i) => {
     const g = c.getContext('2d'); g.font = '400 20px ' + PDF_FONT; g.fillStyle = '#8B7355'; g.textAlign = 'center';
@@ -1756,6 +1794,10 @@ function renderHistoryPages(o){
   const filterLabelMap={all: t.all||'All', income: t.income||'Income', expense: t.expense||'Expense', loan_given:'Given', loan_taken:'Taken', return_received:'Return', repayment:'Repayment', bank_loan:'Bank'};
   const fLabel=filterLabelMap[filter]||filter;
   heading((lang==='en'?'History - ':'ইতিহাস - ')+fLabel);
+  // NEW: Show date range if selected
+  if(o.from || o.to){
+    txt((lang==='en'?'Date Range: ':'তারিখ: ')+(o.from||'...')+' → '+(o.to||'...'),M,22,false,'#8B7355'); y+=28;
+  }
   txt((lang==='en'?'Total Records: ':'মোট রেকর্ড: ')+list.length,M,22,false,'#8B7355'); y+=30;
   if(!list.length){ muted(t.noData||'No data'); }
   else{
@@ -1766,6 +1808,60 @@ function renderHistoryPages(o){
       const note = x.note||''; const amt = fmtMoney(x.amount||0);
       row([{t:x.date||'',x:cDate.x,w:cDate.w},{t:cat,x:cMid.x,w:cMid.w},{t:note,x:cNote.x,w:cNote.w},{t:amt,x:cAmt.x,w:cAmt.w,align:'right'}],22,false);
     });
+    // ===== NEW: TOTAL SUM AT BOTTOM - FIXED LAYOUT =====
+    // Add spacing before total line
+    y+=24; 
+    ensure(300);
+    // Draw line with gap
+    line('#000000'); 
+    y+=36; // IMPORTANT: text must be BELOW line, not on it
+    // Calculate totals
+    let totalIncome = 0, totalExpense = 0, totalGiven = 0, totalTaken = 0, totalReturn = 0, totalRepay = 0, totalBank = 0, grandTotal = 0;
+    list.forEach(x=>{
+      const amt = x.amount||0;
+      grandTotal += amt;
+      if(x.type==='income') totalIncome += amt;
+      else if(x.type==='expense') totalExpense += amt;
+      else if(x.type==='loan_given') totalGiven += amt;
+      else if(x.type==='loan_taken') totalTaken += amt;
+      else if(x.type==='return_received') totalReturn += amt;
+      else if(x.type==='repayment') totalRepay += amt;
+      else if(x.type==='bank_loan') totalBank += amt;
+    });
+    // Helper to draw total row with Amount right-aligned under Amount column
+    function drawTotalRow(label, amount, color){
+      ensure(46);
+      // Label on left
+      txt(label, M, 26, true, color||'#000000');
+      // Amount on right under Amount column (right aligned)
+      const amtStr = fmtMoney(amount);
+      // Save current y for amount
+      const saveY = y;
+      // Draw amount right-aligned
+      font(26, true); ctx.fillStyle = color||'#000000'; ctx.textAlign='right';
+      ctx.fillText(fit(amtStr, cAmt.w), cAmt.x + cAmt.w, saveY);
+      ctx.textAlign='left';
+      y += 38;
+    }
+    if(filter==='all'){
+      if(totalIncome>0) drawTotalRow((lang==='en'?'Total Income: ':'মোট আয়: '), totalIncome, '#2E7D32');
+      if(totalExpense>0) drawTotalRow((lang==='en'?'Total Expense: ':'মোট ব্যয়: '), totalExpense, '#B71C1C');
+      if(totalGiven>0) drawTotalRow((lang==='en'?'Total Given: ':'মোট প্রদান: '), totalGiven, '#8B7355');
+      if(totalTaken>0) drawTotalRow((lang==='en'?'Total Taken: ':'মোট গ্রহণ: '), totalTaken, '#8B7355');
+      if(totalReturn>0) drawTotalRow((lang==='en'?'Total Return: ':'মোট ফেরত: '), totalReturn, '#2E7D32');
+      if(totalRepay>0) drawTotalRow((lang==='en'?'Total Repayment: ':'মোট পরিশোধ: '), totalRepay, '#B71C1C');
+      if(totalBank>0) drawTotalRow((lang==='en'?'Total Bank Loan: ':'মোট ব্যাংক লোন: '), totalBank, '#000000');
+      y+=10; line('#C9A86A'); y+=36;
+      drawTotalRow((lang==='en'?'Grand Total:':'সর্বমোট:'), grandTotal, '#000000');
+      const net = totalIncome - totalExpense;
+      if(filter==='all' || filter==='income' || filter==='expense'){
+        drawTotalRow((lang==='en'?'Net Balance:':'নিট ব্যালেন্স:'), net, net>=0 ? '#2E7D32' : '#B71C1C');
+      }
+    } else {
+      // Single filter - show total with amount right-aligned
+      drawTotalRow((lang==='en'?'Total ('+fLabel+'):':'মোট ('+fLabel+'): ')+' ('+list.length+' records)', grandTotal, '#000000');
+    }
+    y+=20;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='400 20px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+'  •  '+(i+1)+' / '+pages.length,W/2,H-40); });
   return pages;
@@ -2010,74 +2106,121 @@ function App(){
   const [lastSyncTime, setLastSyncTime] = useState(loadLS('lifestyle_last_sync_formatted',''));
   const [cloudTimeStr, setCloudTimeStr] = useState('');
 
+  // ===== FIXED SYNC 100% + DATE FIX =====
+  const isSyncingFromCloudRef = React.useRef(false);
+  const lastCloudDataRef = React.useRef(null);
+  const syncDebounceRef = React.useRef(null);
+  const unsubscribeRef = React.useRef(null);
+
+  function mergeById(localArr, cloudArr){
+    if(!cloudArr) return localArr;
+    if(!localArr || !localArr.length) return cloudArr;
+    const map = new Map();
+    (localArr||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
+    (cloudArr||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
+    const noIdLocal = (localArr||[]).filter(x=>!x.id);
+    return Array.from(map.values()).concat(noIdLocal);
+  }
+  function mergePeople(localPeople, cloudPeople){
+    if(!cloudPeople || !cloudPeople.length) return localPeople;
+    if(!localPeople || !localPeople.length) return cloudPeople;
+    const map = new Map();
+    localPeople.forEach(p=> map.set(p.id, JSON.parse(JSON.stringify(p))));
+    cloudPeople.forEach(cp=>{
+      if(!map.has(cp.id)){
+        map.set(cp.id, cp);
+      } else {
+        const lp = map.get(cp.id);
+        const loanMap = new Map();
+        (lp.loans||[]).forEach(l=>loanMap.set(l.id, l));
+        (cp.loans||[]).forEach(l=>loanMap.set(l.id, l));
+        const payMap = new Map();
+        (lp.payments||[]).forEach(p=>payMap.set(p.id, p));
+        (cp.payments||[]).forEach(p=>payMap.set(p.id, p));
+        lp.loans = Array.from(loanMap.values());
+        lp.payments = Array.from(payMap.values());
+        lp.name = cp.name || lp.name;
+        if(cp.mobile) lp.mobile = cp.mobile;
+      }
+    });
+    return Array.from(map.values());
+  }
+
   function syncToCloud(user){
     if(!user || !user.uid) return;
+    if(isSyncingFromCloudRef.current) return;
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
-      const data = {transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now};
-      db.collection('users').doc(user.uid).set(data, {merge:true});
-      saveLS('lifestyle_last_sync', new Date(now).getTime());
-      const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
-      saveLS('lifestyle_last_sync_formatted', timeStr);
-      setLastSyncTime(timeStr);
-      setSyncStatus('Uploaded at ' + new Date(now).toLocaleTimeString());
-      // Immediate local backup to prevent loss
-      saveLS('lifestyle_transactions', transactions);
-      saveLS('lifestyle_people_given', peopleGiven);
-      saveLS('lifestyle_people_taken', peopleTaken);
-      saveLS('lifestyle_bank_loans', bankLoans);
+      const data = {transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
+      db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
+        saveLS('lifestyle_last_sync', new Date(now).getTime());
+        const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        saveLS('lifestyle_last_sync_formatted', timeStr);
+        setLastSyncTime(timeStr);
+        setSyncStatus('✓ Synced ' + new Date(now).toLocaleTimeString('bn-BD'));
+        lastCloudDataRef.current = data;
+      }).catch(e=>{ console.log('syncToCloud err',e); });
     }catch(e){ console.log('syncToCloud',e); }
   }
+
   function syncFromCloud(user){
     if(!user || !user.uid) return;
     try{
+      if(unsubscribeRef.current){ unsubscribeRef.current(); }
       const db = firebase.firestore();
-      // Use realtime listener so both devices stay in sync
-      db.collection('users').doc(user.uid).onSnapshot(doc=>{
-        if(!doc.exists) { cloudLoadedRef.current = true; return; }
+      unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot(doc=>{
+        if(!doc.exists){ cloudLoadedRef.current=true; return; }
         const d = doc.data();
-        if(!d) { cloudLoadedRef.current = true; return; }
-        // Only auto-load on first load, or if cloud is newer than local
-        if(!cloudLoadedRef.current){
-          if(d.transactions) setTransactions(d.transactions);
-          if(d.peopleGiven) setPeopleGiven(d.peopleGiven);
-          if(d.peopleTaken) setPeopleTaken(d.peopleTaken);
-          if(d.bankLoans) setBankLoans(d.bankLoans);
-          if(d.userName) setUserName(d.userName);
-          if(d.userDesignation) setUserDesignation(d.userDesignation);
-          if(d.userAddress) setUserAddress(d.userAddress);
-          if(d.userMobile) setUserMobile(d.userMobile);
-          if(d.profilePhoto) setProfilePhoto(d.profilePhoto);
-          cloudLoadedRef.current = true;
-          console.log('Loaded from cloud');
-          const tStr = d.updatedAt ? new Date(d.updatedAt).toLocaleTimeString() : new Date().toLocaleTimeString();
-          setSyncStatus('Updated from other device ' + tStr);
-          setCloudTimeStr(tStr);
-          if(d.updatedAt) {
-            const formatted = new Date(d.updatedAt).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        if(!d){ cloudLoadedRef.current=true; return; }
+        const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
+        const localLastSync = parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
+        const isFirstLoad = !cloudLoadedRef.current;
+        if(lastCloudDataRef.current && lastCloudDataRef.current.updatedAt === d.updatedAt){ cloudLoadedRef.current=true; return; }
+        if(isFirstLoad || cloudTime > localLastSync){
+          isSyncingFromCloudRef.current = true;
+          try{
+            const tToday = today();
+            const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
+            if(d.transactions) setTransactions(fixDates(d.transactions));
+            if(d.peopleGiven) setPeopleGiven(d.peopleGiven);
+            if(d.peopleTaken) setPeopleTaken(d.peopleTaken);
+            if(d.bankLoans) setBankLoans(d.bankLoans);
+            if(d.userName) setUserName(d.userName);
+            if(d.userDesignation) setUserDesignation(d.userDesignation);
+            if(d.userAddress) setUserAddress(d.userAddress);
+            if(d.userMobile) setUserMobile(d.userMobile);
+            if(d.profilePhoto) setProfilePhoto(d.profilePhoto);
+            saveLS('lifestyle_last_sync', cloudTime || Date.now());
+            const formatted = d.updatedAt ? new Date(d.updatedAt).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : new Date().toLocaleString();
             setLastSyncTime(formatted);
             saveLS('lifestyle_last_sync_formatted', formatted);
-          }
-        } else {
-          // If cloud updated from another device, merge if cloud has more data
-          const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
-          const lastSync = parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
-          if(cloudTime > lastSync + 5000){
-            const tStr2 = d.updatedAt ? new Date(d.updatedAt).toLocaleTimeString() : new Date().toLocaleTimeString();
-            setSyncStatus('Updated from other device ' + tStr2);
-            setCloudTimeStr(tStr2);
-            if(d.transactions && d.transactions.length >= transactions.length) setTransactions(d.transactions);
-            if(d.peopleGiven && d.peopleGiven.length >= peopleGiven.length) setPeopleGiven(d.peopleGiven);
-            if(d.peopleTaken && d.peopleTaken.length >= peopleTaken.length) setPeopleTaken(d.peopleTaken);
-            if(d.bankLoans && d.bankLoans.length >= bankLoans.length) setBankLoans(d.bankLoans);
+            setSyncStatus(isFirstLoad ? '✓ Cloud loaded' : '✓ Updated ' + new Date(cloudTime).toLocaleTimeString('bn-BD'));
+            setCloudTimeStr(new Date(cloudTime).toLocaleTimeString('bn-BD'));
+          } finally {
+            setTimeout(()=>{ isSyncingFromCloudRef.current=false; }, 1200);
           }
         }
-      });
-    }catch(e){ console.log('syncFromCloud',e); }
+        cloudLoadedRef.current=true;
+        lastCloudDataRef.current=d;
+      }, err=>{ console.log('snapshot err',err); cloudLoadedRef.current=true; });
+    }catch(e){ console.log('syncFromCloud',e); cloudLoadedRef.current=true; }
   }
-  useEffect(()=>{ if(googleUser && cloudLoadedRef.current){ syncToCloud(googleUser); } }, [transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto]);
-  useEffect(()=>{ if(googleUser){ syncFromCloud(googleUser); } }, [googleUser]);
+
+  useEffect(()=>{
+    if(!googleUser || !googleUser.uid) return;
+    if(!cloudLoadedRef.current) return;
+    if(isSyncingFromCloudRef.current) return;
+    if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+    syncDebounceRef.current = setTimeout(()=>{ syncToCloud(googleUser); }, 1500);
+    return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto]);
+
+  useEffect(()=>{
+    if(googleUser){ syncFromCloud(googleUser); }
+    else { if(unsubscribeRef.current){ unsubscribeRef.current(); unsubscribeRef.current=null; } cloudLoadedRef.current=false; }
+    return ()=>{ if(unsubscribeRef.current) unsubscribeRef.current(); }
+  }, [googleUser]);
 
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
@@ -2094,6 +2237,9 @@ function App(){
   const [reportTo, setReportTo] = useState(today());
   const [reportBusy, setReportBusy] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  // NEW: History date range filter - two calendars for All/Income/Expense/Given/Taken/Return/Repayment/Bank
+  const [historyFrom, setHistoryFrom] = useState('');
+  const [historyTo, setHistoryTo] = useState('');
 
   useEffect(()=>{ saveLS('lifestyle_lang', lang); }, [lang]);
   useEffect(()=>{ saveLS('lifestyle_transactions', transactions); }, [transactions]);
@@ -2142,6 +2288,12 @@ function App(){
   const totalRepaidAmt = peopleTaken.reduce((a,p)=>a+p.payments.reduce((s,x)=>s+x.amount,0),0);
 
   function saveTransaction(tx){
+    // FIX: Ensure date is always set - if empty, use today
+    if(!tx.date || tx.date.trim()===''){
+      tx.date = today();
+    }
+    // Also ensure amount is valid
+    if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
     setTransactions(list => {
       const exists = list.some(x=>x.id===tx.id);
       return exists ? list.map(x=>x.id===tx.id?tx:x) : [tx, ...list];
@@ -2321,12 +2473,19 @@ function App(){
         list = list.filter(x=>x.type===historyFilter);
       }
     }
+    // NEW: Date range filter with two calendars
+    if(historyFrom){
+      list = list.filter(x=> x.date && x.date >= historyFrom);
+    }
+    if(historyTo){
+      list = list.filter(x=> x.date && x.date <= historyTo);
+    }
     if(search){
       const s = search.toLowerCase();
       list = list.filter(x => (x.category||'').toLowerCase().includes(s) || (x.note||'').toLowerCase().includes(s) || (x.personName||'').toLowerCase().includes(s));
     }
     return list.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||''));
-  }, [transactions, peopleGiven, peopleTaken, bankLoans, historyFilter, search]);
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, historyFilter, search, historyFrom, historyTo]);
 
   /* ---- render pages ---- */
   let pageContent = null;
@@ -2446,7 +2605,7 @@ function App(){
           }, label)
         )
       ),
-      h('div', {className:'bg-white rounded-[16px] p-2.5 border border-[#F3E8D3] space-y-2'},
+      h('div', {className:'bg-white rounded-[16px] p-2.5 border border-[#F3E8D3] space-y-2.5'},
         h('div', {className:'flex flex-wrap gap-2 items-center'},
           historyFilter==='income' ? h('button', {onClick:()=>setAddType('income'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addIncome) : null,
           historyFilter==='expense' ? h('button', {onClick:()=>setAddType('expense'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addExpense) : null,
@@ -2463,7 +2622,20 @@ function App(){
             h('button', {onClick:()=>handleHistoryPdf('share'), className:'px-2.5 py-1.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[10px] font-bold'}, '🔗 Share')
           )
         ),
-        h('p', {className:'text-[10px] text-[#8B7355] px-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+' • '+filteredHistory.length+' records • User, Date, Time included')
+        // NEW: Two calendar icons below PDF buttons - for all filters
+        h('div', {className:'flex gap-2 items-center pt-1 border-t border-[#F3E8D3]'},
+          h('div', {className:'flex-1 relative'},
+            h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px] pointer-events-none'}, '📅'),
+            h('input', {type:'date', value:historyFrom, onChange:e=>setHistoryFrom(e.target.value), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-full pl-9 pr-3 py-2 text-[11px] font-bold outline-none focus:border-[#C9A86A]'})
+          ),
+          h('span', {className:'text-[12px] text-[#8B7355] font-bold'}, '→'),
+          h('div', {className:'flex-1 relative'},
+            h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px] pointer-events-none'}, '📅'),
+            h('input', {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-full pl-9 pr-3 py-2 text-[11px] font-bold outline-none focus:border-[#C9A86A]'})
+          ),
+          (historyFrom || historyTo) ? h('button', {onClick:()=>{ setHistoryFrom(''); setHistoryTo(''); }, className:'px-3 py-2 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ Clear') : null
+        ),
+        h('p', {className:'text-[10px] text-[#8B7355] px-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+(historyFrom||historyTo ? ' • '+(historyFrom||'...')+' to '+(historyTo||'...') : '')+' • '+filteredHistory.length+' records • User, Date, Time included')
       ),
       filteredHistory.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
         h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)
