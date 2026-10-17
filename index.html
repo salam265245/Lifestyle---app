@@ -2017,6 +2017,7 @@ function App(){
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
   useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
   const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
+  const [profileSaved, setProfileSaved] = useState(false);
   const [offlineQueue, setOfflineQueue] = useState(loadLS('lifestyle_offline_pending','false')==='true');
   useEffect(()=>{ function goOnline(){ setIsOnline(true); setToast(lang==='en'?'Back online - syncing...':'অনলাইনে - সিঙ্ক হচ্ছে...'); try{ const user = googleUser; if(user && user.uid){ setTimeout(()=>{ try{ syncToCloud(user); }catch(e){} try{ syncFromCloud(user); }catch(e){} saveLS('lifestyle_offline_pending','false'); setOfflineQueue(false); }, 800); } }catch(e){} } function goOffline(){ setIsOnline(false); setToast(lang==='en'?'Offline - data saved locally':'অফলাইনে - ডাটা লোকালি সেভ হচ্ছে'); saveLS('lifestyle_offline_pending','true'); setOfflineQueue(true); } window.addEventListener('online', goOnline); window.addEventListener('offline', goOffline); return ()=>{ window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); }; }, [googleUser, lang, transactions, peopleGiven, peopleTaken, bankLoans]);
   useEffect(()=>{ if(!isOnline){ saveLS('lifestyle_offline_pending','true'); setOfflineQueue(true); } }, [transactions, peopleGiven, peopleTaken, bankLoans, isOnline]);
@@ -2622,7 +2623,21 @@ function App(){
             h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Mobile Number':'মোবাইল নাম্বার'),
             h(TextInput, {type:'tel', value:userMobile, onChange:e=>setUserMobile(e.target.value), placeholder: '+8801XXXXXXXXX', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-medium outline-none'})
           ),
-          h('p', {className:'text-[10px] text-[#8B7355] text-center px-2'}, lang==='en'?'This info will appear in all PDF reports':'এই তথ্য সব PDF এ দেখা যাবে')
+          h('button', {
+            onClick:()=>{
+              try{
+                saveLS('lifestyle_user_name', userName);
+                saveLS('lifestyle_user_designation', userDesignation);
+                saveLS('lifestyle_user_address', userAddress);
+                saveLS('lifestyle_user_mobile', userMobile);
+                if(googleUser && googleUser.uid){ try{ syncToCloud(googleUser); }catch(e){} }
+                setProfileSaved(true);
+                setToast(lang==='en'?'Profile saved':'প্রোফাইল সংরক্ষিত');
+                setTimeout(()=>setProfileSaved(false), 2000);
+              }catch(e){ setToast('Save error'); }
+            },
+            className:'w-full py-3 rounded-[14px] font-bold text-[14px] transition-all ' + (profileSaved ? 'bg-[#2E7D32] text-white' : 'bg-[#2D2A26] text-white')
+          }, profileSaved ? (lang==='en'?'✓ Saved':'✓ সংরক্ষিত') : (lang==='en'?'Save':'সংরক্ষণ করুন'))
         )
       ),
             h('div', {className:'bg-white rounded-[24px] p-5 border border-[#0F3D2E]/20 shadow-sm'},
