@@ -113,8 +113,15 @@ const firebaseConfig = {
   messagingSenderId: "494296989508",
   appId: "1:494296989508:web:aa6b3aa501e3f65fcd2111"
 };
-try { firebase.initializeApp(firebaseConfig); } catch(e) {}
-</script>
+try { 
+  firebase.initializeApp(firebaseConfig); 
+  // Phase 3: Offline persistence for APK
+  try{
+    firebase.firestore().enablePersistence({synchronizeTabs:true}).then(()=>console.log('Firestore offline persistence enabled')).catch(e=>{ console.log('Persistence error', e.code); });
+    firebase.firestore().settings({cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED});
+  }catch(e){ console.log('Firestore settings error', e); }
+} catch(e) {}
+/* PWABuilder assetlinks.json guide in comment */</script>
 
 <script>
 // PWA + Shortcut Logo + Offline + Auto Sync - Final
@@ -163,7 +170,8 @@ try { firebase.initializeApp(firebaseConfig); } catch(e) {}
 
     if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v10-offline-final';
+        const CACHE='lifestyle-v11-phase3-offline-sync';
+        const OFFLINE_URL='./';
         self.addEventListener('install', e=>{
           self.skipWaiting();
           e.waitUntil(
@@ -178,6 +186,14 @@ try { firebase.initializeApp(firebaseConfig); } catch(e) {}
           e.waitUntil(
             caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
           );
+        });
+        self.addEventListener('sync', e=>{
+          if(e.tag==='sync-lifestyle'){
+            e.waitUntil(self.clients.matchAll().then(clients=>{ clients.forEach(c=>c.postMessage({type:'SYNC_REQUEST'})); }));
+          }
+        });
+        self.addEventListener('message', e=>{
+          if(e.data && e.data.type==='SKIP_WAITING') self.skipWaiting();
         });
         self.addEventListener('fetch', e=>{
           if(e.request.method!=='GET') return;
@@ -254,6 +270,14 @@ try { firebase.initializeApp(firebaseConfig); } catch(e) {}
         const CACHE='lifestyle-single-v1';
         self.addEventListener('install', e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./']).catch(()=>{}))); });
         self.addEventListener('activate', e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())); });
+        self.addEventListener('sync', e=>{
+          if(e.tag==='sync-lifestyle'){
+            e.waitUntil(self.clients.matchAll().then(clients=>{ clients.forEach(c=>c.postMessage({type:'SYNC_REQUEST'})); }));
+          }
+        });
+        self.addEventListener('message', e=>{
+          if(e.data && e.data.type==='SKIP_WAITING') self.skipWaiting();
+        });
         self.addEventListener('fetch', e=>{
           if(e.request.method!=='GET') return;
           const u=new URL(e.request.url);
@@ -1091,14 +1115,16 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
         h('button', {onClick: ()=>{
           try{
             const genAt = new Date();
-            const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: (typeof userName!=='undefined'?userName:''), generatedAt: genAt});
+            const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
+            const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, generatedAt: genAt, appName: t.appName});
             downloadPdfBlob(blob, person.name + '-loan-history.pdf');
           }catch(e){ alert('PDF Error'); }
         }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[12px] font-bold'}, lang==='en' ? '📄 Download PDF' : '📄 Download PDF'),
         h('button', {onClick: ()=>{
           try{
             const genAt = new Date();
-            const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: (typeof userName!=='undefined'?userName:''), generatedAt: genAt});
+            const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
+            const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, generatedAt: genAt, appName: t.appName});
             viewPdfBlob(blob);
           }catch(e){ alert('PDF Error'); }
         }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[12px] font-bold'}, lang==='en' ? '👁️ View' : '👁️ View')
@@ -1163,10 +1189,17 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
 function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName }){
   const [adding, setAdding] = useState(loadLS('lifestyle_adding_' + kind, false));
   useEffect(()=>{ try{ saveLS('lifestyle_adding_' + kind, adding); }catch(e){} }, [adding, kind]);
+  function getResolvedUserName(){
+    try{
+      const lsName = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || '';
+      return (userName && String(userName).trim()) || lsName || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || '' || 'User';
+    }catch(e){ return (userName||'') || 'User'; }
+  }
   function handleCombinedPdf(isView){
     try{
       const genAt = new Date();
-      const blob = buildAllLoansPdfBlob({t, lang, kind, people, userName, generatedAt: genAt, appName: t.appName});
+      const resolved = (typeof getResolvedUserName==='function' ? getResolvedUserName() : (userName||'')) || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+      const blob = buildAllLoansPdfBlob({t, lang, kind, people, userName: resolved, generatedAt: genAt, appName: t.appName});
       const fname = (kind==='given'?'all-given-history':'all-taken-history') + '.pdf';
       if(isView) viewPdfBlob(blob); else downloadPdfBlob(blob, fname);
     }catch(e){ alert('PDF Error: '+e.message); }
@@ -1328,7 +1361,7 @@ function renderReportPages(o){
     font(18, false); ctx.fillStyle='#2D2A26';
     ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
     ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
+    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||'User'), 500), leftX, ly);
     const rightX = W-M;
     let ry = y;
     const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
@@ -1479,7 +1512,7 @@ function renderPersonLoanPages(o){
     font(18, false); ctx.fillStyle='#2D2A26';
     ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
     ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
+    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||'User'), 500), leftX, ly);
     const rightX = W-M;
     let ry = y;
     const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
@@ -1564,7 +1597,7 @@ function renderAllLoansPages(o){
     font(18, false); ctx.fillStyle='#2D2A26';
     ctx.fillText(fit((isEn ? 'Download Date: ' : 'ডাউনলোড তারিখ: ')+dateStr, 500), leftX, ly); ly+=22;
     ctx.fillText(fit((isEn ? 'Download Time: ' : 'ডাউনলোড সময়: ')+timeStr, 500), leftX, ly); ly+=22;
-    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||''), 500), leftX, ly);
+    ctx.fillText(fit((isEn ? 'User: ' : 'ব্যবহারকারী: ')+(o.userName||'User'), 500), leftX, ly);
     const rightX = W-M;
     let ry = y;
     const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
@@ -1600,7 +1633,76 @@ function buildAllLoansPdfBlob(o){
   });
   return buildPdfFromJpegs(jpegs);
 }
+
+function renderHistoryPages(o){
+  const t=o.t, lang=o.lang||'bn', filter=o.filter||'all', list=o.list||[];
+  const W=1240,H=1754,M=70;
+  const pages=[]; let cv,ctx,y=0;
+  const cDate={x:M,w:170}, cMid={x:M+185,w:280}, cNote={x:M+480,w:400}, cAmt={x:W-M-230,w:230};
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; }
+  function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function txt(str,x,size,bold,color,align,maxW){ font(size,bold); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign=align||'left'; ctx.fillText(fit(str,maxW),x,y); }
+  function ensure(hh){ if(y+hh>H-M-30) newPage(); }
+  function line(c){ ctx.strokeStyle=c||'#F3E8D3'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); }
+  function heading(str,color){ ensure(110); y+=30; txt(str,M,32,true,color||'#2D2A26'); y+=16; line('#C9A86A'); y+=36; }
+  function row(cells,size,bold,color){
+    let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=280){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } });
+    const lineH=30; const totalH=Math.max(46,maxLines*lineH+16); ensure(totalH); const baseY=y;
+    for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txt(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); }
+    y=baseY+totalH;
+  }
+  function muted(str){ ensure(46); txt(str,M,22,false,'#8B7355'); y+=44; }
+  newPage();
+  (function(){
+    const genDateObj=(o.generatedAt instanceof Date)?o.generatedAt:new Date();
+    const dd=String(genDateObj.getDate()).padStart(2,'0'); const mm=String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy=genDateObj.getFullYear();
+    const dateStr=dd+'/'+mm+'/'+yyyy;
+    const timeStr=genDateObj.toLocaleTimeString((o.lang||'bn')==='en'?'en-US':'bn-BD',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+    const isEn=(o.lang||'bn')==='en'; const leftX=M; let ly=y;
+    font(30,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(isEn?'Lifestyle':'লাইফস্টাইল',400),leftX,ly); ly+=34;
+    font(18,false); ctx.fillStyle='#2D2A26';
+    ctx.fillText(fit((isEn?'Download Date: ':'ডাউনলোড তারিখ: ')+dateStr,500),leftX,ly); ly+=22;
+    ctx.fillText(fit((isEn?'Download Time: ':'ডাউনলোড সময়: ')+timeStr,500),leftX,ly); ly+=22;
+    ctx.fillText(fit((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||'User'),500),leftX,ly);
+    const rightX=W-M; let ry=y;
+    const devLinesEn=['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+    const devLinesBn=['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
+    const devLines=isEn?devLinesEn:devLinesBn;
+    devLines.forEach((dl,i)=>{ font(i===0?18:16,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(dl,520),rightX,ry); ry+=22; });
+    y=Math.max(ly,ry)+16; line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
+  })();
+  const filterLabelMap={all: t.all||'All', income: t.income||'Income', expense: t.expense||'Expense', loan_given:'Given', loan_taken:'Taken', return_received:'Return', repayment:'Repayment', bank_loan:'Bank'};
+  const fLabel=filterLabelMap[filter]||filter;
+  heading((lang==='en'?'History - ':'ইতিহাস - ')+fLabel);
+  txt((lang==='en'?'Total Records: ':'মোট রেকর্ড: ')+list.length,M,22,false,'#8B7355'); y+=30;
+  if(!list.length){ muted(t.noData||'No data'); }
+  else{
+    row([{t:t.date||'Date',x:cDate.x,w:cDate.w},{t:(lang==='en'?'Category/Person':'খাত/ব্যক্তি'),x:cMid.x,w:cMid.w},{t:(lang==='en'?'Note':'মন্তব্য'),x:cNote.x,w:cNote.w},{t:t.amount||'Amount',x:cAmt.x,w:cAmt.w,align:'right'}],22,true,'#8B7355');
+    line('#F3E8D3'); y+=8;
+    list.forEach(x=>{
+      const cat = (lang==='en'? (x.category||x.personName||'') : (x.categoryBn||x.category||x.personName||'')) || '';
+      const note = x.note||''; const amt = fmtMoney(x.amount||0);
+      row([{t:x.date||'',x:cDate.x,w:cDate.w},{t:cat,x:cMid.x,w:cMid.w},{t:note,x:cNote.x,w:cNote.w},{t:amt,x:cAmt.x,w:cAmt.w,align:'right'}],22,false);
+    });
+  }
+  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='400 20px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+'  •  '+(i+1)+' / '+pages.length,W/2,H-40); });
+  return pages;
+}
+function buildHistoryPdfBlob(o){
+  const pages=renderHistoryPages(o);
+  const jpegs=pages.map(c=>{
+    const b64=c.toDataURL('image/jpeg',0.92).split(',')[1];
+    const bin=atob(b64), bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return {bytes,w:c.width,h:c.height};
+  });
+  return buildPdfFromJpegs(jpegs);
+}
+
 function downloadPdfBlob(blob, filename){
+
   try{
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click();
@@ -1916,6 +2018,45 @@ function App(){
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
   useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
 
+  // Phase 3: Offline detection + auto sync when online (for PWABuilder APK)
+  const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
+  const [offlineQueue, setOfflineQueue] = useState(loadLS('lifestyle_offline_pending','false')==='true');
+  useEffect(()=>{
+    function goOnline(){
+      setIsOnline(true);
+      setToast(lang==='en'?'Back online - syncing...':'অনলাইনে - সিঙ্ক হচ্ছে...');
+      try{
+        const user = googleUser;
+        if(user && user.uid){
+          // Auto upload pending data
+          setTimeout(()=>{ 
+            try{ syncToCloud(user); }catch(e){}
+            try{ syncFromCloud(user); }catch(e){}
+            saveLS('lifestyle_offline_pending','false');
+            setOfflineQueue(false);
+          }, 800);
+        }
+      }catch(e){}
+    }
+    function goOffline(){
+      setIsOnline(false);
+      setToast(lang==='en'?'Offline - data saved locally':'অফলাইনে - ডাটা লোকালি সেভ হচ্ছে');
+      saveLS('lifestyle_offline_pending','true');
+      setOfflineQueue(true);
+    }
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return ()=>{ window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
+  }, [googleUser, lang, transactions, peopleGiven, peopleTaken, bankLoans]);
+
+  // Mark pending sync whenever data changes while offline
+  useEffect(()=>{
+    if(!isOnline){
+      saveLS('lifestyle_offline_pending','true');
+      setOfflineQueue(true);
+    }
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, isOnline]);
+
   const t = T[lang];
 
   const monthKey = thisMonth();
@@ -2061,12 +2202,26 @@ function App(){
     setConfirmDelBank(null);
     setToast(lang==='en'?'Deleted':'মুছে ফেলা হয়েছে');
   }
+  async function handleHistoryPdf(mode){
+      try{
+        const genAt=new Date();
+        const resolvedUN = userName || (googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+        const o={t, lang, filter:historyFilter, list:filteredHistory, userName:resolvedUN, generatedAt:genAt, appName:t.appName};
+        const blob=buildHistoryPdfBlob(o);
+        const fname='Lifestyle-History-'+historyFilter+'-'+today()+'.pdf';
+        const title=t.history+' - '+historyFilter;
+        if(mode==='download'){ downloadPdfBlob(blob,fname); setToast(t.pdfDownloaded||'PDF downloaded'); }
+        else if(mode==='view'){ viewPdfBlob(blob); }
+        else { const res=await shareOrDownloadPdf(blob,fname,title); if(res==='downloaded') setToast(t.pdfDownloaded||'PDF downloaded'); }
+      }catch(e){ setToast('PDF error: '+e.message); }
+    }
   async function handleReportPdf(mode){
       mode = mode || 'share';
       setReportBusy(true);
       try{
         const genAt = new Date();
-        const o = {t, lang, from:reportFrom, to:reportTo, transactions, peopleGiven, peopleTaken, bankLoans, userName, generatedAt: genAt};
+        const resolvedUN = userName || (googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+        const o = {t, lang, from:reportFrom, to:reportTo, transactions, peopleGiven, peopleTaken, bankLoans, userName: resolvedUN, generatedAt: genAt, appName: t.appName};
         const filename = 'Lifestyle-Report-' + reportFrom + '-to-' + reportTo + '.pdf';
         const title = t.reportHeading + ' ' + reportFrom + ' to ' + reportTo;
         const blob = buildReportPdfBlob(o);
@@ -2135,6 +2290,22 @@ function App(){
 
   if(page === 'home'){
     pageContent = h('div', {className:'pt-5 pb-6 space-y-6'},
+      // Phase 3 offline banner for PWABuilder APK
+      !isOnline ? h('div', {className:'bg-[#FFEBEE] border border-[#FFCDD2] rounded-[12px] p-2.5 flex items-center gap-2'},
+        h('span', {className:'text-[14px]'}, '📴'),
+        h('div', {className:'flex-1'},
+          h('p', {className:'text-[11px] font-bold text-[#B71C1C]'}, lang==='en'?'Offline Mode - Data saved locally':'অফলাইন - ডাটা লোকালি সেভ হচ্ছে'),
+          h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en'?'Will auto sync when online':'অনলাইনে এলে অটো সিঙ্ক হবে')
+        ),
+        h('span', {className:'w-2 h-2 rounded-full bg-[#B71C1C] animate-pulse'})
+      ) : offlineQueue ? h('div', {className:'bg-[#FFF8E1] border border-[#FFE082] rounded-[12px] p-2.5 flex items-center gap-2'},
+        h('span', {className:'text-[14px]'}, '⏳'),
+        h('div', {className:'flex-1'},
+          h('p', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Pending sync':'পেন্ডিং সিঙ্ক'),
+          h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en'?'Data will sync automatically':'অটো সিঙ্ক হবে')
+        ),
+        h('button', {onClick:()=>{ if(googleUser) { syncToCloud(googleUser); setToast('Syncing...'); } }, className:'px-2.5 py-1 rounded-full bg-[#2D2A26] text-white text-[10px] font-bold'}, 'Sync Now')
+      ) : null,
       googleUser ? h('div', {className:'bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
         syncStatus ? h('div', {className:'flex items-center gap-1.5 text-[12px] text-[#2E7D32] font-medium'},
           h('span', null, '🔄'),
@@ -2247,14 +2418,25 @@ function App(){
           }, label)
         )
       ),
-      historyFilter==='income' ? h('button', {onClick:()=>setAddType('income'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addIncome) : null,
-      historyFilter==='expense' ? h('button', {onClick:()=>setAddType('expense'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addExpense) : null,
-      historyFilter==='all' ? h('button', {onClick:()=>setAddSheetOpen(true), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.addNew) : null,
-      historyFilter==='loan_given' ? h('button', {onClick:()=>setPage('given'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Given)' : 'নতুন ব্যক্তি (প্রদান)') : null,
-      historyFilter==='loan_taken' ? h('button', {onClick:()=>setPage('taken'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Taken)' : 'নতুন ব্যক্তি (গ্রহণ)') : null,
-      historyFilter==='return_received' ? h('button', {onClick:()=>setPage('given'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Return)' : 'নতুন ব্যক্তি (ফেরত)') : null,
-      historyFilter==='repayment' ? h('button', {onClick:()=>setPage('taken'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, lang==='en' ? 'Add New Person (Repayment)' : 'নতুন ব্যক্তি (পরিশোধ)') : null,
-      historyFilter==='bank_loan' ? h('button', {onClick:()=>setAddType('bankLoan'), className:'w-full py-3.5 rounded-full bg-black text-white font-bold text-[14px] border border-black', style:{backgroundColor:'#000000', color:'#FFFFFF'}}, t.bankLoan) : null,
+      h('div', {className:'bg-white rounded-[16px] p-2.5 border border-[#F3E8D3] space-y-2'},
+        h('div', {className:'flex flex-wrap gap-2 items-center'},
+          historyFilter==='income' ? h('button', {onClick:()=>setAddType('income'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addIncome) : null,
+          historyFilter==='expense' ? h('button', {onClick:()=>setAddType('expense'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addExpense) : null,
+          historyFilter==='all' ? h('button', {onClick:()=>setAddSheetOpen(true), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addNew) : null,
+          historyFilter==='loan_given' ? h('button', {onClick:()=>setPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
+          historyFilter==='loan_taken' ? h('button', {onClick:()=>setPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
+          historyFilter==='return_received' ? h('button', {onClick:()=>setPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Return':'ফেরত যোগ') : null,
+          historyFilter==='repayment' ? h('button', {onClick:()=>setPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Repay':'পরিশোধ যোগ') : null,
+          historyFilter==='bank_loan' ? h('button', {onClick:()=>setAddType('bankLoan'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.bankLoan) : null,
+          h('div', {className:'flex-1'}),
+          h('div', {className:'flex gap-1.5'},
+            h('button', {onClick:()=>handleHistoryPdf('download'), className:'px-2.5 py-1.5 rounded-full bg-[#2D2A26] text-white text-[10px] font-bold'}, '📄 PDF'),
+            h('button', {onClick:()=>handleHistoryPdf('view'), className:'px-2.5 py-1.5 rounded-full bg-white border border-[#F3E8D3] text-[#2D2A26] text-[10px] font-bold'}, '👁️ View'),
+            h('button', {onClick:()=>handleHistoryPdf('share'), className:'px-2.5 py-1.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[10px] font-bold'}, '🔗 Share')
+          )
+        ),
+        h('p', {className:'text-[10px] text-[#8B7355] px-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+' • '+filteredHistory.length+' records • User, Date, Time included')
+      ),
       filteredHistory.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
         h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)
       ) : h('div', {className:'space-y-2.5'},
@@ -2275,19 +2457,21 @@ function App(){
     );
   } else if(page === 'given'){
     pageContent = h(PeopleList, {
-      t, lang, kind:'given', people: peopleGiven,
+      t, lang, kind:'given', people: peopleGiven, userName: userName || (googleUser && (googleUser.name||googleUser.email)) || '',
+      googleUser: googleUser,
       onOpenPerson: (p)=>openPerson('given', p),
       onAddPerson: (data)=>addPersonWithLoan('given', data)
     });
   } else if(page === 'taken'){
     pageContent = h(PeopleList, {
-      t, lang, kind:'taken', people: peopleTaken,
+      t, lang, kind:'taken', people: peopleTaken, userName: userName || (googleUser && (googleUser.name||googleUser.email)) || '',
+      googleUser: googleUser,
       onOpenPerson: (p)=>openPerson('taken', p),
       onAddPerson: (data)=>addPersonWithLoan('taken', data)
     });
   } else if(page === 'personDetail' && currentPerson){
     pageContent = h(PersonDetail, {
-      t, lang, kind: openPersonKind, person: currentPerson,
+      t, lang, kind: openPersonKind, person: currentPerson, userName: userName || (googleUser && (googleUser.name||googleUser.email)) || '',
       onBack: ()=>setPage(openPersonKind),
       onUpdatePerson: (p)=>updatePerson(openPersonKind, p),
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
