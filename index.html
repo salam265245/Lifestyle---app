@@ -1257,48 +1257,18 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
 const PDF_FONT = "'Noto Sans Bengali','Hind Siliguri','Nirmala UI','Kalpurush',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
 
 function renderReportPages(o){
+  // Make Report PDF EXACTLY like History-All (Image 1) - clean Excel table
   const t = o.t, from = o.from, to = o.to;
   const W = 2480, H = 3508, M = 120;
   const pages = []; let cv, ctx, y = 0;
-  const cDate = {x:M,w:300}, cCat = {x:M+320,w:600}, cNote = {x:M+940,w:880}, cAmt = {x:W-M-400,w:400};
-  function newPage(){
-    cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    ctx = cv.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,W,H);
-    pages.push(cv); y = M;
-  }
-  function font(sz, bold){ ctx.font = (bold ? '700 ' : '400 ') + sz + 'px ' + PDF_FONT; }
-  function fit(str, maxW){ str = String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str, maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  const cDate={x:M,w:280}, cCat={x:M+300,w:600}, cNote={x:M+920,w:900}, cAmt={x:W-M-380,w:380};
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; }
+  function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
   function ensure(hh){ if(y + hh > H - M - 100) newPage(); }
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
-  function heading(str, color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
-  function drawRow(cells, isHeader, color){
-    const maxLinesArr = cells.map(c=>{
-      font(isHeader?28:26, isHeader);
-      return wrapLines(c.t, c.w-30).length;
-    });
-    const maxLines = Math.max(...maxLinesArr, 1);
-    const h = isHeader? 80 : Math.max(70, maxLines*38 + 30);
-    ensure(h+10);
-    const baseY = y;
-    cells.forEach(c=>{
-      drawCellRect(c.x, c.w, h, isHeader ? '#F3E8D3' : '#FFFFFF');
-    });
-    cells.forEach(c=>{
-      const lines = wrapLines(c.t, c.w-30);
-      font(isHeader?28:26, isHeader);
-      ctx.fillStyle = c.color || color || (isHeader ? '#8B7355' : '#2D2A26');
-      const isRight = c.align==='right';
-      ctx.textAlign = isRight ? 'right' : 'left';
-      lines.forEach((ln, idx)=>{
-        const lx = isRight ? c.x + c.w -15 : c.x +15;
-        const ly = baseY + 38 + idx*38;
-        if(idx===0 || !isHeader) ctx.fillText(fit(ln, c.w-30), lx, ly);
-      });
-    });
-    ctx.textAlign='left';
-    y+=h;
-  }
+  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
   function inRange(d){ return d && d >= from && d <= to; }
   const money = fmtMoney;
 
@@ -1326,108 +1296,126 @@ function renderReportPages(o){
     ctx.textAlign='left';
     y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   })();
-  // Period
+
   ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + from + ' → ' + to, M, y); y+=60;
 
-  // Income / Expense Summary as Excel table
-  const tx = o.transactions.filter(x => inRange(x.date)).sort((a,b) => a.date.localeCompare(b.date));
-  const inc = tx.filter(x => x.type === 'income'), exp = tx.filter(x => x.type === 'expense');
-  const incSum = inc.reduce((a,x)=>a+x.amount,0), expSum = exp.reduce((a,x)=>a+x.amount,0);
-
-  heading(t.reports + ' — ' + t.income + ' / ' + t.expense + ' Summary');
-  // Summary table header
-  drawRow([{t:'Type',x:cDate.x,w:600},{t:'Amount',x:cAmt.x,w:600,align:'right'}], true);
-  drawRow([{t:t.income,x:cDate.x,w:600},{t:money(incSum),x:cAmt.x,w:600,align:'right',color:'#2E7D32'}], false, '#2E7D32');
-  drawRow([{t:t.expense,x:cDate.x,w:600},{t:money(expSum),x:cAmt.x,w:600,align:'right',color:'#B71C1C'}], false, '#B71C1C');
-  drawRow([{t:t.balance,x:cDate.x,w:600},{t:money(incSum-expSum),x:cAmt.x,w:600,align:'right'}], false);
-
-  function txSection(title, list, color){
-    heading(title, color);
-    if(!list.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; return; }
-    // Header
-    drawRow([{t:t.date,x:cDate.x,w:cDate.w},{t:t.category,x:cCat.x,w:cCat.w},{t:t.note,x:cNote.x,w:cNote.w},{t:t.amount,x:cAmt.x,w:cAmt.w,align:'right'}], true);
-    list.forEach(x=>{
-      drawRow([
-        {t:x.date,x:cDate.x,w:cDate.w},
-        {t:o.lang==='en'?x.category:(x.categoryBn||x.category),x:cCat.x,w:cCat.w},
-        {t:x.note||'',x:cNote.x,w:cNote.w,color:'#5D4E37'},
-        {t:money(x.amount),x:cAmt.x,w:cAmt.w,align:'right',color:color}
-      ], false, color);
+  // Collect all data in period like History-All does
+  const all = [];
+  (o.transactions||[]).forEach(tx=>{
+    if(inRange(tx.date)) all.push({date:tx.date, cat:tx.category, catBn:tx.categoryBn, note:tx.note, amount:tx.amount, type:tx.type});
+  });
+  (o.peopleGiven||[]).forEach(p=>{
+    p.loans.forEach(l=>{
+      if(inRange(l.date)) all.push({date:l.date, cat:p.name, catBn:p.name, note:(l.note||'')+' • '+(l.medium||'')+' • Given', amount:l.amount, type:'given'});
     });
-    // Section total
-    const sum = list.reduce((a,b)=>a+b.amount,0);
-    y+=10; ensure(90);
-    drawCellRect(cDate.x, cDate.w+cCat.w+cNote.w, 80, '#FFF8E1');
-    drawCellRect(cAmt.x, cAmt.w, 80, '#FFF8E1');
-    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total: '+list.length+' records', cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(money(sum), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=90;
-  }
-
-  txSection(t.income, inc, '#2E7D32');
-  txSection(t.expense, exp, '#B71C1C');
-
-  function peopleSection(title, people, loanLabel, payLabel){
-    heading(title);
-    let any=false;
-    people.forEach(p=>{
-      const ls = p.loans.filter(l => inRange(l.date)).sort((a,b)=>a.date.localeCompare(b.date));
-      const ps = p.payments.filter(x => inRange(x.date)).sort((a,b)=>a.date.localeCompare(b.date));
-      if(!ls.length && !ps.length) return;
-      any=true;
-      const bal = p.loans.reduce((a,l)=>a+l.amount,0) - p.payments.reduce((a,x)=>a+x.amount,0);
-      ensure(90);
-      // Person header as merged cell
-      const ph = 80;
-      drawCellRect(cDate.x, cDate.w+cCat.w+cNote.w+cAmt.w, ph, '#F9F5EB');
-      font(30,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit(p.name+' — '+t.balance+': '+money(bal), cDate.w+cCat.w+cNote.w+cAmt.w-30), cDate.x+15, y+50); y+=ph;
-      // Loans
-      ls.forEach(l=>{
-        drawRow([
-          {t:l.date,x:cDate.x,w:cDate.w},
-          {t:loanLabel,x:cCat.x,w:cCat.w},
-          {t:[l.medium,l.note].filter(Boolean).join(' • '),x:cNote.x,w:cNote.w,color:'#5D4E37'},
-          {t:money(l.amount),x:cAmt.x,w:cAmt.w,align:'right'}
-        ], false);
-      });
-      ps.forEach(x=>{
-        drawRow([
-          {t:x.date,x:cDate.x,w:cDate.w},
-          {t:payLabel,x:cCat.x,w:cCat.w,color:'#2E7D32'},
-          {t:[x.method,x.note].filter(Boolean).join(' • '),x:cNote.x,w:cNote.w,color:'#5D4E37'},
-          {t:money(x.amount),x:cAmt.x,w:cAmt.w,align:'right',color:'#2E7D32'}
-        ], false);
-      });
+    p.payments.forEach(pay=>{
+      if(inRange(pay.date)) all.push({date:pay.date, cat:p.name, catBn:p.name, note:(pay.note||'')+' • '+(pay.method||'')+' • Return', amount:pay.amount, type:'return'});
     });
-    if(!any){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; }
-  }
+  });
+  (o.peopleTaken||[]).forEach(p=>{
+    p.loans.forEach(l=>{
+      if(inRange(l.date)) all.push({date:l.date, cat:p.name, catBn:p.name, note:(l.note||'')+' • '+(l.medium||'')+' • Taken', amount:l.amount, type:'taken'});
+    });
+    p.payments.forEach(pay=>{
+      if(inRange(pay.date)) all.push({date:pay.date, cat:p.name, catBn:p.name, note:(pay.note||'')+' • '+(pay.method||'')+' • Repayment', amount:pay.amount, type:'repayment'});
+    });
+  });
+  (o.bankLoans||[]).forEach(b=>{
+    const d=b.loanDate||b.disbursementDate||'';
+    if(inRange(d)) all.push({date:d, cat:b.bankName, catBn:b.bankName, note:(b.termMonths||'')+'mo • '+(b.interestRate||'')+'% • Bank', amount:b.amount, type:'bank'});
+  });
 
-  peopleSection(t.given || 'Given', o.peopleGiven||[], 'Loan Given', 'Return');
-  peopleSection(t.taken || 'Taken', o.peopleTaken||[], 'Loan Taken', 'Repayment');
+  all.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 
-  // Bank Loans
-  heading(t.bankLoans||'Bank Loans');
-  const bl = (o.bankLoans||[]).filter(b=> inRange(b.loanDate||b.disbursementDate||''));
-  if(!bl.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; }
-  else{
-    drawRow([{t:'Bank',x:cDate.x,w:300},{t:'Date',x:cDate.x+320,w:280},{t:'Amount',x:cCat.x,w:400},{t:'Term/Rate',x:cNote.x,w:500},{t:'Total',x:cAmt.x,w:cAmt.w,align:'right'}], true);
-    bl.forEach(b=>{
-      drawRow([
-        {t:b.bankName||'',x:cDate.x,w:300},
-        {t:b.loanDate||'',x:cDate.x+320,w:280},
-        {t:money(b.amount),x:cCat.x,w:400},
-        {t:(b.termMonths||'')+'mo '+(b.interestRate||'')+'%',x:cNote.x,w:500},
-        {t:money(b.amount),x:cAmt.x,w:cAmt.w,align:'right'}
-      ], false);
+  heading('Report - All (Period) - '+all.length+' records');
+  // Header row like Image 1
+  ensure(80);
+  const headerH=80;
+  drawCellRect(cDate.x,cDate.w,headerH,'#F3E8D3');
+  drawCellRect(cCat.x,cCat.w,headerH,'#F3E8D3');
+  drawCellRect(cNote.x,cNote.w,headerH,'#F3E8D3');
+  drawCellRect(cAmt.x,cAmt.w,headerH,'#F3E8D3');
+  font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
+  ctx.fillText('Date', cDate.x+15, y+50);
+  ctx.fillText('Category/Person', cCat.x+15, y+50);
+  ctx.fillText('Note', cNote.x+15, y+50);
+  ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left';
+  y+=headerH;
+
+  // Data rows - each in separate cell
+  all.forEach(item=>{
+    const cat = (o.lang==='en'?item.cat:(item.catBn||item.cat))||'';
+    const note = item.note||'';
+    font(26,false);
+    const catLines = wrapLines(cat, cCat.w-30);
+    const noteLines = wrapLines(note, cNote.w-30);
+    const maxLines = Math.max(catLines.length, noteLines.length, 1);
+    const h = Math.max(70, maxLines*36+30);
+    ensure(h+10);
+    drawCellRect(cDate.x,cDate.w,h,'#FFFFFF');
+    drawCellRect(cCat.x,cCat.w,h,'#FFFFFF');
+    drawCellRect(cNote.x,cNote.w,h,'#FFFFFF');
+    drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
+    const baseY=y;
+    ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
+    ctx.fillText(fit(item.date||'', cDate.w-30), cDate.x+15, baseY+42);
+    catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-30), cCat.x+15, baseY+32+i*36); });
+    ctx.fillStyle='#5D4E37';
+    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); });
+    ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
+    ctx.fillText(fit(money(item.amount), cAmt.w-30), cAmt.x+cAmt.w-15, baseY+42);
+    ctx.textAlign='left';
+    y+=h;
+  });
+
+  // Total footer like Image 1
+  if(all.length>0){
+    let grandTotal=0; all.forEach(x=>{ grandTotal+=x.amount||0; });
+    y+=10; ensure(100);
+    ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=10;
+    const th=80;
+    drawCellRect(cDate.x, cDate.w+cCat.w+cNote.w, th, '#FFF8E1');
+    drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
+    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText('Total (All): ('+all.length+' records)', cDate.x+15, y+50);
+    ctx.textAlign='right';
+    ctx.fillText(fit(money(grandTotal), cAmt.w-30), cAmt.x+cAmt.w-15, y+50);
+    ctx.textAlign='left';
+    y+=th+30;
+    // Summary breakdown
+    let inc=0, exp=0, given=0, taken=0, ret=0, repay=0, bank=0;
+    all.forEach(x=>{
+      if(x.type==='income') inc+=x.amount;
+      else if(x.type==='expense') exp+=x.amount;
+      else if(x.type==='given') given+=x.amount;
+      else if(x.type==='taken') taken+=x.amount;
+      else if(x.type==='return') ret+=x.amount;
+      else if(x.type==='repayment') repay+=x.amount;
+      else if(x.type==='bank') bank+=x.amount;
+    });
+    const summary = [
+      ['Income', inc],
+      ['Expense', exp],
+      ['Given', given],
+      ['Taken', taken],
+      ['Return', ret],
+      ['Repayment', repay],
+      ['Bank', bank],
+      ['Net Balance', inc-exp]
+    ];
+    heading('Summary');
+    summary.forEach(([label, amt])=>{
+      if(amt===0) return;
+      ensure(80);
+      drawCellRect(cDate.x, cDate.w+cCat.w+cNote.w, 70, '#FFFFFF');
+      drawCellRect(cAmt.x, cAmt.w, 70, '#FFFFFF');
+      font(28,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      ctx.fillText(label, cDate.x+15, y+42);
+      ctx.textAlign='right';
+      ctx.fillText(fit(money(amt), cAmt.w-30), cAmt.x+cAmt.w-15, y+42);
+      ctx.textAlign='left'; y+=70;
     });
   }
-
-  // Grand summary at end
-  y+=30; ensure(250);
-  ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
-  heading('Grand Summary');
-  drawRow([{t:'Total Income',x:cDate.x,w:600},{t:money(incSum),x:cAmt.x,w:600,align:'right',color:'#2E7D32'}], false);
-  drawRow([{t:'Total Expense',x:cDate.x,w:600},{t:money(expSum),x:cAmt.x,w:600,align:'right',color:'#B71C1C'}], false);
-  drawRow([{t:'Net Balance',x:cDate.x,w:600},{t:money(incSum-expSum),x:cAmt.x,w:600,align:'right'}], false);
 
   pages.forEach((c,i) => {
     const g = c.getContext('2d'); g.font = '700 28px ' + PDF_FONT; g.fillStyle = '#8B7355'; g.textAlign = 'center';
