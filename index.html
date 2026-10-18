@@ -1190,6 +1190,8 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
 /* ---------- People List Page ---------- */
 function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName }){
   const [adding, setAdding] = useState(loadLS('lifestyle_adding_' + kind, false));
+  const [filterFrom, setFilterFrom] = useState(thisMonth() + '-01');
+  const [filterTo, setFilterTo] = useState(today());
   useEffect(()=>{ try{ saveLS('lifestyle_adding_' + kind, adding); }catch(e){} }, [adding, kind]);
   function getResolvedUserName(){
     try{
@@ -1205,7 +1207,16 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
       const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
       const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
       const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-      const blob = buildAllLoansPdfBlob({t, lang, kind, people, userName: resolved, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
+      // Filter people by date if calendar selected
+      let filteredPeople = people;
+      if(filterFrom || filterTo){
+        filteredPeople = people.map(p=>{
+          const fLoans = p.loans.filter(l=>{ if(filterFrom && l.date < filterFrom) return false; if(filterTo && l.date > filterTo) return false; return true; });
+          const fPays = p.payments.filter(pay=>{ if(filterFrom && pay.date < filterFrom) return false; if(filterTo && pay.date > filterTo) return false; return true; });
+          return Object.assign({}, p, {loans: fLoans, payments: fPays});
+        }).filter(p=>p.loans.length>0 || p.payments.length>0);
+      }
+      const blob = buildAllLoansPdfBlob({t, lang, kind, people: filteredPeople, userName: resolved, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName, from: filterFrom, to: filterTo});
       const fname = (kind==='given'?'all-given-history':'all-taken-history') + '.pdf';
       if(mode==='view') viewPdfBlob(blob);
       else if(mode==='share') shareOrDownloadPdf(blob, fname, 'All ' + kind + ' history');
@@ -1217,10 +1228,17 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
       h('h2', {className:'text-[18px] font-bold'}, kind==='given' ? t.loansGiven : t.loansTaken),
       h('button', {onClick:()=>setAdding(true), className:'text-[12px] font-bold px-3 py-2 rounded-full bg-[#2D2A26] text-white'}, t.addPerson)
     ),
-    h('div', {className:'bg-white rounded-[16px] p-3 border border-[#F3E8D3] flex gap-2'},
-      h('button', {onClick:()=>handleCombinedPdf('download'), className:'flex-1 py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[11px] font-bold'}, '📄 PDF'),
-      h('button', {onClick:()=>handleCombinedPdf('view'), className:'flex-1 py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
-      h('button', {onClick:()=>handleCombinedPdf('share'), className:'flex-1 py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '📤 Share')
+    h('div', {className:'bg-white rounded-[16px] p-3 border border-[#F3E8D3] space-y-3'},
+      h('div', {className:'flex gap-2'},
+        h('button', {onClick:()=>handleCombinedPdf('download'), className:'flex-1 py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[11px] font-bold'}, '📄 PDF'),
+        h('button', {onClick:()=>handleCombinedPdf('view'), className:'flex-1 py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
+        h('button', {onClick:()=>handleCombinedPdf('share'), className:'flex-1 py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '📤 Share')
+      ),
+      h('div', {className:'grid grid-cols-2 gap-3'},
+        h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:filterFrom, onChange:e=>setFilterFrom(e.target.value)})),
+        h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:filterTo, onChange:e=>setFilterTo(e.target.value)}))
+      ),
+      (filterFrom || filterTo) ? h('div', {className:'flex justify-end'}, h('button', {onClick:()=>{ setFilterFrom(''); setFilterTo(''); }, className:'px-3 py-1.5 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ Clear')) : null
     ),
 
     people.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
@@ -1457,94 +1475,37 @@ function renderPersonLoanPages(o){
   const t=o.t, person=o.person, kind=o.kind;
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0;
-  const cDate={x:M,w:170}, cMid={x:M+185,w:320}, cNote={x:M+520,w:360}, cAmt={x:W-M-230,w:230};
-  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; }
+  const cDate={x:M,w:280}, cCat={x:M+300,w:600}, cNote={x:M+920,w:900}, cAmt={x:W-M-380,w:380};
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; }
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str, maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function txt(str,x,size,bold,color,align,maxW){ font(size,bold); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign=align||'left'; ctx.fillText(fit(str,maxW),x,y); }
-  function ensure(hh){ if(y+hh>H-M-30) newPage(); }
-  function line(c){ ctx.strokeStyle=c||'#F3E8D3'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); }
-  function heading(str,color){ ensure(110); y+=30; txt(str,M,32,true,color||'#2D2A26'); y+=16; line('#C9A86A'); y+=36; }
-  function row(cells,size,bold,color){ let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=280){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } }); const lineH=30; const totalH=Math.max(46, maxLines*lineH+16); ensure(totalH); const baseY=y; for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txt(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); } y=baseY+totalH; }
-  function muted(str){ ensure(46); txt(str,M,22,false,'#8B7355'); y+=44; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function ensure(hh){ if(y+hh>H-M-100) newPage(); }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
+  function rowHeader(cols){ ensure(80); const h=80; cols.forEach(c=>{ drawCellRect(c.x,c.w,h,'#F3E8D3'); }); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cols[0].x+15, y+50); ctx.fillText('Amount', cols[1].x+15, y+50); ctx.fillText('Note', cols[2].x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cols[3].x+cols[3].w-15, y+50); ctx.textAlign='left'; y+=h; }
+  function rowData(item, isPay){ const cat=item.date||''; const amt=fmtMoney(item.amount); const note=(item.note||'')+' '+(item.medium||item.method||''); font(26,false); const noteLines=wrapLines(note, cNote.w-30); const maxLines=Math.max(noteLines.length,1); const h=Math.max(70, maxLines*36+30); ensure(h+10); drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF'); const baseY=y; ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(cat, cDate.w-30), cDate.x+15, baseY+42); ctx.fillText(fit(amt, cCat.w-30), cCat.x+15, baseY+42); ctx.fillStyle='#5D4E37'; noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); }); ctx.fillStyle=isPay?'#2E7D32':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(amt, cAmt.w-30), cAmt.x+cAmt.w-15, baseY+42); ctx.textAlign='left'; y+=h; }
   newPage();
-    (function(){
+  (function(){
     const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const dd = String(genDateObj.getDate()).padStart(2,'0');
-    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
-    const yyyy = genDateObj.getFullYear();
-    const dateStr = dd+'/'+mm+'/'+yyyy;
-    const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-    const isEn = (o.lang||'en')==='en';
-    const leftX = M;
-    let ly = y;
-    const seenProfile = new Set();
-    const profileLines = [];
-    function addProfile(label, val){
-      if(!val) return;
-      val = String(val).trim();
-      if(!val) return;
-      const key = val.toLowerCase();
-      if(seenProfile.has(key)) return;
-      seenProfile.add(key);
-      profileLines.push(label+': '+val);
-    }
-    try{
-      const lsN = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || '';
-      const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
-      const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
-      const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-      addProfile(isEn?'User':'ব্যবহারকারী', o.userName || lsN || 'User');
-      addProfile(isEn?'Designation':'পদবী', o.userDesignation || lsD);
-      addProfile(isEn?'Address':'ঠিকানা', o.userAddress || lsA);
-      addProfile(isEn?'Mobile':'মোবাইল', o.userMobile || lsM);
-    }catch(e){}
-    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    ctx.fillText(fit(o.appName || t.appName || (isEn ? 'Lifestyle' : 'লাইফস্টাইল'), 400), leftX, ly); ly+=34;
-    font(16, true); ctx.fillStyle='#2D2A26';
-    ctx.fillText(fit((isEn ? 'Download: ' : 'ডাউনলোড: ')+dateStr+' '+timeStr, 520), leftX, ly); ly+=24;
-    font(14, false);
-    profileLines.forEach(pl=>{
-      ctx.fillText(fit(pl, 520), leftX, ly); ly+=20;
-    });
-    const rightX = W-M;
-    let ry = y;
-    const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
-    const devLinesBn = ['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
-    const devLines = isEn ? devLinesEn : devLinesBn;
-    devLines.forEach((dl,i)=>{
-      font(i===0?16:13, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(dl, 520), rightX, ry);
-      ry+=20;
-    });
-    y = Math.max(ly, ry) + 16; line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
+    const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
+    const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+    const isEn = (o.lang||'en')==='en'; const leftX = M; let ly = y;
+    const profileLines = []; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLines.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLines.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLines.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLines.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    const rightX=W-M; let ry=y; const devLines=isEn?['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com']:['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com']; devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(dl,900),rightX,ry); ry+=38; }); ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   })();
-  txt(person.name+(person.mobile?' • '+person.mobile:''),M,30,true,'#8B6B3A'); y+=36;
-  const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0);
-  const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0);
-  const balance=totalLoaned-totalPaid;
-  txt((kind==='given'?t.youWillGet:t.youOwe)+': '+fmtMoney(balance),M,26,true); y+=32;
-  txt(t.total+': '+fmtMoney(totalLoaned)+' • '+(kind==='given'?t.totalReturned:t.totalRepaid)+': '+fmtMoney(totalPaid),M,22,false,'#8B7355'); y+=20;
-  heading(t.loanHistory);
-  if(!person.loans.length) muted(t.noData);
-  else{
-    row([{t:t.date,x:cDate.x,w:cDate.w},{t:t.amount,x:cMid.x,w:cMid.w},{t:t.note,x:cNote.x,w:cNote.w},{t:t.amount,x:cAmt.x,w:cAmt.w,align:'right'}],20,true,'#8B7355');
-    person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{
-      row([{t:l.date,x:cDate.x,w:cDate.w},{t:fmtMoney(l.amount),x:cMid.x,w:cMid.w},{t:l.note||'',x:cNote.x,w:cNote.w,color:'#8B7355'},{t:fmtMoney(l.amount),x:cAmt.x,w:cAmt.w,align:'right'}],23,false);
-    });
-  }
-  heading(t.paymentHistory);
-  if(!person.payments.length) muted(t.noData);
-  else{
-    row([{t:t.date,x:cDate.x,w:cDate.w},{t:t.method,x:cMid.x,w:cMid.w},{t:t.note,x:cNote.x,w:cNote.w},{t:t.amount,x:cAmt.x,w:cAmt.w,align:'right'}],20,true,'#8B7355');
-    person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{
-      row([{t:p.date,x:cDate.x,w:cDate.w},{t:p.method,x:cMid.x,w:cMid.w},{t:p.note||'',x:cNote.x,w:cNote.w,color:'#8B7355'},{t:fmtMoney(p.amount),x:cAmt.x,w:cAmt.w,align:'right',color:'#2E7D32'}],23,false);
-    });
-  }
-  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='400 20px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+'  •  '+(i+1)+' / '+pages.length,W/2,H-40); });
+  font(36,true); ctx.fillStyle='#8B6B3A'; ctx.textAlign='left'; ctx.fillText(fit(person.name+(person.mobile?' • '+person.mobile:''), W-M*2), M, y); y+=60;
+  const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0); const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0); const balance=totalLoaned-totalPaid;
+  font(32,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((kind==='given'?t.youWillGet:t.youOwe)+': '+fmtMoney(balance), W-M*2), M, y); y+=50;
+  font(28,false); ctx.fillStyle='#8B7355'; ctx.fillText(fit(t.total+': '+fmtMoney(totalLoaned)+' • '+(kind==='given'?t.totalReturned:t.totalRepaid)+': '+fmtMoney(totalPaid), W-M*2), M, y); y+=40;
+  heading(t.loanHistory); if(!person.loans.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else { ensure(80); const hh=80; drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Amount', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, medium:l.medium}, false); }); }
+  heading(t.paymentHistory); if(!person.payments.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else { ensure(80); const hh=80; drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Method', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, medium:p.method}, true); }); }
+  y+=30; ensure(100); const th=80; drawCellRect(cDate.x, cDate.w+cCat.w+cNote.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Balance: '+fmtMoney(balance), cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
+  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
+
 function buildPersonLoanPdfBlob(o){
   const pages=renderPersonLoanPages(o);
   const jpegs=pages.map(c=>{
@@ -1557,90 +1518,42 @@ function buildPersonLoanPdfBlob(o){
 }
 
 function renderAllLoansPages(o){
-  const t=o.t, lang=o.lang||'bn', kind=o.kind, people=o.people||[];
+  const t=o.t, lang=o.lang||'bn', kind=o.kind, people=o.people||[], from=o.from||'', to=o.to||'';
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0;
-  const cDate={x:M,w:170}, cMid={x:M+185,w:280}, cName={x:M+480,w:300}, cAmt={x:W-M-230,w:230};
+  const cDate={x:M,w:280}, cCat={x:M+300,w:600}, cNote={x:M+920,w:900}, cAmt={x:W-M-380,w:380};
   function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; }
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function txtA(str,x,size,bold,color,align,maxW){ font(size,bold); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign=align||'left'; ctx.fillText(fit(str,maxW),x,y); }
-  function ensure(hh){ if(y+hh>H-M-30) newPage(); }
-  function line(c){ ctx.strokeStyle=c||'#F3E8D3'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); }
-  function heading(str,color){ ensure(110); y+=30; txtA(str,M,32,true,color||'#2D2A26'); y+=16; line('#C9A86A'); y+=36; }
-  function row(cells,size,bold,color){
-    let maxLines=1; const cellLines=cells.map(c=>{ const w=c.w||0; if(w>=200){ const ls=wrapLines(c.t,w); if(ls.length>maxLines) maxLines=ls.length; return ls; } else { return [fit(c.t,w)]; } });
-    const lineH=30; const totalH=Math.max(46, maxLines*lineH+16); ensure(totalH); const baseY=y;
-    for(let li=0; li<maxLines; li++){ cells.forEach((c,idx)=>{ const lines=cellLines[idx]; if(li>=lines.length) return; const right=c.align==='right'; const saveY=y; y=baseY+li*lineH; txtA(lines[li], right?c.x+c.w:c.x, size||24, bold, c.color||color, right?'right':'left', c.w); y=saveY; }); }
-    y=baseY+totalH;
-  }
-  function muted(str){ ensure(46); txtA(str,M,22,false,'#8B7355'); y+=44; }
+  function ensure(hh){ if(y+hh>H-M-100) newPage(); }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
   newPage();
-    (function(){
+  (function(){
     const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const dd = String(genDateObj.getDate()).padStart(2,'0');
-    const mm = String(genDateObj.getMonth()+1).padStart(2,'0');
-    const yyyy = genDateObj.getFullYear();
-    const dateStr = dd+'/'+mm+'/'+yyyy;
-    const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-    const isEn = (o.lang||'en')==='en';
-    const leftX = M;
-    let ly = y;
-    const seenProfile = new Set();
-    const profileLines = [];
-    function addProfile(label, val){
-      if(!val) return;
-      val = String(val).trim();
-      if(!val) return;
-      const key = val.toLowerCase();
-      if(seenProfile.has(key)) return;
-      seenProfile.add(key);
-      profileLines.push(label+': '+val);
-    }
-    try{
-      const lsN = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || '';
-      const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
-      const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
-      const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-      addProfile(isEn?'User':'ব্যবহারকারী', o.userName || lsN || 'User');
-      addProfile(isEn?'Designation':'পদবী', o.userDesignation || lsD);
-      addProfile(isEn?'Address':'ঠিকানা', o.userAddress || lsA);
-      addProfile(isEn?'Mobile':'মোবাইল', o.userMobile || lsM);
-    }catch(e){}
-    font(30, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    ctx.fillText(fit(o.appName || t.appName || (isEn ? 'Lifestyle' : 'লাইফস্টাইল'), 400), leftX, ly); ly+=34;
-    font(16, true); ctx.fillStyle='#2D2A26';
-    ctx.fillText(fit((isEn ? 'Download: ' : 'ডাউনলোড: ')+dateStr+' '+timeStr, 520), leftX, ly); ly+=24;
-    font(14, false);
-    profileLines.forEach(pl=>{
-      ctx.fillText(fit(pl, 520), leftX, ly); ly+=20;
-    });
-    const rightX = W-M;
-    let ry = y;
-    const devLinesEn = ['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
-    const devLinesBn = ['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
-    const devLines = isEn ? devLinesEn : devLinesBn;
-    devLines.forEach((dl,i)=>{
-      font(i===0?16:13, i===0); ctx.fillStyle = i===0 ? '#000000' : '#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(dl, 520), rightX, ry);
-      ry+=20;
-    });
-    y = Math.max(ly, ry) + 16; line('#000000'); ctx.lineWidth=2; ctx.strokeStyle='#000000'; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=28;
+    const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
+    const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+    const isEn = (o.lang||'en')==='en'; const leftX = M; let ly = y;
+    const profileLines = []; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLines.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLines.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLines.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLines.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    const rightX=W-M; let ry=y; const devLines=isEn?['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com']:['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com']; devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(dl,900),rightX,ry); ry+=38; }); ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   })();
-  const all=[]; people.forEach(p=>{ p.loans.forEach(l=>{ all.push({date:l.date, type:'loan', person:p.name, medium:l.medium||'', note:l.note||'', amount:l.amount}); }); p.payments.forEach(px=>{ all.push({date:px.date, type:'payment', person:p.name, medium:px.method||'', note:px.note||'', amount:px.amount}); }); });
-  all.sort((a,b)=>a.date.localeCompare(b.date));
-  if(!all.length){ muted(t.noData); } else {
-    heading((lang==='en'?'Date wise all history':'দিন অনুযায়ী সবার History'), '#2D2A26');
-    row([{t:t.date,x:cDate.x,w:cDate.w},{t:(lang==='en'?'Person':'নাম'),x:cMid.x,w:cMid.w},{t:(lang==='en'?'Details':'বিবরণ'),x:cName.x,w:cName.w},{t:t.amount,x:cAmt.x,w:cAmt.w,align:'right'}],20,true,'#8B7355');
+  if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + (from||'...') + ' → ' + (to||'...'), M, y); y+=60; }
+  let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, type:'loan', amount:l.amount, medium:l.medium, note:l.note})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, type:'payment', amount:pay.amount, medium:pay.method, note:pay.note})); }); all.sort((a,b)=>a.date.localeCompare(b.date));
+  if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
+    heading((lang==='en'?'All '+(kind==='given'?'Given':'Taken')+' History - '+all.length+' records':'সব '+(kind==='given'?'প্রদান':'গ্রহণ')+' - '+all.length+' রেকর্ড'), '#2D2A26');
+    ensure(80); const hh=80; drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText(lang==='en'?'Person':'নাম', cCat.x+15, y+50); ctx.fillText(lang==='en'?'Details':'বিবরণ', cNote.x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh;
+    let grand=0;
     all.forEach(item=>{
-      const isPay = item.type==='payment';
-      row([{t:item.date,x:cDate.x,w:cDate.w},{t:item.person,x:cMid.x,w:cMid.w},{t:[item.medium,item.note].filter(Boolean).join(' • '),x:cName.x,w:cName.w,color:'#8B7355'},{t:(isPay?'+':'')+fmtMoney(item.amount),x:cAmt.x,w:cAmt.w,align:'right',color:isPay?'#2E7D32':'#2D2A26'}],22,false);
+      const details=(item.medium||'')+' '+(item.note||''); font(26,false); const personLines=wrapLines(item.person, cCat.w-30); const detailLines=wrapLines(details, cNote.w-30); const maxLines=Math.max(personLines.length, detailLines.length,1); const h=Math.max(70, maxLines*36+30); ensure(h+10); drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF'); const baseY=y; ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(item.date, cDate.w-30), cDate.x+15, baseY+42); personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-30), cCat.x+15, baseY+32+i*36); }); ctx.fillStyle='#5D4E37'; detailLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); }); ctx.fillStyle=item.type==='payment'?'#2E7D32':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-30), cAmt.x+cAmt.w-15, baseY+42); ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
+    y+=10; ensure(100); const th=80; drawCellRect(cDate.x, cDate.w+cCat.w+cNote.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
-  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='400 20px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+'  •  '+(i+1)+' / '+pages.length,W/2,H-40); });
+  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
+
 function buildAllLoansPdfBlob(o){
   const pages=renderAllLoansPages(o);
   const jpegs=pages.map(c=>{
@@ -2147,8 +2060,8 @@ function App(){
   const [reportBusy, setReportBusy] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   // NEW: History date range filter - two calendars for All/Income/Expense/Given/Taken/Return/Repayment/Bank
-  const [historyFrom, setHistoryFrom] = useState('');
-  const [historyTo, setHistoryTo] = useState('');
+  const [historyFrom, setHistoryFrom] = useState(thisMonth() + '-01');
+  const [historyTo, setHistoryTo] = useState(today());
 
   useEffect(()=>{ saveLS('lifestyle_lang', lang); }, [lang]);
   useEffect(()=>{ saveLS('lifestyle_transactions', transactions); }, [transactions]);
@@ -2466,6 +2379,19 @@ function App(){
             h('p', {className:'text-[18px] font-bold'}, fmtMoney(totalTakenAmt)),
             h('p', {className:'text-[11px] text-[#B71C1C] mt-1'}, fmtMoney(totalRepaidAmt) + ' ' + t.totalRepaid)
           )
+        ),
+        // NEW: Calendar icon + PDF buttons like Report button - added under Loans & Receivable
+        h('div', {className:'bg-white rounded-[16px] p-3 border border-[#F3E8D3] mt-3 space-y-3'},
+          h('div', {className:'grid grid-cols-2 gap-3'},
+            h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:historyFrom, onChange:e=>setHistoryFrom(e.target.value)})),
+            h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value)}))
+          ),
+          h('div', {className:'grid grid-cols-3 gap-2'},
+            h('button', {onClick:()=>handleHistoryPdf('download'), className:'py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[11px] font-bold'}, '📄 Download PDF'),
+            h('button', {onClick:()=>handleHistoryPdf('view'), className:'py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
+            h('button', {onClick:()=>handleHistoryPdf('share'), className:'py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '📤 Share')
+          ),
+          h('p', {className:'text-[10px] text-[#8B7355] text-center'}, lang==='en'?'Filter loans by date & download PDF':'তারিখ দিয়ে ফিল্টার করে PDF ডাউনলোড করুন')
         )
       ),
       h('div', null,
@@ -2531,18 +2457,13 @@ function App(){
             h('button', {onClick:()=>handleHistoryPdf('share'), className:'px-2.5 py-1.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[10px] font-bold'}, '🔗 Share')
           )
         ),
-        // NEW: Two calendar icons below PDF buttons - for all filters
-        h('div', {className:'flex gap-2 items-center pt-1 border-t border-[#F3E8D3]'},
-          h('div', {className:'flex-1 relative'},
-            h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px] pointer-events-none'}, '📅'),
-            h('input', {type:'date', value:historyFrom, onChange:e=>setHistoryFrom(e.target.value), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-full pl-9 pr-3 py-2 text-[11px] font-bold outline-none focus:border-[#C9A86A]'})
+        // FIXED: Calendar icons like Report button - same style
+        h('div', {className:'pt-1 border-t border-[#F3E8D3] space-y-2'},
+          h('div', {className:'grid grid-cols-2 gap-3'},
+            h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:historyFrom, onChange:e=>setHistoryFrom(e.target.value)})),
+            h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value)}))
           ),
-          h('span', {className:'text-[12px] text-[#8B7355] font-bold'}, '→'),
-          h('div', {className:'flex-1 relative'},
-            h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px] pointer-events-none'}, '📅'),
-            h('input', {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-full pl-9 pr-3 py-2 text-[11px] font-bold outline-none focus:border-[#C9A86A]'})
-          ),
-          (historyFrom || historyTo) ? h('button', {onClick:()=>{ setHistoryFrom(''); setHistoryTo(''); }, className:'px-3 py-2 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ Clear') : null
+          (historyFrom || historyTo) ? h('div', {className:'flex justify-end'}, h('button', {onClick:()=>{ setHistoryFrom(''); setHistoryTo(''); }, className:'px-3 py-1.5 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ Clear')) : null
         ),
         h('p', {className:'text-[10px] text-[#8B7355] px-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+(historyFrom||historyTo ? ' • '+(historyFrom||'...')+' to '+(historyTo||'...') : '')+' • '+filteredHistory.length+' records • User, Date, Time included')
       ),
