@@ -1392,7 +1392,7 @@ function renderReportPages(o){
     y+=10; ensure(100);
     ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=10;
     const th=80;
-    drawCellRect(cDate.x, cAmt.x - 20 - cDate.x, th, '#FFF8E1');
+    drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1');
     drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
     ctx.fillText('Total (All): ('+all.length+' records)', cDate.x+15, y+50);
@@ -1425,7 +1425,7 @@ function renderReportPages(o){
     summary.forEach(([label, amt])=>{
       if(amt===0) return;
       ensure(80);
-      drawCellRect(cDate.x, cAmt.x - 20 - cDate.x, 70, '#FFFFFF');
+      drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, 70, '#FFFFFF');
       drawCellRect(cAmt.x, cAmt.w, 70, '#FFFFFF');
       font(28,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
       ctx.fillText(label, cDate.x+15, y+42);
@@ -1501,7 +1501,7 @@ function renderPersonLoanPages(o){
   font(28,false); ctx.fillStyle='#8B7355'; ctx.fillText(fit(t.total+': '+fmtMoney(totalLoaned)+' • '+(kind==='given'?t.totalReturned:t.totalRepaid)+': '+fmtMoney(totalPaid), W-M*2), M, y); y+=40;
   heading(t.loanHistory); if(!person.loans.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else { ensure(80); const hh=80; drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Amount', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, medium:l.medium}, false); }); }
   heading(t.paymentHistory); if(!person.payments.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else { ensure(80); const hh=80; drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Method', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, medium:p.method}, true); }); }
-  y+=30; ensure(100); const th=80; drawCellRect(cDate.x, cAmt.x - 20 - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Balance: '+fmtMoney(balance), cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
+  y+=30; ensure(100); const th=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Balance: '+fmtMoney(balance), cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -1548,7 +1548,7 @@ function renderAllLoansPages(o){
     all.forEach(item=>{
       const details=(item.medium||'')+' '+(item.note||''); font(26,false); const personLines=wrapLines(item.person, cCat.w-30); const detailLines=wrapLines(details, cNote.w-30); const maxLines=Math.max(personLines.length, detailLines.length,1); const h=Math.max(70, maxLines*36+30); ensure(h+10); drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF'); const baseY=y; ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(item.date, cDate.w-30), cDate.x+15, baseY+42); personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-30), cCat.x+15, baseY+32+i*36); }); ctx.fillStyle='#5D4E37'; detailLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); }); ctx.fillStyle=item.type==='payment'?'#2E7D32':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-30), cAmt.x+cAmt.w-15, baseY+42); ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
-    y+=10; ensure(100); const th=80; drawCellRect(cDate.x, cAmt.x - 20 - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
+    y+=10; ensure(100); const th=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
@@ -1675,7 +1675,7 @@ function renderHistoryPages(o){
     // Top border line
     ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=10;
     // Total cells
-    drawCellRect(cDate.x, cAmt.x - 20 - cDate.x, th, '#FFF8E1');
+    drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1');
     drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32, true); ctx.fillStyle='#000000'; ctx.textAlign='left';
     ctx.fillText((lang==='en'?'Total ('+fLabel+'): ('+list.length+' records)':'মোট ('+fLabel+'): ('+list.length+' রেকর্ড)'), cDate.x+15, y+50);
