@@ -1,0 +1,13 @@
+{
+  "name": "Lifestyle",
+  "short_name": "Lifestyle",
+  "start_url": "/Lifestyle---app/",
+  "display": "standalone",
+  "background_color": "#FFFBF7",
+  "theme_color": "#2D2A26",
+  "icons": [{
+    "src": "https://via.placeholder.com/512",
+    "sizes": "512x512",
+    "type": "image/png"
+  }]
+}
