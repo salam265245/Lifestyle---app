@@ -1515,22 +1515,35 @@ function renderPersonLoanPages(o){
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50); 
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=thL+20;
   }
-  heading(t.paymentHistory); 
-  if(!person.payments.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } 
+          // Payments section - FINAL: Upper Payments removed, lower Payment big bold black, 4 cells merged to 1
+  if(!person.payments.length){ 
+    heading(t.paymentHistory); 
+    ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; 
+  } 
   else { 
-    // NO extra blank row - directly start payment table (fixing red marked area)
-    ensure(80); const hh=80; 
+    // No Payments heading (removed as per user - upper payment removed)
+    ensure(140);
+    // Lower Payment - 4 cells merged into 1, big bold black
+    const mergedH = 75;
+    const fullW = (cAmt.x + cAmt.w) - cDate.x;
+    drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
+    font(38,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText('Payment', cDate.x+15, y+48);
+    ctx.textAlign='left';
+    y+=mergedH+8;
+    
+    // Date header
+    const hh=80; 
     drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); 
     font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; 
-    ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Payment', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); 
+    ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Amount', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); 
     ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; 
     person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, medium:p.method}, true); }); 
-    // Total Payment at bottom of payment excel - inside excel as user wanted at red mark area logic
     ensure(90); const thP=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, thP, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, thP, '#FFF8E1'); 
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50); 
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=thP+20;
   }
-  // Final Summary - separate as user requested
+    // Final Summary - separate as user requested
   ensure(280);
   const th=80;
   drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#E8F5E9'); drawCellRect(cAmt.x, cAmt.w, th, '#E8F5E9'); 
