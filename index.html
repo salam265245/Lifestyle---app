@@ -1500,9 +1500,48 @@ function renderPersonLoanPages(o){
   const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0); const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0); const balance=totalLoaned-totalPaid;
   font(32,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((kind==='given'?t.youWillGet:t.youOwe)+': '+fmtMoney(balance), W-M*2), M, y); y+=50;
   font(28,false); ctx.fillStyle='#8B7355'; ctx.fillText(fit(t.total+': '+fmtMoney(totalLoaned)+' • '+(kind==='given'?t.totalReturned:t.totalRepaid)+': '+fmtMoney(totalPaid), W-M*2), M, y); y+=40;
-  heading(t.loanHistory); if(!person.loans.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else { ensure(80); const hh=80; drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Amount', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, medium:l.medium}, false); }); }
-  heading(t.paymentHistory); if(!person.payments.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else { ensure(80); const hh=80; drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Method', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, medium:p.method}, true); }); }
-  y+=30; ensure(100); const th=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Balance: '+fmtMoney(balance), cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
+  // === FINAL PDF LAYOUT - User requested ===
+  heading(t.loanHistory); 
+  if(!person.loans.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } 
+  else { 
+    ensure(80); const hh=80; 
+    drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); 
+    font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; 
+    ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Amount', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); 
+    ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; 
+    person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, medium:l.medium}, false); }); 
+    // Total Loan at bottom of loan excel - as user wanted
+    ensure(90); const thL=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, thL, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, thL, '#FFF8E1'); 
+    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50); 
+    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=thL+20;
+  }
+  heading(t.paymentHistory); 
+  if(!person.payments.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } 
+  else { 
+    // NO extra blank row - directly start payment table (fixing red marked area)
+    ensure(80); const hh=80; 
+    drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3'); 
+    font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left'; 
+    ctx.fillText('Date', cDate.x+15, y+50); ctx.fillText('Payment', cCat.x+15, y+50); ctx.fillText('Note', cNote.x+15, y+50); 
+    ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh; 
+    person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, medium:p.method}, true); }); 
+    // Total Payment at bottom of payment excel - inside excel as user wanted at red mark area logic
+    ensure(90); const thP=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, thP, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, thP, '#FFF8E1'); 
+    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50); 
+    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=thP+20;
+  }
+  // Final Summary - separate as user requested
+  ensure(280);
+  const th=80;
+  drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#E8F5E9'); drawCellRect(cAmt.x, cAmt.w, th, '#E8F5E9'); 
+  font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50); 
+  ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
+  drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#E3F2FD'); drawCellRect(cAmt.x, cAmt.w, th, '#E3F2FD'); 
+  font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50); 
+  ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
+  drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); 
+  font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Balance: '+fmtMoney(balance), cDate.x+15, y+50); 
+  ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
