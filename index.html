@@ -1321,9 +1321,11 @@ function renderReportPages(o){
     font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60;
     font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44;
     font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    const rightX=W-M; let ry=y;
-    const devLines=isEn?['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com']:['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(dl,900),rightX,ry); ry+=38; });
+    const devBlockW=900; let _maxDevW=0;
+    const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
+    const devBlockX=W-M-_maxDevW; let ry=y;
+    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
     ctx.textAlign='left';
     y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   })();
@@ -1506,7 +1508,12 @@ function renderPersonLoanPages(o){
     const isEn = (o.lang||'en')==='en'; const leftX = M; let ly = y;
     const profileLines = []; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLines.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLines.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLines.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLines.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
     font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    const rightX=W-M; let ry=y; const devLines=isEn?['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com']:['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com']; devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(dl,900),rightX,ry); ry+=38; }); ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
+    const devBlockW=900; let _maxDevW=0;
+    const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
+    const devBlockX=W-M-_maxDevW; let ry=y;
+    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
+    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   })();
   // === Customer Identity: Keep exactly same style, same font size, same position ===
   font(44,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(person.name+(person.mobile?' • '+person.mobile:''), W-M*2), M, y); y+=70;
@@ -1700,7 +1707,12 @@ function renderAllLoansPages(o){
     const isEn = (o.lang||'en')==='en'; const leftX = M; let ly = y;
     const profileLines = []; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLines.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLines.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLines.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLines.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
     font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    const rightX=W-M; let ry=y; const devLines=isEn?['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com']:['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com']; devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(dl,900),rightX,ry); ry+=38; }); ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
+    const devBlockW=900; let _maxDevW=0;
+    const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
+    const devBlockX=W-M-_maxDevW; let ry=y;
+    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
+    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   })();
   if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; const fDisp=from?formatDateForPdf(from):'...'; const tDisp=to?formatDateForPdf(to):'...'; ctx.fillText(t.period + ': ' + fDisp + ' → ' + tDisp, M, y); y+=60; }
   let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, type:'loan', amount:l.amount, medium:l.medium, note:l.note})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, type:'payment', amount:pay.amount, medium:pay.method, note:pay.note})); }); all.sort((a,b)=>a.date.localeCompare(b.date));
@@ -1812,9 +1824,12 @@ function renderHistoryPages(o){
     font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(o.appName||t.appName||'Lifestyle',800),leftX,ly); ly+=60;
     font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44;
     font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    const rightX=W-M; let ry=y;
-    const devLines=isEn?['Developer','Name: Md. Abdus Salam','Address: Bantra, Jalalabad, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com']:['ডেভেলপার','নাম: মোঃ আব্দুস ছালাম','ঠিকানা: বাঁটরা, জালালাবাদ, কলারোয়া, সাতক্ষীরা','মোবাইল: +8801737265245','ইমেইল: salamwgp@gmail.com'];
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='right'; ctx.fillText(fit(dl,900),rightX,ry); ry+=38; });
+    const devBlockW=900; let _maxDevW=0;
+    const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
+    const devBlockX=W-M-_maxDevW; let ry=y;
+    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
+    ctx.textAlign='left';
     y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   })();
   const filterLabelMap={all: t.all||'All', income: t.income||'Income', expense: t.expense||'Expense', loan_given:'Given', loan_taken:'Taken', return_received:'Return', repayment:'Repayment', bank_loan:'Bank'};
