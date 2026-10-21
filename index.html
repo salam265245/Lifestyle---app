@@ -1450,8 +1450,6 @@ function renderReportPages(o){
     });
   }
 
-  drawSignatureFooter(o, pages, W, H, M);
-
   pages.forEach((c,i) => {
     const g = c.getContext('2d'); g.font = '700 28px ' + PDF_FONT; g.fillStyle = '#8B7355'; g.textAlign = 'center';
     g.fillText(t.appName + ' • ' + (i+1) + ' / ' + pages.length, W/2, H - 60);
@@ -1485,45 +1483,6 @@ function buildPdfFromJpegs(jpegs){
   for(let i=1;i<=total;i++) x += String(offsets[i]).padStart(10,'0') + ' 00000 n \n';
   push(x + 'trailer\n<< /Size ' + (total+1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
   return new Blob(chunks, {type:'application/pdf'});
-}
-
-function drawSignatureFooter(o, pages, W, H, M){
-  try{
-    const sigData = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
-    const genAt = (o && o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const day = String(genAt.getDate()).padStart(2,'0');
-    const month = genAt.toLocaleString('en-US',{month:'long'});
-    const year = genAt.getFullYear();
-    const dateStr = day + ' ' + month + ' ' + year;
-    const last = pages[pages.length-1];
-    if(!last) return;
-    const ctx = last.getContext('2d');
-    const baseY = H - 420;
-    ctx.textAlign='left';
-    if(sigData){
-      ctx.fillStyle='#2D2A26';
-      ctx.font='700 32px '+PDF_FONT;
-      ctx.fillText('Authorized Signature:', M, baseY);
-      try{
-        const img = new Image();
-        img.src = sigData;
-        if(img.complete && img.naturalWidth){
-          ctx.drawImage(img, M, baseY+20, 380, 140);
-        } else {
-          ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(M, baseY+20, 380, 140);
-          ctx.fillStyle='#8B7355'; ctx.font='400 24px '+PDF_FONT; ctx.fillText('Signature loading...', M+10, baseY+90);
-          img.onload = function(){ try{ ctx.drawImage(img, M, baseY+20, 380, 140); }catch(e){} };
-        }
-      }catch(e){}
-      ctx.fillStyle='#2D2A26';
-      ctx.font='400 28px '+PDF_FONT;
-      ctx.fillText('Date: '+dateStr, M, baseY+200);
-    } else {
-      ctx.fillStyle='#2D2A26';
-      ctx.font='400 28px '+PDF_FONT;
-      ctx.fillText('Date: '+dateStr, M, baseY+120);
-    }
-  }catch(e){ console.log('signature footer err',e); }
 }
 
 
@@ -1712,8 +1671,6 @@ function renderPersonLoanPages(o){
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
 
-  drawSignatureFooter(o, pages, W, H, M);
-
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -1768,8 +1725,6 @@ function renderAllLoansPages(o){
     });
     y+=10; ensure(100); const th=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
-  drawSignatureFooter(o, pages, W, H, M);
-
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -1907,8 +1862,6 @@ function renderHistoryPages(o){
     ctx.textAlign='left';
     y+=th+20;
   }
-  drawSignatureFooter(o, pages, W, H, M);
-
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
@@ -2057,7 +2010,6 @@ function App(){
   const [userAddress, setUserAddress] = useState(loadLS('lifestyle_user_address', ''));
   const [userMobile, setUserMobile] = useState(loadLS('lifestyle_user_mobile', ''));
   const [profilePhoto, setProfilePhoto] = useState(loadLS('lifestyle_profile_photo', null));
-  const [userSignature, setUserSignature] = useState(loadLS('lifestyle_user_signature', null));
   const [googleUser, setGoogleUser] = useState(loadLS('lifestyle_google_user', null));
   useEffect(()=>{ try{ saveLS('lifestyle_last_page', page); }catch(e){} }, [page]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_addType', addType); }catch(e){} }, [addType]);
@@ -2065,7 +2017,6 @@ function App(){
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonKind', openPersonKind); }catch(e){} }, [openPersonKind]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonId', openPersonId); }catch(e){} }, [openPersonId]);
   const photoInputRef = useRef(null);
-  const signatureInputRef = useRef(null);
   function handlePhotoChange(e){
     const file = e.target.files && e.target.files[0];
     if(!file) return;
@@ -2093,36 +2044,6 @@ function App(){
     };
     reader.readAsDataURL(file);
     // reset input so same file can be selected again
-    try{ e.target.value = ''; }catch(e){}
-  }
-  function handleSignatureChange(e){
-    const file = e.target.files && e.target.files[0];
-    if(!file) return;
-    if(file.size > 5*1024*1024){ alert(lang==='en'?'Signature too large (5MB max)':'স্বাক্ষর 5MB এর বেশি'); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX = 600;
-        let w = img.width, h = img.height;
-        if(w > h){ if(w > MAX){ h = h*MAX/w; w = MAX; } } else { if(h > MAX){ w = w*MAX/h; h = MAX; } }
-        canvas.width = w; canvas.height = h;
-        const c = canvas.getContext('2d');
-        c.fillStyle='#ffffff'; c.fillRect(0,0,w,h);
-        c.drawImage(img,0,0,w,h);
-        try{
-          const compressed = canvas.toDataURL('image/png', 0.85);
-          setUserSignature(compressed);
-          setToast(lang==='en'?'Signature updated':'স্বাক্ষর আপডেট হয়েছে');
-        }catch(err){
-          setUserSignature(reader.result);
-        }
-      };
-      img.onerror = () => setUserSignature(reader.result);
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
     try{ e.target.value = ''; }catch(e){}
   }
   // APK তে 100% কাজ করবে এমন Free Auth - Email + Password
@@ -2231,7 +2152,7 @@ function App(){
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
-      const data = {transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto, userSignature, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
+      const data = {transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', new Date(now).getTime());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -2270,7 +2191,6 @@ function App(){
             if(d.userAddress) setUserAddress(d.userAddress);
             if(d.userMobile) setUserMobile(d.userMobile);
             if(d.profilePhoto) setProfilePhoto(d.profilePhoto);
-            if(d.userSignature) setUserSignature(d.userSignature);
             saveLS('lifestyle_last_sync', cloudTime || Date.now());
             const formatted = d.updatedAt ? new Date(d.updatedAt).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : new Date().toLocaleString();
             setLastSyncTime(formatted);
@@ -2294,7 +2214,7 @@ function App(){
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     syncDebounceRef.current = setTimeout(()=>{ syncToCloud(googleUser); }, 1500);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
-  }, [transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto, userSignature]);
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
   useEffect(()=>{
     if(googleUser){ syncFromCloud(googleUser); }
@@ -2331,7 +2251,6 @@ function App(){
   useEffect(()=>{ saveLS('lifestyle_user_address', userAddress); }, [userAddress]);
   useEffect(()=>{ saveLS('lifestyle_user_mobile', userMobile); }, [userMobile]);
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
-  useEffect(()=>{ if(userSignature) saveLS('lifestyle_user_signature', userSignature); else try{ localStorage.removeItem('lifestyle_user_signature'); }catch(e){} }, [userSignature]);
   useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
   const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -2956,16 +2875,6 @@ function App(){
             h('span', null, 'APK login divider hidden')
           ),
           h(EmailAuthForm, {t, onAuth: handleEmailAuth})
-        ),
-        h('div', {className:'bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3 mt-3'},
-          h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Signature Upload':'স্বাক্ষর আপলোড'),
-          userSignature ? h('div', {className:'mt-2 flex items-center gap-3 justify-center'},
-            h('img', {src:userSignature, className:'h-[70px] max-w-[220px] object-contain bg-white border border-[#F3E8D3] rounded-[8px] p-1'}),
-            h('button', {onClick:()=>{ setUserSignature(null); try{ localStorage.removeItem('lifestyle_user_signature'); }catch(e){} setToast(lang==='en'?'Signature removed':'স্বাক্ষর মুছে ফেলা হয়েছে'); }, className:'px-3 py-1.5 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[11px] font-bold'}, lang==='en'?'Remove':'মুছুন')
-          ) : null,
-          h('button', {onClick:()=> signatureInputRef.current && signatureInputRef.current.click(), className:'w-full mt-2 py-2.5 rounded-[12px] bg-white border-2 border-dashed border-[#C9A86A] text-[#2D2A26] text-[12px] font-bold'}, lang==='en'?'📝 Upload Signature':'📝 স্বাক্ষর আপলোড'),
-          h('input', {ref:signatureInputRef, type:'file', accept:'image/*', className:'hidden', onChange:handleSignatureChange}),
-          h('p', {className:'text-[10px] text-[#8B7355] mt-1.5 text-center'}, lang==='en'?'PNG with transparent background recommended':'স্বচ্ছ ব্যাকগ্রাউন্ড PNG ভালো হবে')
         ),
         h('div', {className:'w-full mt-4 space-y-3'},
           h('div', null,
