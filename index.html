@@ -1119,11 +1119,11 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
         h('span', null, (kind==='given'?t.totalReturned:t.totalRepaid) + ': ' + fmtMoney(totalPaid))
       ),
       h('div', {className:'mt-3 grid grid-cols-3 gap-2'},
-        h('button', {onClick: async ()=>{
+        h('button', {onClick: ()=>{
           try{
             const genAt = new Date();
             const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
-            const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = await buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
+            const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
             downloadPdfBlob(blob, person.name + '-loan-history.pdf');
           }catch(e){ alert('PDF Error'); }
         }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
@@ -1139,7 +1139,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
           try{
             const genAt = new Date();
             const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
-            const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = await buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
+            const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
             await shareOrDownloadPdf(blob, person.name + '-loan-history.pdf', person.name + ' History');
           }catch(e){ alert('PDF Error'); }
         }, className:'py-2.5 rounded-full bg-[#2D2A26] text-white text-[11px] font-bold'}, '📤 Share')
@@ -1212,7 +1212,7 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
       return (userName && String(userName).trim()) || lsName || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || '' || 'User';
     }catch(e){ return (userName||'') || 'User'; }
   }
-  async function handleCombinedPdf(mode){
+  function handleCombinedPdf(mode){
     try{
       mode = mode || 'download';
       const genAt = new Date();
@@ -1229,7 +1229,7 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
           return Object.assign({}, p, {loans: fLoans, payments: fPays});
         }).filter(p=>p.loans.length>0 || p.payments.length>0);
       }
-      const blob = await buildAllLoansPdfBlob({t, lang, kind, people: filteredPeople, userName: resolved, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName, from: filterFrom, to: filterTo});
+      const blob = buildAllLoansPdfBlob({t, lang, kind, people: filteredPeople, userName: resolved, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName, from: filterFrom, to: filterTo});
       const fname = (kind==='given'?'all-given-history':'all-taken-history') + '.pdf';
       if(mode==='view') viewPdfBlob(blob);
       else if(mode==='share') shareOrDownloadPdf(blob, fname, 'All ' + kind + ' history');
@@ -1287,13 +1287,7 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
 /* ---------- PDF report (renders pages on canvas -> JPEG -> minimal PDF) ---------- */
 const PDF_FONT = "'Noto Sans Bengali','Hind Siliguri','Nirmala UI','Kalpurush',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
 
-async function renderReportPages(o){
-  let __sigImg = null;
-  try{
-    const __sigData = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
-    if(__sigData){ __sigImg = await loadImage(__sigData).catch(()=>null); }
-  }catch(e){}
-
+function renderReportPages(o){
   // Make Report PDF EXACTLY like History-All (Image 1) - clean Excel table
   const t = o.t, from = o.from, to = o.to;
   const W = 2480, H = 3508, M = 120;
@@ -1456,7 +1450,7 @@ async function renderReportPages(o){
     });
   }
 
-  await drawSignatureFooter(o, pages, W, H, M, __sigImg);
+  drawSignatureFooter(o, pages, W, H, M);
 
   pages.forEach((c,i) => {
     const g = c.getContext('2d'); g.font = '700 28px ' + PDF_FONT; g.fillStyle = '#8B7355'; g.textAlign = 'center';
@@ -1493,10 +1487,9 @@ function buildPdfFromJpegs(jpegs){
   return new Blob(chunks, {type:'application/pdf'});
 }
 
-function loadImage(src){ return new Promise((res, rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
-
-async function drawSignatureFooter(o, pages, W, H, M, preloadedImg){
+function drawSignatureFooter(o, pages, W, H, M){
   try{
+    const sigData = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
     const genAt = (o && o.generatedAt instanceof Date) ? o.generatedAt : new Date();
     const day = String(genAt.getDate()).padStart(2,'0');
     const month = genAt.toLocaleString('en-US',{month:'long'});
@@ -1507,47 +1500,34 @@ async function drawSignatureFooter(o, pages, W, H, M, preloadedImg){
     const ctx = last.getContext('2d');
     const baseY = H - 420;
     ctx.textAlign='left';
-    let imgToDraw = preloadedImg || null;
-    if(!imgToDraw){
-      const sigData = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
-      if(sigData){
-        try{ imgToDraw = await loadImage(sigData); }catch(e){ imgToDraw = null; }
-      }
-    }
-    if(imgToDraw){
+    if(sigData){
       ctx.fillStyle='#2D2A26';
       ctx.font='700 32px '+PDF_FONT;
       ctx.fillText('Authorized Signature:', M, baseY);
-      try{ ctx.drawImage(imgToDraw, M, baseY+20, 380, 140); }catch(e){}
+      try{
+        const img = new Image();
+        img.src = sigData;
+        if(img.complete && img.naturalWidth){
+          ctx.drawImage(img, M, baseY+20, 380, 140);
+        } else {
+          ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(M, baseY+20, 380, 140);
+          ctx.fillStyle='#8B7355'; ctx.font='400 24px '+PDF_FONT; ctx.fillText('Signature loading...', M+10, baseY+90);
+          img.onload = function(){ try{ ctx.drawImage(img, M, baseY+20, 380, 140); }catch(e){} };
+        }
+      }catch(e){}
       ctx.fillStyle='#2D2A26';
       ctx.font='400 28px '+PDF_FONT;
       ctx.fillText('Date: '+dateStr, M, baseY+200);
     } else {
-      const sigDataCheck = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
-      if(sigDataCheck){
-        ctx.fillStyle='#2D2A26';
-        ctx.font='700 32px '+PDF_FONT;
-        ctx.fillText('Authorized Signature:', M, baseY);
-        ctx.fillStyle='#2D2A26';
-        ctx.font='400 28px '+PDF_FONT;
-        ctx.fillText('Date: '+dateStr, M, baseY+200);
-      } else {
-        ctx.fillStyle='#2D2A26';
-        ctx.font='400 28px '+PDF_FONT;
-        ctx.fillText('Date: '+dateStr, M, baseY+120);
-      }
+      ctx.fillStyle='#2D2A26';
+      ctx.font='400 28px '+PDF_FONT;
+      ctx.fillText('Date: '+dateStr, M, baseY+120);
     }
   }catch(e){ console.log('signature footer err',e); }
 }
 
 
-async function renderPersonLoanPages(o){
-  let __sigImg = null;
-  try{
-    const __sigData = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
-    if(__sigData){ __sigImg = await loadImage(__sigData).catch(()=>null); }
-  }catch(e){}
-
+function renderPersonLoanPages(o){
   const t=o.t, person=o.person, kind=o.kind;
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0;
@@ -1732,14 +1712,15 @@ async function renderPersonLoanPages(o){
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
 
-  await drawSignatureFooter(o, pages, W, H, M, __sigImg);
+  drawSignatureFooter(o, pages, W, H, M);
 
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
 
-async function buildPersonLoanPdfBlob(o){
-  const pages=await renderPersonLoanPages(o);
+function buildPersonLoanPdfBlob
+(o){
+  const pages=renderPersonLoanPages(o);
   const jpegs=pages.map(c=>{
     const b64=c.toDataURL('image/jpeg',1.0).split(',')[1];
     const bin=atob(b64), bytes=new Uint8Array(bin.length);
@@ -1749,13 +1730,7 @@ async function buildPersonLoanPdfBlob(o){
   return buildPdfFromJpegs(jpegs);
 }
 
-async function renderAllLoansPages(o){
-  let __sigImg = null;
-  try{
-    const __sigData = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
-    if(__sigData){ __sigImg = await loadImage(__sigData).catch(()=>null); }
-  }catch(e){}
-
+function renderAllLoansPages(o){
   const t=o.t, lang=o.lang||'bn', kind=o.kind, people=o.people||[], from=o.from||'', to=o.to||'';
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0;
@@ -1793,14 +1768,14 @@ async function renderAllLoansPages(o){
     });
     y+=10; ensure(100); const th=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
-  await drawSignatureFooter(o, pages, W, H, M, __sigImg);
+  drawSignatureFooter(o, pages, W, H, M);
 
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
 
-async function buildAllLoansPdfBlob(o){
-  const pages=await renderAllLoansPages(o);
+function buildAllLoansPdfBlob(o){
+  const pages=renderAllLoansPages(o);
   const jpegs=pages.map(c=>{
     const b64=c.toDataURL('image/jpeg',1.0).split(',')[1];
     const bin=atob(b64), bytes=new Uint8Array(bin.length);
@@ -1809,13 +1784,7 @@ async function buildAllLoansPdfBlob(o){
   });
   return buildPdfFromJpegs(jpegs);
 }
-async function renderHistoryPages(o){
-  let __sigImg = null;
-  try{
-    const __sigData = (o && o.userSignature) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_signature')) || null;
-    if(__sigData){ __sigImg = await loadImage(__sigData).catch(()=>null); }
-  }catch(e){}
-
+function renderHistoryPages(o){
   const t=o.t, lang=o.lang||'bn', filter=o.filter||'all', list=o.list||[], from=o.from||'', to=o.to||'';
   const W=2480,H=3508,M=120; // DOUBLE SIZE for high quality - no blur on zoom
   const pages=[]; let cv,ctx,y=0;
@@ -1938,14 +1907,14 @@ async function renderHistoryPages(o){
     ctx.textAlign='left';
     y+=th+20;
   }
-  await drawSignatureFooter(o, pages, W, H, M, __sigImg);
+  drawSignatureFooter(o, pages, W, H, M);
 
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
 
-async function buildHistoryPdfBlob(o){
-  const pages=await renderHistoryPages(o);
+function buildHistoryPdfBlob(o){
+  const pages=renderHistoryPages(o);
   const jpegs=pages.map(c=>{
     const b64=c.toDataURL('image/jpeg',1.0).split(',')[1];
     const bin=atob(b64), bytes=new Uint8Array(bin.length);
@@ -1972,8 +1941,8 @@ function viewPdfBlob(blob){
 }
 
 
-async function buildReportPdfBlob(o){
-  const pages = await renderReportPages(o);
+function buildReportPdfBlob(o){
+  const pages = renderReportPages(o);
   const jpegs = pages.map(c => {
     const b64 = c.toDataURL('image/jpeg', 1.0).split(',')[1];
     const bin = atob(b64), bytes = new Uint8Array(bin.length);
@@ -2521,7 +2490,7 @@ function App(){
     setConfirmDelBank(null);
     setToast(lang==='en'?'Deleted':'মুছে ফেলা হয়েছে');
   }
-  async function handleHistoryPdf(mode){ try{ const genAt=new Date(); const resolvedUN = userName || (googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User'; const o={t, lang, filter:historyFilter, list:filteredHistory, userName:resolvedUN, userDesignation: userDesignation, userAddress: userAddress, userMobile: userMobile, generatedAt:genAt, appName:t.appName}; const blob=await buildHistoryPdfBlob(o); const fname='Lifestyle-History-'+historyFilter+'-'+today()+'.pdf'; const title=t.history+' - '+historyFilter; if(mode==='download'){ downloadPdfBlob(blob,fname); setToast(t.pdfDownloaded||'PDF downloaded'); } else if(mode==='view'){ viewPdfBlob(blob); } else { const res=await shareOrDownloadPdf(blob,fname,title); if(res==='downloaded') setToast(t.pdfDownloaded||'PDF downloaded'); } }catch(e){ setToast('PDF error: '+e.message); } }
+  async function handleHistoryPdf(mode){ try{ const genAt=new Date(); const resolvedUN = userName || (googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User'; const o={t, lang, filter:historyFilter, list:filteredHistory, userName:resolvedUN, userDesignation: userDesignation, userAddress: userAddress, userMobile: userMobile, generatedAt:genAt, appName:t.appName}; const blob=buildHistoryPdfBlob(o); const fname='Lifestyle-History-'+historyFilter+'-'+today()+'.pdf'; const title=t.history+' - '+historyFilter; if(mode==='download'){ downloadPdfBlob(blob,fname); setToast(t.pdfDownloaded||'PDF downloaded'); } else if(mode==='view'){ viewPdfBlob(blob); } else { const res=await shareOrDownloadPdf(blob,fname,title); if(res==='downloaded') setToast(t.pdfDownloaded||'PDF downloaded'); } }catch(e){ setToast('PDF error: '+e.message); } }
   async function handleReportPdf(mode){
       mode = mode || 'share';
       setReportBusy(true);
@@ -2531,7 +2500,7 @@ function App(){
         const o = {t, lang, from:reportFrom, to:reportTo, transactions, peopleGiven, peopleTaken, bankLoans, userName: resolvedUN, userDesignation: userDesignation, userAddress: userAddress, userMobile: userMobile, generatedAt: genAt, appName: t.appName};
         const filename = 'Lifestyle-Report-' + reportFrom + '-to-' + reportTo + '.pdf';
         const title = t.reportHeading + ' ' + reportFrom + ' to ' + reportTo;
-        const blob = await buildReportPdfBlob(o);
+        const blob = buildReportPdfBlob(o);
         if(mode==='download'){ downloadPdfBlob(blob, filename); setToast(t.pdfDownloaded); }
         else if(mode==='view'){ viewPdfBlob(blob); }
         else { const res = await shareOrDownloadPdf(blob, filename, title); if(res === 'downloaded') setToast(t.pdfDownloaded); }
