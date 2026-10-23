@@ -621,6 +621,7 @@ function ConfirmModal(props){
 /* ---------- Category Picker ---------- */
 function CategoryPicker({ t, lang, type, value, onChange }){
   const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
   const flat = useMemo(()=>{
     if(type === 'income'){
       const copy = [...INCOME_CATEGORIES];
@@ -637,27 +638,29 @@ function CategoryPicker({ t, lang, type, value, onChange }){
     return flat.filter(a => { const en = (a.en||'').toLowerCase(); const bn = (a.bn||'').toLowerCase(); return en.includes(ql) || bn.includes(ql); });
   }, [flat, q]);
   function hideKeyboard(){ try{ if(document.activeElement) document.activeElement.blur(); }catch(e){} }
+  const shouldShowGrid = (type !== 'expense') ? true : (open || q.length>0);
   return h('div', null,
     h('div', {className:'flex items-center gap-2 mb-2'},
       h('input', {
-        value: q, onChange: e=>setQ(e.target.value),
+        value: q, onChange: e=>{ const v=e.target.value; setQ(v); if(v) setOpen(true); },
         placeholder: t.selectCategory + '...',
         className:'flex-1 bg-white rounded-full border border-[#F3E8D3] px-4 py-2.5 outline-none text-[13px]',
-        onFocus: e=>{ try{ setTimeout(()=>{ e.target.scrollIntoView({block:'center', behavior:'smooth'}); }, 300); }catch(_){} }
+        onFocus: e=>{ try{ setTimeout(()=>{ e.target.scrollIntoView({block:'center', behavior:'smooth'}); }, 300); }catch(_){} },
+        onClick: ()=>{ if(type==='expense' && !q){ setOpen(o=>!o); } }
       }),
       q ? h('button', {type:'button', onClick: ()=>{ setQ(''); hideKeyboard(); }, className:'w-[38px] h-[38px] rounded-full bg-white border border-[#F3E8D3] flex items-center justify-center text-[14px]'}, '✕') : null,
       h('button', {type:'button', onClick: hideKeyboard, className:'px-3 h-[38px] rounded-full bg-[#2D2A26] text-white text-[11px] font-bold whitespace-nowrap'}, lang==='en' ? 'Hide ⌨️' : 'কীবোর্ড লুকান')
     ),
-    h('div', {className:'grid grid-cols-2 gap-2 max-h-[50dvh] overflow-y-auto p-1 overscroll-contain', style:{WebkitOverflowScrolling:'touch'}},
+    shouldShowGrid ? h('div', {className:'grid grid-cols-2 gap-2 max-h-[50dvh] overflow-y-auto p-1 overscroll-contain', style:{WebkitOverflowScrolling:'touch'}},
       filtered.map((a,i)=> h('button', {
         key: a.en+i, type:'button',
-        onClick: ()=>{ hideKeyboard(); onChange(a); },
+        onClick: ()=>{ hideKeyboard(); onChange(a); if(type==='expense') setOpen(false); },
         className: 'flex items-center gap-2 p-3 rounded-[14px] border text-left ' + (value && value.en===a.en ? 'bg-[#2D2A26] text-white border-[#2D2A26]' : 'bg-white border-[#F3E8D3]')
       },
         h('span', {className:'text-[16px]'}, a.icon),
         h('span', {className:'text-[12px] font-medium leading-tight'}, lang==='en'?a.en:a.bn)
       ))
-    )
+    ) : null
   );
 }
 
@@ -665,7 +668,7 @@ function CategoryPicker({ t, lang, type, value, onChange }){
 function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_tx_'+type+'_amount', ''));
   const [cat, setCat] = useState(initial ? {en:initial.category, bn:initial.categoryBn} : loadLS('lifestyle_draft_tx_'+type+'_cat', null));
-  const [date, setDate] = useState(initial ? initial.date : loadLS('lifestyle_draft_tx_'+type+'_date', today()));
+  const [date, setDate] = useState(initial ? initial.date : today());
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_tx_'+type+'_note', ''));
   const [medium, setMedium] = useState(initial ? (initial.medium || 'Cash') : loadLS('lifestyle_draft_tx_'+type+'_medium', 'Cash'));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_amount', amount); }catch(e){} } }, [amount, type, initial]);
@@ -714,7 +717,7 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
 /* ---------- Loan entry form (for a person) ---------- */
 function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_loanentry_amount', ''));
-  const [date, setDate] = useState(initial ? initial.date : loadLS('lifestyle_draft_loanentry_date', today()));
+  const [date, setDate] = useState(initial ? initial.date : today());
   const [medium, setMedium] = useState(initial ? initial.medium : loadLS('lifestyle_draft_loanentry_medium', 'Cash'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_loanentry_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_amount', amount); }catch(e){} } }, [amount, initial]);
@@ -749,7 +752,7 @@ function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
 /* ---------- Payment form ---------- */
 function PaymentForm({ t, lang, initial, onSave }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_payment_amount', ''));
-  const [date, setDate] = useState(initial ? initial.date : loadLS('lifestyle_draft_payment_date', today()));
+  const [date, setDate] = useState(initial ? initial.date : today());
   const [method, setMethod] = useState(initial ? initial.method : loadLS('lifestyle_draft_payment_method', 'Cash'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_payment_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_amount', amount); }catch(e){} } }, [amount, initial]);
@@ -781,7 +784,7 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
   const [showNumberPicker, setShowNumberPicker] = useState(false);
   const [expectedReturnDate, setExpectedReturnDate] = useState(loadLS('lifestyle_draft_np_expectedReturnDate', ''));
   const [amount, setAmount] = useState(loadLS('lifestyle_draft_np_amount', ''));
-  const [date, setDate] = useState(loadLS('lifestyle_draft_np_date', today()));
+  const [date, setDate] = useState(today());
   const [medium, setMedium] = useState(loadLS('lifestyle_draft_np_medium', 'Cash'));
   const [note, setNote] = useState(loadLS('lifestyle_draft_np_note', ''));
   const [contactMsg, setContactMsg] = useState('');
@@ -922,8 +925,8 @@ function BankLoanForm({ t, lang, initial, onSave }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_bank_amount', ''));
   const [term, setTerm] = useState(initial ? String(initial.termMonths) : loadLS('lifestyle_draft_bank_term', '24'));
   const [rate, setRate] = useState(initial ? String(initial.interestRate) : loadLS('lifestyle_draft_bank_rate', '9'));
-  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || today()) : loadLS('lifestyle_draft_bank_disbursementDate', today()));
-  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.loanDate || today()) : loadLS('lifestyle_draft_bank_emiStartDate', today()));
+  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || today()) : today());
+  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.loanDate || today()) : today());
   const [paidEmis, setPaidEmis] = useState(initial && initial.paidEmis ? initial.paidEmis.slice() : []);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_bankName', bankName); }catch(e){} } }, [bankName, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_amount', amount); }catch(e){} } }, [amount, initial]);
@@ -1358,7 +1361,7 @@ function renderReportPages(o){
     if(inRange(d)) all.push({date:d, cat:b.bankName, catBn:b.bankName, note:(b.termMonths||'')+'mo • '+(b.interestRate||'')+'% • Bank', amount:b.amount, type:'bank'});
   });
 
-  all.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  all.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
   heading('Report - All (Period) - '+all.length+' records');
   // Header row like Image 1
@@ -1454,6 +1457,31 @@ function renderReportPages(o){
     const g = c.getContext('2d'); g.font = '700 28px ' + PDF_FONT; g.fillStyle = '#8B7355'; g.textAlign = 'center';
     g.fillText(t.appName + ' • ' + (i+1) + ' / ' + pages.length, W/2, H - 60);
   });
+  try{
+    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
+    if(sigData && pages.length>0){
+      const lastC = pages[pages.length-1];
+      const lastCtx = lastC.getContext('2d');
+      const sigImg = new Image();
+      sigImg.src = sigData;
+      const drawSig = ()=>{
+        try{
+          const sigW=380, sigH=130;
+          const sigX=W-M-sigW-20;
+          const sigY=H-360;
+          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
+          const now=new Date();
+          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
+          lastCtx.font='400 26px '+PDF_FONT;
+          lastCtx.fillStyle='#2D2A26';
+          lastCtx.textAlign='right';
+          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
+          lastCtx.textAlign='left';
+        }catch(e){}
+      };
+      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
+    }
+  }catch(e){}
   return pages;
 }
 
@@ -1672,6 +1700,31 @@ function renderPersonLoanPages(o){
   }
 
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
+  try{
+    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
+    if(sigData && pages.length>0){
+      const lastC = pages[pages.length-1];
+      const lastCtx = lastC.getContext('2d');
+      const sigImg = new Image();
+      sigImg.src = sigData;
+      const drawSig = ()=>{
+        try{
+          const sigW=380, sigH=130;
+          const sigX=W-M-sigW-20;
+          const sigY=H-360;
+          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
+          const now=new Date();
+          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
+          lastCtx.font='400 26px '+PDF_FONT;
+          lastCtx.fillStyle='#2D2A26';
+          lastCtx.textAlign='right';
+          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
+          lastCtx.textAlign='left';
+        }catch(e){}
+      };
+      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
+    }
+  }catch(e){}
   return pages;
 }
 
@@ -1726,6 +1779,31 @@ function renderAllLoansPages(o){
     y+=10; ensure(100); const th=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
+  try{
+    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
+    if(sigData && pages.length>0){
+      const lastC = pages[pages.length-1];
+      const lastCtx = lastC.getContext('2d');
+      const sigImg = new Image();
+      sigImg.src = sigData;
+      const drawSig = ()=>{
+        try{
+          const sigW=380, sigH=130;
+          const sigX=W-M-sigW-20;
+          const sigY=H-360;
+          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
+          const now=new Date();
+          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
+          lastCtx.font='400 26px '+PDF_FONT;
+          lastCtx.fillStyle='#2D2A26';
+          lastCtx.textAlign='right';
+          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
+          lastCtx.textAlign='left';
+        }catch(e){}
+      };
+      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
+    }
+  }catch(e){}
   return pages;
 }
 
@@ -1842,7 +1920,8 @@ function renderHistoryPages(o){
   // Table header
   rowHeader();
   // Rows - each in separate cell like Excel
-  list.forEach(x=>{ rowData(x); });
+  const sortedList = list.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  sortedList.forEach(x=>{ rowData(x); });
   // Total footer - Excel style with borders, below line, not on line
   if(list.length>0){
     y+=30; ensure(200);
@@ -1863,6 +1942,31 @@ function renderHistoryPages(o){
     y+=th+20;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
+  try{
+    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
+    if(sigData && pages.length>0){
+      const lastC = pages[pages.length-1];
+      const lastCtx = lastC.getContext('2d');
+      const sigImg = new Image();
+      sigImg.src = sigData;
+      const drawSig = ()=>{
+        try{
+          const sigW=380, sigH=130;
+          const sigX=W-M-sigW-20;
+          const sigY=H-360;
+          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
+          const now=new Date();
+          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
+          lastCtx.font='400 26px '+PDF_FONT;
+          lastCtx.fillStyle='#2D2A26';
+          lastCtx.textAlign='right';
+          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
+          lastCtx.textAlign='left';
+        }catch(e){}
+      };
+      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
+    }
+  }catch(e){}
   return pages;
 }
 
@@ -1888,8 +1992,11 @@ function downloadPdfBlob(blob, filename){
 function viewPdfBlob(blob){
   try{
     const url=URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+    const win=window.open(url, '_blank');
+    if(!win){
+      window.location.href=url;
+    }
+    setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(e){} }, 120000);
   }catch(e){ alert('View failed'); }
 }
 
@@ -2010,6 +2117,7 @@ function App(){
   const [userAddress, setUserAddress] = useState(loadLS('lifestyle_user_address', ''));
   const [userMobile, setUserMobile] = useState(loadLS('lifestyle_user_mobile', ''));
   const [profilePhoto, setProfilePhoto] = useState(loadLS('lifestyle_profile_photo', null));
+  const [profileSignature, setProfileSignature] = useState(loadLS('lifestyle_signature', null));
   const [googleUser, setGoogleUser] = useState(loadLS('lifestyle_google_user', null));
   useEffect(()=>{ try{ saveLS('lifestyle_last_page', page); }catch(e){} }, [page]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_addType', addType); }catch(e){} }, [addType]);
@@ -2017,6 +2125,7 @@ function App(){
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonKind', openPersonKind); }catch(e){} }, [openPersonKind]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonId', openPersonId); }catch(e){} }, [openPersonId]);
   const photoInputRef = useRef(null);
+  const signatureInputRef = useRef(null);
   function handlePhotoChange(e){
     const file = e.target.files && e.target.files[0];
     if(!file) return;
@@ -2044,6 +2153,22 @@ function App(){
     };
     reader.readAsDataURL(file);
     // reset input so same file can be selected again
+    try{ e.target.value = ''; }catch(e){}
+  }
+  function handleSignatureChange(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    if(file.size > 5*1024*1024){ alert('সিগনেচার 5MB এর বেশি'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        setProfileSignature(reader.result);
+        setToast(lang==='en'?'Signature updated':'স্বাক্ষর আপডেট হয়েছে');
+      }catch(err){
+        alert('Signature upload failed');
+      }
+    };
+    reader.readAsDataURL(file);
     try{ e.target.value = ''; }catch(e){}
   }
   // APK তে 100% কাজ করবে এমন Free Auth - Email + Password
@@ -2251,6 +2376,7 @@ function App(){
   useEffect(()=>{ saveLS('lifestyle_user_address', userAddress); }, [userAddress]);
   useEffect(()=>{ saveLS('lifestyle_user_mobile', userMobile); }, [userMobile]);
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
+  useEffect(()=>{ if(profileSignature) saveLS('lifestyle_signature', profileSignature); else try{ localStorage.removeItem('lifestyle_signature'); }catch(e){} }, [profileSignature]);
   useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
   const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -2860,6 +2986,15 @@ function App(){
             profilePhoto ? h('img', {src:profilePhoto, alt:'profile', className:'w-full h-full object-cover'}) : initials
           ),
           h('label', {htmlFor:'profilePhotoInput', className:'absolute bottom-0 right-0 w-8 h-8 bg-[#C9A86A] rounded-full flex items-center justify-center border-2 border-white text-[14px] cursor-pointer'}, '\uD83D\uDCF7')
+        ),
+        h('div', {className:'w-full mt-4 flex flex-col items-center gap-2'},
+          h('input', {ref:signatureInputRef, id:'signatureInput', type:'file', accept:'image/*', className:'hidden', onChange:handleSignatureChange}),
+          profileSignature ? h('div', {className:'w-full bg-white border border-[#F3E8D3] rounded-[14px] p-2 flex flex-col items-center'},
+            h('img', {src:profileSignature, alt:'signature', className:'max-h-[80px] object-contain'}),
+            h('p', {className:'text-[10px] text-[#8B7355] mt-1'}, lang==='en'?'Your Signature':'আপনার স্বাক্ষর')
+          ) : null,
+          h('button', {onClick:()=> signatureInputRef.current && signatureInputRef.current.click(), className:'w-full py-2.5 rounded-[14px] bg-white border border-[#C9A86A] text-[#2D2A26] font-bold text-[13px]'}, lang==='en'?'✍️ Signature upload':'✍️ Signature upload'),
+          profileSignature ? h('button', {onClick:()=>{ setProfileSignature(null); try{ localStorage.removeItem('lifestyle_signature'); }catch(e){} setToast(lang==='en'?'Signature removed':'স্বাক্ষর মুছে ফেলা হয়েছে'); }, className:'text-[11px] text-[#B71C1C] underline'}, lang==='en'?'Remove signature':'স্বাক্ষর মুছুন') : null
         ),
         googleUser ? h('div', {className:'w-full mt-4'},
           h('div', {className:'bg-[#E8F5E9] border border-[#C8E6C9] rounded-[14px] p-3 text-center'},
