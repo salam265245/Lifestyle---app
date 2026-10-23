@@ -1457,31 +1457,6 @@ function renderReportPages(o){
     const g = c.getContext('2d'); g.font = '700 28px ' + PDF_FONT; g.fillStyle = '#8B7355'; g.textAlign = 'center';
     g.fillText(t.appName + ' • ' + (i+1) + ' / ' + pages.length, W/2, H - 60);
   });
-  try{
-    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
-    if(sigData && pages.length>0){
-      const lastC = pages[pages.length-1];
-      const lastCtx = lastC.getContext('2d');
-      const sigImg = new Image();
-      sigImg.src = sigData;
-      const drawSig = ()=>{
-        try{
-          const sigW=380, sigH=130;
-          const sigX=W-M-sigW-20;
-          const sigY=H-360;
-          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
-          const now=new Date();
-          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
-          lastCtx.font='400 26px '+PDF_FONT;
-          lastCtx.fillStyle='#2D2A26';
-          lastCtx.textAlign='right';
-          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
-          lastCtx.textAlign='left';
-        }catch(e){}
-      };
-      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
-    }
-  }catch(e){}
   return pages;
 }
 
@@ -1700,31 +1675,6 @@ function renderPersonLoanPages(o){
   }
 
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
-  try{
-    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
-    if(sigData && pages.length>0){
-      const lastC = pages[pages.length-1];
-      const lastCtx = lastC.getContext('2d');
-      const sigImg = new Image();
-      sigImg.src = sigData;
-      const drawSig = ()=>{
-        try{
-          const sigW=380, sigH=130;
-          const sigX=W-M-sigW-20;
-          const sigY=H-360;
-          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
-          const now=new Date();
-          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
-          lastCtx.font='400 26px '+PDF_FONT;
-          lastCtx.fillStyle='#2D2A26';
-          lastCtx.textAlign='right';
-          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
-          lastCtx.textAlign='left';
-        }catch(e){}
-      };
-      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
-    }
-  }catch(e){}
   return pages;
 }
 
@@ -1779,31 +1729,6 @@ function renderAllLoansPages(o){
     y+=10; ensure(100); const th=80; drawCellRect(cDate.x, cNote.x + cNote.w - cDate.x, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1'); font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50); ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
-  try{
-    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
-    if(sigData && pages.length>0){
-      const lastC = pages[pages.length-1];
-      const lastCtx = lastC.getContext('2d');
-      const sigImg = new Image();
-      sigImg.src = sigData;
-      const drawSig = ()=>{
-        try{
-          const sigW=380, sigH=130;
-          const sigX=W-M-sigW-20;
-          const sigY=H-360;
-          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
-          const now=new Date();
-          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
-          lastCtx.font='400 26px '+PDF_FONT;
-          lastCtx.fillStyle='#2D2A26';
-          lastCtx.textAlign='right';
-          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
-          lastCtx.textAlign='left';
-        }catch(e){}
-      };
-      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
-    }
-  }catch(e){}
   return pages;
 }
 
@@ -1942,31 +1867,6 @@ function renderHistoryPages(o){
     y+=th+20;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
-  try{
-    const sigData = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_signature')) || '';
-    if(sigData && pages.length>0){
-      const lastC = pages[pages.length-1];
-      const lastCtx = lastC.getContext('2d');
-      const sigImg = new Image();
-      sigImg.src = sigData;
-      const drawSig = ()=>{
-        try{
-          const sigW=380, sigH=130;
-          const sigX=W-M-sigW-20;
-          const sigY=H-360;
-          lastCtx.drawImage(sigImg, sigX, sigY, sigW, sigH);
-          const now=new Date();
-          const dStr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
-          lastCtx.font='400 26px '+PDF_FONT;
-          lastCtx.fillStyle='#2D2A26';
-          lastCtx.textAlign='right';
-          lastCtx.fillText(dStr, sigX+sigW, sigY+sigH+35);
-          lastCtx.textAlign='left';
-        }catch(e){}
-      };
-      if(sigImg.complete){ drawSig(); } else { sigImg.onload=drawSig; }
-    }
-  }catch(e){}
   return pages;
 }
 
@@ -2117,7 +2017,6 @@ function App(){
   const [userAddress, setUserAddress] = useState(loadLS('lifestyle_user_address', ''));
   const [userMobile, setUserMobile] = useState(loadLS('lifestyle_user_mobile', ''));
   const [profilePhoto, setProfilePhoto] = useState(loadLS('lifestyle_profile_photo', null));
-  const [profileSignature, setProfileSignature] = useState(loadLS('lifestyle_signature', null));
   const [googleUser, setGoogleUser] = useState(loadLS('lifestyle_google_user', null));
   useEffect(()=>{ try{ saveLS('lifestyle_last_page', page); }catch(e){} }, [page]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_addType', addType); }catch(e){} }, [addType]);
@@ -2125,7 +2024,6 @@ function App(){
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonKind', openPersonKind); }catch(e){} }, [openPersonKind]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonId', openPersonId); }catch(e){} }, [openPersonId]);
   const photoInputRef = useRef(null);
-  const signatureInputRef = useRef(null);
   function handlePhotoChange(e){
     const file = e.target.files && e.target.files[0];
     if(!file) return;
@@ -2153,22 +2051,6 @@ function App(){
     };
     reader.readAsDataURL(file);
     // reset input so same file can be selected again
-    try{ e.target.value = ''; }catch(e){}
-  }
-  function handleSignatureChange(e){
-    const file = e.target.files && e.target.files[0];
-    if(!file) return;
-    if(file.size > 5*1024*1024){ alert('সিগনেচার 5MB এর বেশি'); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      try{
-        setProfileSignature(reader.result);
-        setToast(lang==='en'?'Signature updated':'স্বাক্ষর আপডেট হয়েছে');
-      }catch(err){
-        alert('Signature upload failed');
-      }
-    };
-    reader.readAsDataURL(file);
     try{ e.target.value = ''; }catch(e){}
   }
   // APK তে 100% কাজ করবে এমন Free Auth - Email + Password
@@ -2376,7 +2258,6 @@ function App(){
   useEffect(()=>{ saveLS('lifestyle_user_address', userAddress); }, [userAddress]);
   useEffect(()=>{ saveLS('lifestyle_user_mobile', userMobile); }, [userMobile]);
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
-  useEffect(()=>{ if(profileSignature) saveLS('lifestyle_signature', profileSignature); else try{ localStorage.removeItem('lifestyle_signature'); }catch(e){} }, [profileSignature]);
   useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
   const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -2986,15 +2867,6 @@ function App(){
             profilePhoto ? h('img', {src:profilePhoto, alt:'profile', className:'w-full h-full object-cover'}) : initials
           ),
           h('label', {htmlFor:'profilePhotoInput', className:'absolute bottom-0 right-0 w-8 h-8 bg-[#C9A86A] rounded-full flex items-center justify-center border-2 border-white text-[14px] cursor-pointer'}, '\uD83D\uDCF7')
-        ),
-        h('div', {className:'w-full mt-4 flex flex-col items-center gap-2'},
-          h('input', {ref:signatureInputRef, id:'signatureInput', type:'file', accept:'image/*', className:'hidden', onChange:handleSignatureChange}),
-          profileSignature ? h('div', {className:'w-full bg-white border border-[#F3E8D3] rounded-[14px] p-2 flex flex-col items-center'},
-            h('img', {src:profileSignature, alt:'signature', className:'max-h-[80px] object-contain'}),
-            h('p', {className:'text-[10px] text-[#8B7355] mt-1'}, lang==='en'?'Your Signature':'আপনার স্বাক্ষর')
-          ) : null,
-          h('button', {onClick:()=> signatureInputRef.current && signatureInputRef.current.click(), className:'w-full py-2.5 rounded-[14px] bg-white border border-[#C9A86A] text-[#2D2A26] font-bold text-[13px]'}, lang==='en'?'✍️ Signature upload':'✍️ Signature upload'),
-          profileSignature ? h('button', {onClick:()=>{ setProfileSignature(null); try{ localStorage.removeItem('lifestyle_signature'); }catch(e){} setToast(lang==='en'?'Signature removed':'স্বাক্ষর মুছে ফেলা হয়েছে'); }, className:'text-[11px] text-[#B71C1C] underline'}, lang==='en'?'Remove signature':'স্বাক্ষর মুছুন') : null
         ),
         googleUser ? h('div', {className:'w-full mt-4'},
           h('div', {className:'bg-[#E8F5E9] border border-[#C8E6C9] rounded-[14px] p-3 text-center'},
