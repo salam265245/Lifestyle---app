@@ -2167,6 +2167,8 @@ function App(){
         setLastSyncTime(timeStr);
         setSyncStatus('✓ Synced ' + new Date(now).toLocaleTimeString('bn-BD'));
         lastCloudDataRef.current = data;
+        saveLS('lifestyle_offline_pending','false');
+        setOfflineQueue(false);
       }).catch(e=>{ console.log('syncToCloud err',e); });
     }catch(e){ console.log('syncToCloud',e); }
   }
@@ -2259,6 +2261,19 @@ function App(){
   useEffect(()=>{ saveLS('lifestyle_user_mobile', userMobile); }, [userMobile]);
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
   useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
+  
+// AUTO-FIX for stuck Pending sync
+setTimeout(()=>{
+  try{
+    const pending = localStorage.getItem('lifestyle_offline_pending');
+    const last = parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
+    if(pending==='true' && navigator.onLine && (Date.now() - last) < 120000){
+      localStorage.setItem('lifestyle_offline_pending','false');
+      console.log('Auto cleared stuck pending sync');
+    }
+  }catch(e){}
+}, 3000);
+
   const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
   const [profileSaved, setProfileSaved] = useState(false);
   const [offlineQueue, setOfflineQueue] = useState(loadLS('lifestyle_offline_pending','false')==='true');
