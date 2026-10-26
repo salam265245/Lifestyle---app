@@ -2843,15 +2843,19 @@ setTimeout(()=>{
       h('div', null,
         h('h2', {className:'text-[18px] font-bold mb-3'}, t.loansReceivables),
         h('div', {className:'grid grid-cols-2 gap-3'},
-          h('div', {onClick:()=>setPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalGiven),
-            h('p', {className:'text-[18px] font-bold'}, fmtMoney(totalGivenAmt)),
-            h('p', {className:'text-[11px] text-[#2E7D32] mt-1'}, fmtMoney(totalReturnedAmt) + ' ' + t.totalReturned)
+          h('div', {onClick:()=>setPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform space-y-1'},
+            h('p', {className:'text-[12px] font-bold text-[#8B7355] mb-1'}, t.totalGiven),
+            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#8B7355]'}, lang==='en'?'Given:':'দিয়েছি:'), h('span', {className:'font-bold'}, fmtMoney(totalGivenAmt))),
+            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#2E7D32]'}, lang==='en'?'Returned:':'ফেরত পেয়েছি:'), h('span', {className:'font-bold text-[#2E7D32]'}, fmtMoney(totalReturnedAmt))),
+            h('div', {className:'h-[1px] bg-[#F3E8D3] my-1'}),
+            h('div', {className:'flex justify-between text-[12px]'}, h('span', {className:'font-bold text-[#2D2A26]'}, lang==='en'?'Due:':'পাওনা আছে:'), h('span', {className:'font-bold text-[15px] text-[#2D2A26]'}, fmtMoney(totalGivenAmt - totalReturnedAmt)))
           ),
-          h('div', {onClick:()=>setPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalTaken),
-            h('p', {className:'text-[18px] font-bold'}, fmtMoney(totalTakenAmt)),
-            h('p', {className:'text-[11px] text-[#B71C1C] mt-1'}, fmtMoney(totalRepaidAmt) + ' ' + t.totalRepaid)
+          h('div', {onClick:()=>setPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform space-y-1'},
+            h('p', {className:'text-[12px] font-bold text-[#8B7355] mb-1'}, t.totalTaken),
+            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#8B7355]'}, lang==='en'?'Taken:':'নিয়েছি:'), h('span', {className:'font-bold'}, fmtMoney(totalTakenAmt))),
+            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#B71C1C]'}, lang==='en'?'Repaid:':'ফেরত দিয়েছি:'), h('span', {className:'font-bold text-[#B71C1C]'}, fmtMoney(totalRepaidAmt))),
+            h('div', {className:'h-[1px] bg-[#F3E8D3] my-1'}),
+            h('div', {className:'flex justify-between text-[12px]'}, h('span', {className:'font-bold text-[#2D2A26]'}, lang==='en'?'Due:':'দিতে হবে:'), h('span', {className:'font-bold text-[15px] text-[#B71C1C]'}, fmtMoney(totalTakenAmt - totalRepaidAmt)))
           )
         ),
         // NEW: Calendar icon + PDF buttons like Report button - added under Loans & Receivable
