@@ -670,7 +670,7 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
   const [cat, setCat] = useState(initial ? {en:initial.category, bn:initial.categoryBn} : loadLS('lifestyle_draft_tx_'+type+'_cat', null));
   const [date, setDate] = useState(initial ? initial.date : today());
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_tx_'+type+'_note', ''));
-  const [medium, setMedium] = useState(initial ? (initial.medium || 'Cash') : loadLS('lifestyle_draft_tx_'+type+'_medium', 'Cash'));
+  const [medium, setMedium] = useState(()=>{ const def = type==='income' ? 'Bank Account' : 'Cash'; return initial ? (initial.medium || def) : (loadLS('lifestyle_draft_tx_'+type+'_medium', def) || def); })();
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_amount', amount); }catch(e){} } }, [amount, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_cat', cat); }catch(e){} } }, [cat, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_date', date); }catch(e){} } }, [date, type, initial]);
@@ -718,11 +718,13 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
 function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_loanentry_amount', ''));
   const [date, setDate] = useState(initial ? initial.date : today());
-  const [medium, setMedium] = useState(initial ? initial.medium : loadLS('lifestyle_draft_loanentry_medium', 'Cash'));
+  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_loanentry_fromChannel', 'Cash'));
+  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || 'Cash') : loadLS('lifestyle_draft_loanentry_toChannel', 'Cash'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_loanentry_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_amount', amount); }catch(e){} } }, [amount, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_date', date); }catch(e){} } }, [date, initial]);
-  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_medium', medium); }catch(e){} } }, [medium, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_fromChannel', fromChannel); }catch(e){} } }, [fromChannel, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_toChannel', toChannel); }catch(e){} } }, [toChannel, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_note', note); }catch(e){} } }, [note, initial]);
   function submit(){
     if(!amount) return;
@@ -730,22 +732,26 @@ function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
       try{
         saveLS('lifestyle_draft_loanentry_amount', '');
         saveLS('lifestyle_draft_loanentry_date', '');
-        saveLS('lifestyle_draft_loanentry_medium', '');
+        saveLS('lifestyle_draft_loanentry_fromChannel', '');
+        saveLS('lifestyle_draft_loanentry_toChannel', '');
         saveLS('lifestyle_draft_loanentry_note', '');
       }catch(e){}
     }
-    onSave({ id: initial ? initial.id : uid(), amount: parseFloat(amount)||0, date, medium, note });
+    onSave({ id: initial ? initial.id : uid(), amount: parseFloat(amount)||0, date, note, fromChannel: fromChannel, toChannel: toChannel, channel: fromChannel, fromMedium: fromChannel, toMedium: toChannel, medium: fromChannel, method: fromChannel });
   }
   return h('div', null,
-    h('button', {onClick:submit, disabled:!amount, className:'w-full py-3.5 rounded-full bg-[#2D2A26] text-white font-bold text-[14px] mb-4'}, t.save),
     h(Field, {label: t.amount}, h(TextInput, {type:'number', value:amount, onChange:e=>setAmount(e.target.value)})),
+    h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
     h('div', {className:'grid grid-cols-2 gap-3'},
-      h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
-      h(Field, {label: t.medium}, h(Select, {value:medium, onChange:e=>setMedium(e.target.value)},
+      h(Field, {label: lang==='en'?'From Channel':'প্রেরণের মাধ্যম'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
+        MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+      )),
+      h(Field, {label: lang==='en'?'To Channel':'গ্রহণের মাধ্যম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
         MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
       ))
     ),
-    h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)}))
+    h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)})),
+    h('button', {onClick:submit, disabled:!amount, className:'w-full py-3.5 rounded-full bg-[#2D2A26] text-white font-bold text-[14px] mt-4 disabled:opacity-40'}, t.save)
   );
 }
 
@@ -753,26 +759,31 @@ function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
 function PaymentForm({ t, lang, initial, onSave }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_payment_amount', ''));
   const [date, setDate] = useState(initial ? initial.date : today());
-  const [method, setMethod] = useState(initial ? initial.method : loadLS('lifestyle_draft_payment_method', 'Cash'));
+  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_payment_fromChannel', 'Cash'));
+  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || 'Cash') : loadLS('lifestyle_draft_payment_toChannel', 'Cash'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_payment_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_amount', amount); }catch(e){} } }, [amount, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_date', date); }catch(e){} } }, [date, initial]);
-  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_method', method); }catch(e){} } }, [method, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_fromChannel', fromChannel); }catch(e){} } }, [fromChannel, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_toChannel', toChannel); }catch(e){} } }, [toChannel, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_note', note); }catch(e){} } }, [note, initial]);
   function submit(){
     if(!amount) return;
-    onSave({ id: initial ? initial.id : uid(), amount: parseFloat(amount)||0, date, method, note });
+    onSave({ id: initial ? initial.id : uid(), amount: parseFloat(amount)||0, date, note, fromChannel: fromChannel, toChannel: toChannel, channel: fromChannel, fromMedium: fromChannel, toMedium: toChannel, medium: fromChannel, method: fromChannel });
   }
   return h('div', null,
-    h('button', {onClick:submit, disabled:!amount, className:'w-full py-3.5 rounded-full bg-[#2D2A26] text-white font-bold text-[14px] mb-4'}, t.save),
     h(Field, {label: t.amount}, h(TextInput, {type:'number', value:amount, onChange:e=>setAmount(e.target.value)})),
+    h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
     h('div', {className:'grid grid-cols-2 gap-3'},
-      h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
-      h(Field, {label: t.method}, h(Select, {value:method, onChange:e=>setMethod(e.target.value)},
+      h(Field, {label: lang==='en'?'From Channel':'প্রেরণের মাধ্যম'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
+        MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+      )),
+      h(Field, {label: lang==='en'?'To Channel':'গ্রহণের মাধ্যম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
         MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
       ))
     ),
-    h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)}))
+    h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)})),
+    h('button', {onClick:submit, disabled:!amount, className:'w-full py-3.5 rounded-full bg-[#2D2A26] text-white font-bold text-[14px] mt-4 disabled:opacity-40'}, t.save)
   );
 }
 
@@ -785,7 +796,8 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
   const [expectedReturnDate, setExpectedReturnDate] = useState(loadLS('lifestyle_draft_np_expectedReturnDate', ''));
   const [amount, setAmount] = useState(loadLS('lifestyle_draft_np_amount', ''));
   const [date, setDate] = useState(today());
-  const [medium, setMedium] = useState(loadLS('lifestyle_draft_np_medium', 'Cash'));
+  const [fromChannel, setFromChannel] = useState(loadLS('lifestyle_draft_np_fromChannel', 'Cash'));
+  const [toChannel, setToChannel] = useState(loadLS('lifestyle_draft_np_toChannel', 'Cash'));
   const [note, setNote] = useState(loadLS('lifestyle_draft_np_note', ''));
   const [contactMsg, setContactMsg] = useState('');
   useEffect(()=>{ try{ saveLS('lifestyle_draft_np_name', name); }catch(e){} }, [name]);
@@ -793,7 +805,8 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
   useEffect(()=>{ try{ saveLS('lifestyle_draft_np_expectedReturnDate', expectedReturnDate); }catch(e){} }, [expectedReturnDate]);
   useEffect(()=>{ try{ saveLS('lifestyle_draft_np_amount', amount); }catch(e){} }, [amount]);
   useEffect(()=>{ try{ saveLS('lifestyle_draft_np_date', date); }catch(e){} }, [date]);
-  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_medium', medium); }catch(e){} }, [medium]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_fromChannel', fromChannel); }catch(e){} }, [fromChannel]);
+  useEffect(()=>{ try{ saveLS('lifestyle_draft_np_toChannel', toChannel); }catch(e){} }, [toChannel]);
   useEffect(()=>{ try{ saveLS('lifestyle_draft_np_note', note); }catch(e){} }, [note]);
   function pickExisting(p){ setName(p.name); if(p.mobile) setMobile(p.mobile); }
   function selectNumber(num){ setMobile(num); setShowNumberPicker(false); setContactNumbers([]); }
@@ -845,14 +858,15 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
       saveLS('lifestyle_draft_np_expectedReturnDate', '');
       saveLS('lifestyle_draft_np_amount', '');
       saveLS('lifestyle_draft_np_date', '');
-      saveLS('lifestyle_draft_np_medium', '');
+      saveLS('lifestyle_draft_np_fromChannel', '');
+      saveLS('lifestyle_draft_np_toChannel', '');
       saveLS('lifestyle_draft_np_note', '');
     }catch(e){}
-    onSave({ name: name.trim(), mobile: mobile.trim(), amount: parseFloat(amount)||0, date, medium, note, expectedReturnDate, returnDate: expectedReturnDate });
+    onSave({ name: name.trim(), mobile: mobile.trim(), amount: parseFloat(amount)||0, date, note, expectedReturnDate, returnDate: expectedReturnDate, fromChannel: fromChannel, toChannel: toChannel, channel: fromChannel, fromMedium: fromChannel, toMedium: toChannel, medium: fromChannel, method: fromChannel });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
     h('div', {className:'sticky z-20 bg-[#FFFBF7] px-5 py-3 border-b border-[#F3E8D3] flex gap-2', style:{top:'44px'}},
-      h('button', {onClick:submit, disabled: !name || !amount, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveLoan),
+      h('button', {onClick:submit, disabled: !amount, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveLoan),
       h('button', {type:'button', className:'px-5 py-3.5 rounded-[14px] font-bold text-[14px] bg-white border border-[#F3E8D3]'}, t.cancel)
     ),
     h('div', {className:'pt-4 px-5 pb-5'},
@@ -908,9 +922,12 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
         h(TextInput, {type:'date', value:expectedReturnDate, onChange:e=>setExpectedReturnDate(e.target.value)})
       ),
       h(Field, {label: t.amount}, h(TextInput, {type:'number', value:amount, onChange:e=>setAmount(e.target.value)})),
+      h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
       h('div', {className:'grid grid-cols-2 gap-3'},
-        h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
-        h(Field, {label: t.medium}, h(Select, {value:medium, onChange:e=>setMedium(e.target.value)},
+        h(Field, {label: lang==='en'?'From Channel':'প্রেরণের মাধ্যম'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
+          MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+        )),
+        h(Field, {label: lang==='en'?'To Channel':'গ্রহণের মাধ্যম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
           MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
         ))
       ),
@@ -1315,17 +1332,21 @@ const PDF_FONT = "'Noto Sans Bengali','Hind Siliguri','Nirmala UI','Kalpurush',s
 
 
 
+
 function renderReportPages(o){
   const t = o.t, from = o.from, to = o.to, lang=o.lang||'bn';
   const W = 2480, H = 3508, M = 120;
   const pages = []; let cv, ctx, y = 0; let tableHeaderActive=false;
-  const cDate = {x:M, w:300};
-  const cPerson = {x:M+320, w:550};
-  const cNote = {x:M+890, w:700};
-  const cMedia = {x:M+1610, w:320};
-  const cAmount = {x:W-M-400, w:400};
-  const cCat = cPerson;
+  const cDate = {x:M, w:250};
+  const cPerson = {x:M+250, w:320};
+  const cCat = {x:M+570, w:320};
+  const cNote = {x:M+890, w:500};
+  const cFrom = {x:M+1390, w:250};
+  const cTo = {x:M+1640, w:250};
+  const cAmount = {x:W-M-350, w:350};
   const cAmt = cAmount;
+  const cMedia = cFrom;
+  const cPersonW = cPerson;
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
@@ -1347,14 +1368,40 @@ function renderReportPages(o){
   }
   function ensure(hh){ if(y + hh > H - M - 100){ newPage(); } }
   function drawTableHeader(){
-    const hh=80;
-    drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cPerson.x,cPerson.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cMedia.x,cMedia.w,hh,'#F3E8D3'); drawCellRect(cAmount.x,cAmount.w,hh,'#F3E8D3');
-    font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-    ctx.fillText('Date', cDate.x+15, y+50);
-    ctx.fillText('Person/Category', cPerson.x+15, y+50);
-    ctx.fillText('Note', cNote.x+15, y+50);
-    ctx.fillText('Media', cMedia.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText('Amount', cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=hh;
+    const hh1=50, hh2=50, totalH=100;
+    // background rects row1
+    ctx.fillStyle='#F3E8D3';
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.fillRect(cAmount.x, y, cAmount.w, totalH);
+    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.strokeRect(cAmount.x, y, cAmount.w, totalH);
+    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText('Date', cDate.x+10, y+32);
+    ctx.fillText('Person', cPerson.x+10, y+32);
+    ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    ctx.textAlign='center';
+    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+    ctx.textAlign='left';
+    ctx.fillText('From', cFrom.x+10, y+hh1+32);
+    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.textAlign='right';
+    ctx.fillText('Amount', cAmount.x+cAmount.w-10, y+32);
+    ctx.textAlign='left';
+    y+=totalH;
   }
   function newPage(){
     cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M;
@@ -1366,31 +1413,43 @@ function renderReportPages(o){
   }
   function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
   function inRange(d){ return d && d >= from && d <= to; }
+  function mediumLabel(id){
+    if(!id) return '';
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
+    return map[id] || id;
+  }
+  function getFromTo(item){
+    const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+    const tRaw = item.toChannel || item.toMedium || '';
+    const f = mediumLabel(fRaw);
+    const t2 = mediumLabel(tRaw);
+    return {from:f, to:t2};
+  }
   newPage();
   ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + formatDateForPdf(from) + ' → ' + formatDateForPdf(to), M, y); y+=60;
   const all = [];
   (o.transactions||[]).forEach(tx=>{
-    if(inRange(tx.date)) all.push({date:tx.date, category:tx.category, cat:tx.category, personName:'', note:tx.note||'', medium:tx.medium||tx.method||tx.media||'Cash', amount:tx.amount, type:tx.type});
+    if(inRange(tx.date)) all.push({date:tx.date, person:'', category:tx.category, cat:tx.category, personName:'', note:tx.note||'', fromChannel:tx.fromChannel||tx.fromMedium||tx.channel||tx.medium||tx.method||tx.media||'Cash', toChannel:tx.toChannel||tx.toMedium||'', medium:tx.medium||tx.method||tx.media||'Cash', amount:tx.amount, type:tx.type});
   });
   (o.peopleGiven||[]).forEach(p=>{
     p.loans.forEach(l=>{
-      if(inRange(l.date)) all.push({date:l.date, category:p.name, cat:p.name, personName:p.name, note:l.note||'', medium:l.medium||l.method||l.media||'Bank Account', amount:l.amount, type:'given'});
+      if(inRange(l.date)) all.push({date:l.date, person:p.name, category:'', cat:'', personName:p.name, note:l.note||'', fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||l.method||l.media||'Bank', toChannel:l.toChannel||l.toMedium||'', medium:l.medium||l.method||l.media||'Bank', amount:l.amount, type:'given'});
     });
     p.payments.forEach(pay=>{
-      if(inRange(pay.date)) all.push({date:pay.date, category:p.name, cat:p.name, personName:p.name, note:pay.note||'', medium:pay.method||pay.medium||pay.media||'Bank Account', amount:pay.amount, type:'return'});
+      if(inRange(pay.date)) all.push({date:pay.date, person:p.name, category:'', cat:'', personName:p.name, note:pay.note||'', fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||pay.medium||pay.media||'Bank', toChannel:pay.toChannel||pay.toMedium||'', medium:pay.method||pay.medium||pay.media||'Bank', amount:pay.amount, type:'return'});
     });
   });
   (o.peopleTaken||[]).forEach(p=>{
     p.loans.forEach(l=>{
-      if(inRange(l.date)) all.push({date:l.date, category:p.name, cat:p.name, personName:p.name, note:l.note||'', medium:l.medium||l.method||l.media||'Bank Account', amount:l.amount, type:'taken'});
+      if(inRange(l.date)) all.push({date:l.date, person:p.name, category:'', cat:'', personName:p.name, note:l.note||'', fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||l.method||l.media||'Bank', toChannel:l.toChannel||l.toMedium||'', medium:l.medium||l.method||l.media||'Bank', amount:l.amount, type:'taken'});
     });
     p.payments.forEach(pay=>{
-      if(inRange(pay.date)) all.push({date:pay.date, category:p.name, cat:p.name, personName:p.name, note:pay.note||'', medium:pay.method||pay.medium||pay.media||'Bank Account', amount:pay.amount, type:'repayment'});
+      if(inRange(pay.date)) all.push({date:pay.date, person:p.name, category:'', cat:'', personName:p.name, note:pay.note||'', fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||pay.medium||pay.media||'Bank', toChannel:pay.toChannel||pay.toMedium||'', medium:pay.method||pay.medium||pay.media||'Bank', amount:pay.amount, type:'repayment'});
     });
   });
   (o.bankLoans||[]).forEach(b=>{
     const d=b.loanDate||b.disbursementDate||'';
-    if(inRange(d)) all.push({date:d, category:b.bankName, cat:b.bankName, personName:b.bankName, note:(b.termMonths||'')+'mo '+(b.interestRate||'')+'%', medium:'Bank', amount:b.amount, type:'bank'});
+    if(inRange(d)) all.push({date:d, person:'', category:b.bankName, cat:b.bankName, personName:'', note:(b.termMonths||'')+'mo '+(b.interestRate||'')+'%', fromChannel:'Bank', toChannel:'', medium:'Bank', amount:b.amount, type:'bank'});
   });
   all.sort((a,b)=>a.date.localeCompare(b.date));
   if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
@@ -1399,37 +1458,40 @@ function renderReportPages(o){
     tableHeaderActive=true;
     let grand=0;
     all.forEach(item=>{
-      const personText = (item.personName || item.category || '')+'';
-      const noteText = (item.note || '')+'';
-      const mediaText = (item.medium || '')+'';
-      font(26,false);
-      const personLines=wrapLines(personText, cPerson.w-30);
-      const noteLines=wrapLines(noteText, cNote.w-30);
-      const mediaLines=wrapLines(mediaText, cMedia.w-30);
-      const maxLines=Math.max(personLines.length, noteLines.length, mediaLines.length,1);
-      const h=Math.max(70, maxLines*36+30);
+      const ch = getFromTo(item);
+      font(24,false);
+      const personLines=wrapLines(typeof personText!=='undefined' ? personText : (item.personName||item.person||''), cPerson.w-20);
+      const catLines=wrapLines(item.category||'', cCat.w-20);
+      const noteLines=wrapLines(item.note||'', cNote.w-20);
+      const fromLines=wrapLines(ch.from||'', cFrom.w-20);
+      const toLines=wrapLines(ch.to||'', cTo.w-20);
+      const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
+      const h=Math.max(70, maxLines*32+30);
       ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cMedia.x,cMedia.w,h,'#FFFFFF'); drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
+      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-30), cDate.x+15, baseY+42);
-      personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-30), cPerson.x+15, baseY+32+i*36); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
+      personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+      catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
       ctx.fillStyle='#2D2A26';
-      mediaLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cMedia.w-30), cMedia.x+15, baseY+32+i*36); });
+      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
+      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-30), cAmount.x+cAmount.w-15, baseY+42);
+      ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
-    y+=10; ensure(100); const th=80; const first4W = cMedia.x + cMedia.w - cDate.x;
-    drawCellRect(cDate.x, first4W, th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
+    y+=10; ensure(100); const th=80; 
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=th;
+    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
+
 
 
 
@@ -1465,16 +1527,67 @@ function buildPdfFromJpegs(jpegs){
 
 
 
+
 function renderPersonLoanPages(o){
   const t=o.t, person=o.person, kind=o.kind;
   const W=2480,H=3508,M=120;
-  const pages=[]; let cv,ctx,y=0; let tableHeaderActive=false;
+  const pages=[]; let cv,ctx,y=0; let tableHeaderActive=false; let currentSectionTitle='';
+  const cDate = {x:M, w:250};
+  const cPerson = {x:M+250, w:320};
+  const cCat = {x:M+570, w:320};
+  const cNote = {x:M+890, w:500};
+  const cFrom = {x:M+1390, w:250};
+  const cTo = {x:M+1640, w:250};
+  const cAmt = {x:W-M-350, w:350};
+  const cAmount = cAmt;
+  const cMedia = cFrom;
+  const cPersonW = cPerson;
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
   const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+  function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function ensure(hh){ if(y+hh>H-M-100) newPage(); }
+  function drawTableHeader(){
+    const hh1=50, hh2=50, totalH=100;
+    ctx.fillStyle='#F3E8D3';
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
+    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText('Date', cDate.x+10, y+32);
+    ctx.fillText('Person', cPerson.x+10, y+32);
+    ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    ctx.textAlign='center';
+    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+    ctx.textAlign='left';
+    ctx.fillText('From', cFrom.x+10, y+hh1+32);
+    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.textAlign='right';
+    ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
+    ctx.textAlign='left';
+    y+=totalH;
+  }
   function drawTopHeader(){
     const leftX = M; let ly = y;
     font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
@@ -1484,104 +1597,57 @@ function renderPersonLoanPages(o){
     devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
     ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   }
-
-  const cDate = {x:M, w:300};
-  const cPerson = {x:M+320, w:550};
-  const cNote = {x:M+890, w:700};
-  const cMedia = {x:M+1610, w:320};
-  const cAmount = {x:W-M-400, w:400};
-  const cCat = cPerson;
-  const cAmt = cAmount;
-  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; if(tableHeaderActive){ 
-          try{
-            const hh=80;
-            if(typeof cDate!=='undefined' && typeof cPerson!=='undefined'){
-              drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cPerson.x,cPerson.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cMedia.x,cMedia.w,hh,'#F3E8D3'); drawCellRect(cAmount.x,cAmount.w,hh,'#F3E8D3');
-              font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-              ctx.fillText('Date', cDate.x+15, y+50);
-              ctx.fillText(cPerson.x===cCat?.x ? 'Person/Category' : (cPerson.w>500 ? 'Person/Category' : 'Person'), cPerson.x+15, y+50);
-              ctx.fillText('Note', cNote.x+15, y+50);
-              ctx.fillText('Media', cMedia.x+15, y+50);
-              ctx.textAlign='right'; ctx.fillText('Amount', cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=hh;
-            } else if(typeof cDate!=='undefined'){
-              drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cMedia.x,cMedia.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3');
-              font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-              ctx.fillText('Date', cDate.x+15, y+50);
-              ctx.fillText('Person/Category', cCat.x+15, y+50);
-              ctx.fillText('Note', cNote.x+15, y+50);
-              ctx.fillText('Media', cMedia.x+15, y+50);
-              ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh;
-            }
-          }catch(e){}
-        } }
-  function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
-  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function ensure(hh){ if(y+hh>H-M-100) newPage(); }
-  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; drawTopHeader(); if(currentSectionTitle){ ensure(140); const mergedH = 75; const fullW = (cAmount.x + cAmount.w) - cDate.x; drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF'); font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(currentSectionTitle, W-M*2), cDate.x+15, y+48); ctx.textAlign='left'; y+=mergedH+8; } if(tableHeaderActive){ drawTableHeader(); } }
   function headingOld(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
-  function rowHeader5(){
-    ensure(80);
-    const h=80;
-    drawCellRect(cDate.x,cDate.w,h,'#F3E8D3');
-    drawCellRect(cPerson.x,cPerson.w,h,'#F3E8D3');
-    drawCellRect(cNote.x,cNote.w,h,'#F3E8D3');
-    drawCellRect(cMedia.x,cMedia.w,h,'#F3E8D3');
-    drawCellRect(cAmount.x,cAmount.w,h,'#F3E8D3');
-    font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-    ctx.fillText('Date', cDate.x+15, y+50);
-    ctx.fillText('Person', cPerson.x+15, y+50);
-    ctx.fillText('Note', cNote.x+15, y+50);
-    ctx.fillText('Media', cMedia.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText('Amount', cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=h;
+  function mediumLabel(id){
+    if(!id) return '';
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
+    return map[id] || id;
+  }
+  function getFromTo(item){
+    const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Bank';
+    const tRaw = item.toChannel || item.toMedium || '';
+    const f = mediumLabel(fRaw);
+    const t2 = mediumLabel(tRaw);
+    return {from:f, to:t2};
   }
   function rowData(item, isPay){
+    const ch = getFromTo(item);
     const dateStr = formatDateForPdf(item.date||'');
     const personText = (item.personName || person.name || '')+'';
     const noteText = (item.note || '')+'';
-    const rawMedia = (item.medium || item.method || item.media || '');
-    const mediaText = rawMedia ? rawMedia : 'Bank Account';
-    const amt = fmtMoney(item.amount);
-    font(26,false);
-    const personLines = wrapLines(personText, cPerson.w-30);
-    const noteLines = wrapLines(noteText, cNote.w-30);
-    const mediaLines = wrapLines(mediaText, cMedia.w-30);
-    const maxLines = Math.max(personLines.length, noteLines.length, mediaLines.length, 1);
-    const h = Math.max(70, maxLines*36+30);
+    font(24,false);
+    const personLines = wrapLines(personText, cPerson.w-20);
+    const catLines = wrapLines('', cCat.w-20); // Category empty for person loan
+    const noteLines = wrapLines(noteText, cNote.w-20);
+    const fromLines = wrapLines(ch.from||'', cFrom.w-20);
+    const toLines = wrapLines(ch.to||'', cTo.w-20);
+    const maxLines = Math.max(personLines.length, noteLines.length, fromLines.length, toLines.length, 1);
+    const h = Math.max(70, maxLines*32+30);
     ensure(h+10);
     drawCellRect(cDate.x,cDate.w,h,'#FFFFFF');
     drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF');
+    drawCellRect(cCat.x,cCat.w,h,'#FFFFFF');
     drawCellRect(cNote.x,cNote.w,h,'#FFFFFF');
-    drawCellRect(cMedia.x,cMedia.w,h,'#FFFFFF');
+    drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF');
+    drawCellRect(cTo.x,cTo.w,h,'#FFFFFF');
     drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
     const baseY=y;
     ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-    ctx.fillText(fit(dateStr, cDate.w-30), cDate.x+15, baseY+42);
-    personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-30), cPerson.x+15, baseY+32+i*36); });
+    ctx.fillText(fit(dateStr, cDate.w-20), cDate.x+10, baseY+32);
+    personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+    catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
     ctx.fillStyle='#5D4E37';
-    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); });
+    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
     ctx.fillStyle='#2D2A26';
-    mediaLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cMedia.w-30), cMedia.x+15, baseY+32+i*36); });
+    fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
+    toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
     ctx.fillStyle=isPay?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
-    ctx.fillText(fit(amt, cAmount.w-30), cAmount.x+cAmount.w-15, baseY+42);
+    ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
     ctx.textAlign='left';
     y+=h;
   }
   newPage();
-  (function(){
-    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-    const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-    const isEn = (o.lang||'en')==='en'; const leftX = M; let ly = y;
-    const profileLines = []; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLines.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLines.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLines.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLines.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    const devBlockW=900; let _maxDevW=0;
-    const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
-    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
-    const devBlockX=W-M-_maxDevW; let ry=y;
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
-    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
-  })();
   font(44,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(person.name+(person.mobile?' • '+person.mobile:''), W-M*2), M, y); y+=70;
   const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0); const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0); const balance=totalLoaned-totalPaid;
   font(38,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((kind==='given'?t.youWillGet:t.youOwe)+': '+fmtMoney(balance), W-M*2), M, y); y+=60;
@@ -1592,7 +1658,6 @@ function renderPersonLoanPages(o){
   if(isMulti){
     ensure(20);
     ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
-
     if(!person.loans.length){
       ensure(140);
       const mergedH = 75;
@@ -1609,19 +1674,18 @@ function renderPersonLoanPages(o){
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      currentSectionTitle = t.loanHistory||'Loan Entries';
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      rowHeader5();
-      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, medium:l.medium, method:l.method, media:l.media, personName:person.name, category:person.name, cat:person.name}, false); });
-      ensure(90); const thL=80; const first4W = cMedia.x + cMedia.w - cDate.x;
+      drawTableHeader(); tableHeaderActive=true;
+      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
+      ensure(90); const thL=80; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50);
-      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=thL;
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thL;
     }
-
     y+=60;
-
     if(!person.payments.length){
       ensure(140);
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(t.paymentHistory||'Payment', W-M*2), M, y); y+=80;
@@ -1632,38 +1696,17 @@ function renderPersonLoanPages(o){
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      currentSectionTitle = t.paymentHistory||'Payment';
       ctx.fillText(fit(t.paymentHistory||'Payment', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      rowHeader5();
-      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, medium:p.method, method:p.method, media:p.method, personName:person.name, category:person.name, cat:person.name}, true); });
-      ensure(90); const thP=80; const first4W = cMedia.x + cMedia.w - cDate.x;
+      drawTableHeader(); tableHeaderActive=true;
+      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
+      ensure(90); const thP=80; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50);
-      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=thP;
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thP;
     }
-
-    y+=60;
-    ensure(400);
-    const sumHeadH = 75;
-    const sumFullW = (cAmount.x + cAmount.w) - cDate.x;
-    drawCellRect(cDate.x, sumFullW, sumHeadH, '#FFFFFF');
-    font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    ctx.fillText(fit('Total Summary', W-M*2), cDate.x+15, y+48);
-    ctx.textAlign='left';
-    y+=sumHeadH+8;
-    const th=80;
-    const first4W = cMedia.x + cMedia.w - cDate.x;
-    drawCellRect(cDate.x, first4W, th, '#E8F5E9'); drawCellRect(cAmount.x, cAmount.w, th, '#E8F5E9');
-    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=th;
-    drawCellRect(cDate.x, first4W, th, '#E3F2FD'); drawCellRect(cAmount.x, cAmount.w, th, '#E3F2FD');
-    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=th;
-    drawCellRect(cDate.x, first4W, th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
-    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Balance: '+fmtMoney(balance), cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(balance), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=th;
-
   } else {
     if(!person.loans.length){
       headingOld(t.loanHistory);
@@ -1674,15 +1717,16 @@ function renderPersonLoanPages(o){
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      currentSectionTitle = t.loanHistory||'Loan Entries';
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      rowHeader5();
-      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, medium:l.medium, method:l.method, media:l.media, personName:person.name, category:person.name, cat:person.name}, false); });
-      ensure(90); const thL=80; const first4W = cMedia.x + cMedia.w - cDate.x;
+      drawTableHeader(); tableHeaderActive=true;
+      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
+      ensure(90); const thL=80; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50);
-      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=thL+20;
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thL+20;
     }
     if(!person.payments.length){
       headingOld(t.paymentHistory);
@@ -1696,17 +1740,18 @@ function renderPersonLoanPages(o){
       ctx.fillText('Payment', cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      rowHeader5();
-      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, medium:p.method, method:p.method, media:p.method, personName:person.name, category:person.name, cat:person.name}, true); });
-      ensure(90); const thP=80; const first4W = cMedia.x + cMedia.w - cDate.x;
+      drawTableHeader();
+      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
+      ensure(90); const thP=80; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50);
-      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=thP+20;
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thP+20;
     }
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
+
 
 
 
@@ -1724,151 +1769,19 @@ function buildPersonLoanPdfBlob
 
 
 
+
 function renderAllLoansPages(o){
   const t=o.t, lang=o.lang||'bn', kind=o.kind, people=o.people||[], from=o.from||'', to=o.to||'';
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0; let tableHeaderActive=false;
-  const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-  const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-  const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-  const isEn = (o.lang||'en')==='en';
-  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
-  function drawTopHeader(){
-    const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    let _maxDevW=0; const devBlockW=900;
-    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
-    const devBlockX=W-M-_maxDevW; let ry=y;
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
-    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
-  }
-
-  const cDate = {x:M, w:300};
-  const cPerson = {x:M+320, w:550};
-  const cNote = {x:M+890, w:700};
-  const cMedia = {x:M+1610, w:320};
-  const cAmount = {x:W-M-400, w:400};
-  const cCat = cPerson;
-  const cAmt = cAmount;
-  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; if(tableHeaderActive){ 
-          try{
-            const hh=80;
-            if(typeof cDate!=='undefined' && typeof cPerson!=='undefined'){
-              drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cPerson.x,cPerson.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cMedia.x,cMedia.w,hh,'#F3E8D3'); drawCellRect(cAmount.x,cAmount.w,hh,'#F3E8D3');
-              font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-              ctx.fillText('Date', cDate.x+15, y+50);
-              ctx.fillText(cPerson.x===cCat?.x ? 'Person/Category' : (cPerson.w>500 ? 'Person/Category' : 'Person'), cPerson.x+15, y+50);
-              ctx.fillText('Note', cNote.x+15, y+50);
-              ctx.fillText('Media', cMedia.x+15, y+50);
-              ctx.textAlign='right'; ctx.fillText('Amount', cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=hh;
-            } else if(typeof cDate!=='undefined'){
-              drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cMedia.x,cMedia.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3');
-              font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-              ctx.fillText('Date', cDate.x+15, y+50);
-              ctx.fillText('Person/Category', cCat.x+15, y+50);
-              ctx.fillText('Note', cNote.x+15, y+50);
-              ctx.fillText('Media', cMedia.x+15, y+50);
-              ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh;
-            }
-          }catch(e){}
-        } }
-  function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
-  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function ensure(hh){ if(y+hh>H-M-100) newPage(); }
-  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
-  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
-  newPage();
-  (function(){
-    const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
-    const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-    const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
-    const isEn = (o.lang||'en')==='en'; const leftX = M; let ly = y;
-    const profileLines = []; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLines.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLines.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLines.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLines.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLines.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    const devBlockW=900; let _maxDevW=0;
-    const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
-    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
-    const devBlockX=W-M-_maxDevW; let ry=y;
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
-    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
-  })();
-  if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; const fDisp=from?formatDateForPdf(from):'...'; const tDisp=to?formatDateForPdf(to):'...'; ctx.fillText(t.period + ': ' + fDisp + ' → ' + tDisp, M, y); y+=60; }
-  let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, category:p.name, cat:p.name, personName:p.name, type:'loan', amount:l.amount, medium:l.medium||l.method||l.media||'', method:l.medium||l.method||l.media||'', media:l.medium||l.method||l.media||'', note:l.note||''})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, category:p.name, cat:p.name, personName:p.name, type:'payment', amount:pay.amount, medium:pay.method||pay.medium||pay.media||'', method:pay.method||pay.medium||pay.media||'', media:pay.method||pay.medium||pay.media||'', note:pay.note||''})); }); all.sort((a,b)=>a.date.localeCompare(b.date));
-  if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
-    heading((lang==='en'?'All '+(kind==='given'?'Given':'Taken')+' History - '+all.length+' records':'সব '+(kind==='given'?'প্রদান':'গ্রহণ')+' - '+all.length+' রেকর্ড'), '#2D2A26');
-    ensure(80); const hh=80;
-    drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cPerson.x,cPerson.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cMedia.x,cMedia.w,hh,'#F3E8D3'); drawCellRect(cAmount.x,cAmount.w,hh,'#F3E8D3');
-    font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-    ctx.fillText('Date', cDate.x+15, y+50);
-    ctx.fillText('Person', cPerson.x+15, y+50);
-    ctx.fillText('Note', cNote.x+15, y+50);
-    ctx.fillText('Media', cMedia.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText('Amount', cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=hh;
-    tableHeaderActive=true;
-    let grand=0;
-    all.forEach(item=>{
-      const personText = (item.personName || item.person || '')+'';
-      const noteText = (item.note || '')+'';
-      const rawMedia = (item.medium || item.method || item.media || '');
-      const mediaText = rawMedia ? rawMedia : 'Bank Account';
-      font(26,false);
-      const personLines=wrapLines(personText, cPerson.w-30);
-      const noteLines=wrapLines(noteText, cNote.w-30);
-      const mediaLines=wrapLines(mediaText, cMedia.w-30);
-      const maxLines=Math.max(personLines.length, noteLines.length, mediaLines.length,1);
-      const h=Math.max(70, maxLines*36+30);
-      ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cMedia.x,cMedia.w,h,'#FFFFFF'); drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
-      const baseY=y;
-      ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-30), cDate.x+15, baseY+42);
-      personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-30), cPerson.x+15, baseY+32+i*36); });
-      ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); });
-      ctx.fillStyle='#2D2A26';
-      mediaLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cMedia.w-30), cMedia.x+15, baseY+32+i*36); });
-      ctx.fillStyle=item.type==='payment'?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-30), cAmount.x+cAmount.w-15, baseY+42);
-      ctx.textAlign='left'; y+=h; grand+=item.amount;
-    });
-    y+=10; ensure(100); const th=80; const first4W = cMedia.x + cMedia.w - cDate.x;
-    drawCellRect(cDate.x, first4W, th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
-    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmount.w-30), cAmount.x+cAmount.w-15, y+50); ctx.textAlign='left'; y+=th;
-  }
-  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
-  return pages;
-}
-
-
-
-function buildAllLoansPdfBlob(o){
-  const pages=renderAllLoansPages(o);
-  const jpegs=pages.map(c=>{
-    const b64=c.toDataURL('image/jpeg',1.0).split(',')[1];
-    const bin=atob(b64), bytes=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-    return {bytes,w:c.width,h:c.height};
-  });
-  return buildPdfFromJpegs(jpegs);
-}
-
-
-
-
-function renderHistoryPages(o){
-  const t=o.t, lang=o.lang||'bn', filter=o.filter||'all', list=o.list||[];
-  const W=2480,H=3508,M=120;
-  const pages=[]; let cv,ctx,y=0;
-  let tableHeaderActive=false;
-  const cDate = {x:M, w:300};
-  const cCat = {x:M+320, w:550};
-  const cNote = {x:M+890, w:700};
-  const cMedia = {x:M+1610, w:320};
-  const cAmt = {x:W-M-400, w:400};
-  // Precompute header info
+  const cDate = {x:M, w:250};
+  const cPerson = {x:M+250, w:320};
+  const cCat = {x:M+570, w:320};
+  const cNote = {x:M+890, w:500};
+  const cFrom = {x:M+1390, w:250};
+  const cTo = {x:M+1640, w:250};
+  const cAmt = {x:W-M-350, w:350};
+  const cAmount = cAmt;
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
@@ -1890,19 +1803,187 @@ function renderHistoryPages(o){
   }
   function ensure(hh){ if(y+hh>H-M-100) newPage(); }
   function drawTableHeader(){
-    const hh=80;
-    drawCellRect(cDate.x,cDate.w,hh,'#F3E8D3'); drawCellRect(cCat.x,cCat.w,hh,'#F3E8D3'); drawCellRect(cNote.x,cNote.w,hh,'#F3E8D3'); drawCellRect(cMedia.x,cMedia.w,hh,'#F3E8D3'); drawCellRect(cAmt.x,cAmt.w,hh,'#F3E8D3');
-    font(28,true); ctx.fillStyle='#8B7355'; ctx.textAlign='left';
-    ctx.fillText('Date', cDate.x+15, y+50);
-    ctx.fillText('Person/Category', cCat.x+15, y+50);
-    ctx.fillText('Note', cNote.x+15, y+50);
-    ctx.fillText('Media', cMedia.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText('Amount', cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=hh;
+    const hh1=50, hh2=50, totalH=100;
+    ctx.fillStyle='#F3E8D3';
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
+    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText('Date', cDate.x+10, y+32);
+    ctx.fillText('Person', cPerson.x+10, y+32);
+    ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    ctx.textAlign='center';
+    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+    ctx.textAlign='left';
+    ctx.fillText('From', cFrom.x+10, y+hh1+32);
+    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.textAlign='right';
+    ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
+    ctx.textAlign='left';
+    y+=totalH;
+  }
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; drawTopHeader(); if(tableHeaderActive){ drawTableHeader(); } }
+  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
+  function mediumLabel(id){
+    if(!id) return '';
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
+    return map[id] || id;
+  }
+  function getFromTo(item){
+    const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Bank';
+    const tRaw = item.toChannel || item.toMedium || '';
+    const f = mediumLabel(fRaw);
+    const t2 = mediumLabel(tRaw);
+    return {from:f, to:t2};
+  }
+  newPage();
+  if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; const fDisp=from?formatDateForPdf(from):'...'; const tDisp=to?formatDateForPdf(to):'...'; ctx.fillText(t.period + ': ' + fDisp + ' → ' + tDisp, M, y); y+=60; }
+  let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, category:'', cat:'', personName:p.name, type:'loan', amount:l.amount, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||l.method||l.media||'', toChannel:l.toChannel||l.toMedium||'', medium:l.medium||l.method||l.media||'', method:l.medium||l.method||l.media||'', media:l.medium||l.method||l.media||'', note:l.note||''})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, category:'', cat:'', personName:p.name, type:'payment', amount:pay.amount, fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||pay.medium||pay.media||'', toChannel:pay.toChannel||pay.toMedium||'', medium:pay.method||pay.medium||pay.media||'', method:pay.method||pay.medium||pay.media||'', media:pay.method||pay.medium||pay.media||'', note:pay.note||''})); }); all.sort((a,b)=>a.date.localeCompare(b.date));
+  if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
+    heading((lang==='en'?'All '+(kind==='given'?'Given':'Taken')+' History - '+all.length+' records':'সব '+(kind==='given'?'প্রদান':'গ্রহণ')+' - '+all.length+' রেকর্ড'), '#2D2A26');
+    drawTableHeader();
+    tableHeaderActive=true;
+    let grand=0;
+    all.forEach(item=>{
+      const ch = getFromTo(item);
+      font(24,false);
+      const personLines=wrapLines(item.personName||item.person||'', cPerson.w-20);
+      const catLines=wrapLines(item.category||'', cCat.w-20);
+      const noteLines=wrapLines(item.note||'', cNote.w-20);
+      const fromLines=wrapLines(ch.from||'', cFrom.w-20);
+      const toLines=wrapLines(ch.to||'', cTo.w-20);
+      const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
+      const h=Math.max(70, maxLines*32+30);
+      ensure(h+10);
+      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
+      const baseY=y;
+      ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
+      personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+      catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+      ctx.fillStyle='#5D4E37';
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
+      ctx.fillStyle='#2D2A26';
+      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
+      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
+      ctx.fillStyle=item.type==='payment'?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
+      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
+      ctx.textAlign='left'; y+=h; grand+=item.amount;
+    });
+    y+=10; ensure(100); const th=80; 
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
+    font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
+    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
+  }
+  pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
+  return pages;
+}
+
+
+
+
+function buildAllLoansPdfBlob(o){
+  const pages=renderAllLoansPages(o);
+  const jpegs=pages.map(c=>{
+    const b64=c.toDataURL('image/jpeg',1.0).split(',')[1];
+    const bin=atob(b64), bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return {bytes,w:c.width,h:c.height};
+  });
+  return buildPdfFromJpegs(jpegs);
+}
+
+
+
+
+
+function renderHistoryPages(o){
+  const t=o.t, lang=o.lang||'bn', filter=o.filter||'all', list=o.list||[];
+  const W=2480,H=3508,M=120;
+  const pages=[]; let cv,ctx,y=0;
+  let tableHeaderActive=false;
+  const cDate = {x:M, w:250};
+  const cPerson = {x:M+250, w:320};
+  const cCat = {x:M+570, w:320};
+  const cNote = {x:M+890, w:500};
+  const cFrom = {x:M+1390, w:250};
+  const cTo = {x:M+1640, w:250};
+  const cAmt = {x:W-M-350, w:350};
+  const cAmount = cAmt;
+  const cMedia = cFrom;
+  const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
+  const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
+  const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+  const isEn = (o.lang||'en')==='en';
+  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
+  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+  function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function drawTopHeader(){
+    const leftX = M; let ly = y;
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    let _maxDevW=0; const devBlockW=900;
+    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
+    const devBlockX=W-M-_maxDevW; let ry=y;
+    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
+    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
+  }
+  function ensure(hh){ if(y+hh>H-M-100) newPage(); }
+  function drawTableHeader(){
+    const hh1=50, hh2=50, totalH=100;
+    ctx.fillStyle='#F3E8D3';
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+    ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
+    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText('Date', cDate.x+10, y+32);
+    ctx.fillText('Person', cPerson.x+10, y+32);
+    ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    ctx.textAlign='center';
+    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+    ctx.textAlign='left';
+    ctx.fillText('From', cFrom.x+10, y+hh1+32);
+    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.textAlign='right';
+    ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
+    ctx.textAlign='left';
+    y+=totalH;
   }
   function newPage(){
     cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M;
     drawTopHeader();
-    // Repeat History heading on every page
     ensure(140); y+=10; font(38, true); ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(filter==='all'?t.history+' - All':t.history+' - '+filter, W-M*2), M, y); y+=50;
     font(22,false); ctx.fillStyle='#8B7355'; ctx.fillText('Total Records: '+list.length, M, y); y+=10;
     ctx.strokeStyle='#C9A86A'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=30;
@@ -1910,44 +1991,63 @@ function renderHistoryPages(o){
       drawTableHeader();
     }
   }
-  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
+  function mediumLabel(id){
+    if(!id) return '';
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
+    return map[id] || id;
+  }
+  function getFromTo(item){
+    const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+    const tRaw = item.toChannel || item.toMedium || '';
+    const f = mediumLabel(fRaw);
+    const t2 = mediumLabel(tRaw);
+    return {from:f, to:t2};
+  }
   newPage();
   if(!list.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
     drawTableHeader();
     tableHeaderActive=true;
     let total=0;
     list.forEach(item=>{
-      const catText = (item.person || item.category || item.cat || '')+'';
+      const ch = getFromTo(item);
+      // RULE: Person transaction -> Person column, Category transaction -> Category column
+      const isPersonTx = item.personName || item.personId || (item.type && (item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='given' || item.type==='taken' || item.type==='return' || item.type==='repayment'));
+      const catText = isPersonTx ? '' : (item.category || item.categoryBn || item.cat || '')+'';
+      const personText = isPersonTx ? (item.personName || item.person || '')+'' : '';
       const noteText = (item.note || '')+'';
-      const mediaText = (item.medium || item.method || item.media || '')+'';
-      font(26,false);
-      const catLines=wrapLines(catText, cCat.w-30);
-      const noteLines=wrapLines(noteText, cNote.w-30);
-      const mediaLines=wrapLines(mediaText, cMedia.w-30);
-      const maxLines=Math.max(catLines.length, noteLines.length, mediaLines.length,1);
-      const h=Math.max(70, maxLines*36+30);
+      font(24,false);
+      const catLines=wrapLines(catText, cCat.w-20);
+      const noteLines=wrapLines(noteText, cNote.w-20);
+      const personLines=wrapLines(typeof personText!=='undefined' ? personText : (item.personName||item.person||''), cPerson.w-20);
+      const fromLines=wrapLines(ch.from||'', cFrom.w-20);
+      const toLines=wrapLines(ch.to||'', cTo.w-20);
+      const maxLines=Math.max(catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length,1);
+      const h=Math.max(70, maxLines*32+30);
       ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cMedia.x,cMedia.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
+      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-30), cDate.x+15, baseY+42);
-      catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-30), cCat.x+15, baseY+32+i*36); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
+      personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+      catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-30), cNote.x+15, baseY+32+i*36); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
       ctx.fillStyle='#2D2A26';
-      mediaLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cMedia.w-30), cMedia.x+15, baseY+32+i*36); });
+      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
+      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-30), cAmt.x+cAmt.w-15, baseY+42);
+      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; total+=item.amount;
     });
-    y+=10; ensure(100); const th=80; const first4W = cMedia.x + cMedia.w - cDate.x;
-    drawCellRect(cDate.x, first4W, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
+    y+=10; ensure(100); const th=80; 
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+list.length+' records)', cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(total), cAmt.w-30), cAmt.x+cAmt.w-15, y+50); ctx.textAlign='left'; y+=th;
+    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(total), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
+
 
 
 
@@ -2597,15 +2697,15 @@ setTimeout(()=>{
   const filteredHistory = useMemo(()=>{
     let all = [];
     transactions.forEach(t=>{
-      all.push({id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, kind:'tx'});
+      all.push({id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, fromChannel:t.fromChannel||t.fromMedium||t.channel||t.medium||'Cash', toChannel:t.toChannel||t.toMedium||'', kind:'tx', person:'', personName:''});
     });
     peopleGiven.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||''), medium:l.medium||'', method:l.medium||'', media:l.medium||'', kind:'loan_given', personName:p.name, personId:p.id, personKind:'given'}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||''), medium:pay.method||'', method:pay.method||'', media:pay.method||'', kind:'return', personName:p.name, personId:p.id, personKind:'given'}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_given', amount:l.amount, category:'', categoryBn:'', note:(l.note||''), medium:l.medium||'', fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||'Bank', toChannel:l.toChannel||l.toMedium||'', method:l.medium||'', media:l.medium||'', kind:'loan_given', personName:p.name, personId:p.id, personKind:'given'}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'return_received', amount:pay.amount, category:'', categoryBn:'', note:(pay.note||''), medium:pay.method||'', fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||'Bank', toChannel:pay.toChannel||pay.toMedium||'', method:pay.method||'', media:pay.method||'', kind:'return', personName:p.name, personId:p.id, personKind:'given'}));
     });
     peopleTaken.forEach(p=>{
-      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:p.name, categoryBn:p.name, note:(l.note||''), medium:l.medium||'', method:l.medium||'', media:l.medium||'', kind:'loan_taken', personName:p.name, personId:p.id, personKind:'taken'}));
-      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:p.name, categoryBn:p.name, note:(pay.note||''), medium:pay.method||'', method:pay.method||'', media:pay.method||'', kind:'repayment', personName:p.name, personId:p.id, personKind:'taken'}));
+      p.loans.forEach(l=> all.push({id:l.id, date:l.date, type:'loan_taken', amount:l.amount, category:'', categoryBn:'', note:(l.note||''), medium:l.medium||'', fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||'Bank', toChannel:l.toChannel||l.toMedium||'', method:l.medium||'', media:l.medium||'', kind:'loan_taken', personName:p.name, personId:p.id, personKind:'taken'}));
+      p.payments.forEach(pay=> all.push({id:pay.id, date:pay.date, type:'repayment', amount:pay.amount, category:'', categoryBn:'', note:(pay.note||''), medium:pay.method||'', fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||'Bank', toChannel:pay.toChannel||pay.toMedium||'', method:pay.method||'', media:pay.method||'', kind:'repayment', personName:p.name, personId:p.id, personKind:'taken'}));
     });
     bankLoans.forEach(b=>{
       all.push({id:b.id, date:b.loanDate||b.disbursementDate||'', type:'bank_loan', amount:b.amount, category:b.bankName, categoryBn:b.bankName, note:b.termMonths+'mo • '+b.interestRate+'%', kind:'bank'});
@@ -2771,7 +2871,7 @@ setTimeout(()=>{
           historyFilter==='loan_given' ? h('button', {onClick:()=>setPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
           historyFilter==='loan_taken' ? h('button', {onClick:()=>setPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
           historyFilter==='return_received' ? h('button', {onClick:()=>setPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Return':'ফেরত যোগ') : null,
-          historyFilter==='repayment' ? h('button', {onClick:()=>setPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Repay':'পরিশোধ যোগ') : null,
+          historyFilter==='repayment' ? h('button', {onClick:()=>setPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Repayment':'পরিশোধ যোগ') : null,
           historyFilter==='bank_loan' ? h('button', {onClick:()=>setAddType('bankLoan'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.bankLoan) : null,
           h('div', {className:'flex-1'}),
           h('div', {className:'flex gap-1.5'},
