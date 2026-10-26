@@ -1127,6 +1127,47 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
   const [editingPerson, setEditingPerson] = useState(false);
   const [editName, setEditName] = useState(person.name);
   const [editMobile, setEditMobile] = useState(person.mobile||'');
+  const [contactNumbers, setContactNumbers] = useState([]);
+  const [showNumberPicker, setShowNumberPicker] = useState(false);
+  const [contactMsg, setContactMsg] = useState('');
+  function selectNumber(num){ setEditMobile(num); setShowNumberPicker(false); setContactNumbers([]); }
+  async function handlePickContact(){
+    setContactMsg('');
+    try{
+      if(navigator.contacts && navigator.contacts.select){
+        const props = ['name','tel'];
+        const opts = { multiple: false };
+        const contacts = await navigator.contacts.select(props, opts);
+        if(contacts && contacts.length>0){
+          const c = contacts[0];
+          if(c.name && c.name[0]) setEditName(c.name[0]);
+          if(c.tel && c.tel.length>0){
+            const seen = new Set();
+            const clean = [];
+            c.tel.forEach(raw => {
+              const digits = (raw||'').toString().replace(/\D/g,'');
+              if(!digits) return;
+              if(seen.has(digits)) return;
+              seen.add(digits);
+              clean.push(raw);
+            });
+            if(clean.length===1){
+              setEditMobile(clean[0]);
+            } else {
+              setContactNumbers(clean);
+              setShowNumberPicker(true);
+            }
+          }
+        }
+      } else {
+        setContactMsg(t.contactUnsupported || (lang==='bn' ? 'এখানে কন্টাক্ট সাপোর্ট নেই' : 'Contact not supported'));
+      }
+    }catch(e){
+      if(e && e.name!=='NotAllowedError'){
+        setContactMsg(t.contactUnsupported || '');
+      }
+    }
+  }
   function savePersonEdit(){
     const nm = (editName||'').trim();
     if(!nm){ alert(t.newPersonName||'Name required'); return; }
@@ -1226,12 +1267,47 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
     ) : null,
     editingPerson ? h(BottomSheet, {title: t.personDetails ? (t.personDetails + ' - Edit') : 'Edit Person', onClose:()=>setEditingPerson(false)},
       h('div', {className:'space-y-4 p-1'},
-        h(Field, {label: t.newPersonName||'Name'}, h(TextInput, {type:'text', value:editName, onChange:e=>setEditName(e.target.value), placeholder:'Enter correct name'})),
-        h(Field, {label: 'Mobile / Contact'}, h(TextInput, {type:'text', value:editMobile, onChange:e=>setEditMobile(e.target.value), placeholder:'Mobile'})),
+        h(Field, {label: t.newPersonName||'Name'},
+          h('div', {className:'flex gap-2 items-center'},
+            h('div', {className:'flex-1'}, h(TextInput, {type:'text', value:editName, onChange:e=>setEditName(e.target.value), placeholder:'Enter correct name'})),
+            h('button', {type:'button', onClick:handlePickContact, className:'w-[46px] h-[46px] rounded-[14px] bg-white border border-[#F3E8D3] flex items-center justify-center text-[20px] shrink-0', title: t.pickContact || 'Contact'}, '📇')
+          )
+        ),
+        h(Field, {label: 'Mobile / Contact'},
+          h('div', null,
+            h('div', {className:'flex gap-2 items-center'},
+              h('div', {className:'flex-1'}, h(TextInput, {type:'text', value:editMobile, onChange:e=>setEditMobile(e.target.value), placeholder:'Mobile'})),
+              h('button', {type:'button', onClick:handlePickContact, className:'w-[46px] h-[46px] rounded-[14px] bg-white border border-[#F3E8D3] flex items-center justify-center text-[18px] shrink-0', title: t.pickContact || 'Contact'}, '📞')
+            ),
+            contactMsg ? h('p', {className:'text-[11px] text-[#8B7355] mt-1.5'}, contactMsg) : null
+          )
+        ),
         h('div', {className:'flex gap-2 pt-2'},
           h('button', {onClick:()=>setEditingPerson(false), className:'flex-1 py-3 rounded-full bg-white border border-[#F3E8D3] text-[#2D2A26] font-bold'}, t.cancel||'Cancel'),
           h('button', {onClick:savePersonEdit, className:'flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold'}, t.save||'Save')
-        )
+        ),
+        showNumberPicker ? h('div', {className:'fixed inset-0 z-[85] flex items-end justify-center'},
+          h('div', {className:'absolute inset-0 bg-black/40', onClick:()=>{ setShowNumberPicker(false); }}),
+          h('div', {className:'relative w-full max-w-[460px] bg-white rounded-t-[24px] border border-[#F3E8D3] max-h-[70vh] overflow-y-auto'},
+            h('div', {className:'flex items-center justify-between p-4 border-b border-[#F3E8D3]'},
+              h('p', {className:'font-bold text-[14px]'}, 'Select Number'),
+              h('button', {onClick:()=>setShowNumberPicker(false), className:'w-8 h-8 rounded-full bg-[#F3E8D3] flex items-center justify-center'}, '✕')
+            ),
+            h('div', {className:'p-3 grid grid-cols-1 gap-2'},
+              contactNumbers.map((num, i) => h('button', {
+                key:i, type:'button',
+                onClick:()=>selectNumber(num),
+                className:'w-full text-left px-4 py-3.5 rounded-[14px] border-2 bg-[#FFFBF7] border-[#F3E8D3] hover:border-[#2D2A26] hover:bg-white transition-all flex items-center justify-between'
+              },
+                h('div', {className:'flex items-center gap-3'},
+                  h('span', {className:'text-[18px]'}, '📞'),
+                  h('span', {className:'text-[14px] font-bold'}, num)
+                ),
+                h('span', {className:'text-[12px] text-[#8B7355]'}, 'Select')
+              ))
+            )
+          )
+        ) : null
       )
     ) : null,
     h(ConfirmModal, {
