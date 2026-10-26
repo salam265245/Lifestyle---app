@@ -670,7 +670,7 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
   const [cat, setCat] = useState(initial ? {en:initial.category, bn:initial.categoryBn} : loadLS('lifestyle_draft_tx_'+type+'_cat', null));
   const [date, setDate] = useState(initial ? initial.date : today());
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_tx_'+type+'_note', ''));
-  const [medium, setMedium] = useState(()=>{ const def = type==='income' ? 'Bank Account' : 'Cash'; return initial ? (initial.medium || def) : (loadLS('lifestyle_draft_tx_'+type+'_medium', def) || def); })();
+  const [medium, setMedium] = useState(()=>{ const def = type==='income' ? 'Bank Account' : 'Cash'; return initial ? (initial.medium || def) : (loadLS('lifestyle_draft_tx_'+type+'_medium', def) || def); });
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_amount', amount); }catch(e){} } }, [amount, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_cat', cat); }catch(e){} } }, [cat, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_date', date); }catch(e){} } }, [date, type, initial]);
