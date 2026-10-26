@@ -671,11 +671,15 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
   const [date, setDate] = useState(initial ? initial.date : today());
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_tx_'+type+'_note', ''));
   const [medium, setMedium] = useState(()=>{ const def = type==='income' ? 'Bank Account' : 'Cash'; return initial ? (initial.medium || def) : (loadLS('lifestyle_draft_tx_'+type+'_medium', def) || def); });
+  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || 'Cash') : loadLS('lifestyle_draft_tx_'+type+'_fromChannel', 'Cash'));
+  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || (type==='income'?'Bank Account':'Cash')) : loadLS('lifestyle_draft_tx_'+type+'_toChannel', type==='income'?'Bank Account':'Cash'));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_amount', amount); }catch(e){} } }, [amount, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_cat', cat); }catch(e){} } }, [cat, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_date', date); }catch(e){} } }, [date, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_note', note); }catch(e){} } }, [note, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_medium', medium); }catch(e){} } }, [medium, type, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_fromChannel', fromChannel); }catch(e){} } }, [fromChannel, type, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_toChannel', toChannel); }catch(e){} } }, [toChannel, type, initial]);
   function submit(){
     if(!amount || !cat) return;
     if(!initial){
@@ -685,15 +689,37 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
         saveLS('lifestyle_draft_tx_'+type+'_date', '');
         saveLS('lifestyle_draft_tx_'+type+'_note', '');
         saveLS('lifestyle_draft_tx_'+type+'_medium', '');
+        saveLS('lifestyle_draft_tx_'+type+'_fromChannel', '');
+        saveLS('lifestyle_draft_tx_'+type+'_toChannel', '');
       }catch(e){}
     }
-    onSave({
-      id: initial ? initial.id : uid(),
-      type,
-      amount: parseFloat(amount) || 0,
-      category: cat.en, categoryBn: cat.bn,
-      date, note, medium
-    });
+    if(type==='income'){
+      onSave({
+        id: initial ? initial.id : uid(),
+        type,
+        amount: parseFloat(amount) || 0,
+        category: cat.en, categoryBn: cat.bn,
+        date, note,
+        medium: toChannel,
+        fromChannel: fromChannel,
+        toChannel: toChannel,
+        fromMedium: fromChannel,
+        toMedium: toChannel,
+        channel: fromChannel
+      });
+    } else {
+      onSave({
+        id: initial ? initial.id : uid(),
+        type,
+        amount: parseFloat(amount) || 0,
+        category: cat.en, categoryBn: cat.bn,
+        date, note, medium,
+        fromChannel: medium,
+        toChannel: '',
+        fromMedium: medium,
+        toMedium: ''
+      });
+    }
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
     h('div', {className:'sticky z-20 bg-[#FFFBF7] px-5 py-3 border-b border-[#F3E8D3] flex gap-2', style:{top:'44px'}},
@@ -705,9 +731,19 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
       h(Field, {label: t.category}, h(CategoryPicker, {t, lang, type, value:cat, onChange:setCat})),
       h('div', {className:'grid grid-cols-2 gap-3'},
         h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
-        h(Field, {label: t.medium}, h(Select, {value:medium, onChange:e=>setMedium(e.target.value)},
-          MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
-        ))
+        type==='income' ?
+          h('div', {className:'grid grid-cols-2 gap-3 col-span-2'},
+            h(Field, {label: lang==='en'?'From Channel':'কোথা থেকে'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
+              MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+            )),
+            h(Field, {label: lang==='en'?'To Channel':'কোন মাধ্যমে পেলাম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
+              MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+            ))
+          )
+        :
+          h(Field, {label: t.medium}, h(Select, {value:medium, onChange:e=>setMedium(e.target.value)},
+            MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+          ))
       ),
       h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)}))
     )
@@ -1127,47 +1163,6 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
   const [editingPerson, setEditingPerson] = useState(false);
   const [editName, setEditName] = useState(person.name);
   const [editMobile, setEditMobile] = useState(person.mobile||'');
-  const [contactNumbers, setContactNumbers] = useState([]);
-  const [showNumberPicker, setShowNumberPicker] = useState(false);
-  const [contactMsg, setContactMsg] = useState('');
-  function selectNumber(num){ setEditMobile(num); setShowNumberPicker(false); setContactNumbers([]); }
-  async function handlePickContact(){
-    setContactMsg('');
-    try{
-      if(navigator.contacts && navigator.contacts.select){
-        const props = ['name','tel'];
-        const opts = { multiple: false };
-        const contacts = await navigator.contacts.select(props, opts);
-        if(contacts && contacts.length>0){
-          const c = contacts[0];
-          if(c.name && c.name[0]) setEditName(c.name[0]);
-          if(c.tel && c.tel.length>0){
-            const seen = new Set();
-            const clean = [];
-            c.tel.forEach(raw => {
-              const digits = (raw||'').toString().replace(/\D/g,'');
-              if(!digits) return;
-              if(seen.has(digits)) return;
-              seen.add(digits);
-              clean.push(raw);
-            });
-            if(clean.length===1){
-              setEditMobile(clean[0]);
-            } else {
-              setContactNumbers(clean);
-              setShowNumberPicker(true);
-            }
-          }
-        }
-      } else {
-        setContactMsg(t.contactUnsupported || (lang==='bn' ? 'এখানে কন্টাক্ট সাপোর্ট নেই' : 'Contact not supported'));
-      }
-    }catch(e){
-      if(e && e.name!=='NotAllowedError'){
-        setContactMsg(t.contactUnsupported || '');
-      }
-    }
-  }
   function savePersonEdit(){
     const nm = (editName||'').trim();
     if(!nm){ alert(t.newPersonName||'Name required'); return; }
@@ -1267,47 +1262,12 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
     ) : null,
     editingPerson ? h(BottomSheet, {title: t.personDetails ? (t.personDetails + ' - Edit') : 'Edit Person', onClose:()=>setEditingPerson(false)},
       h('div', {className:'space-y-4 p-1'},
-        h(Field, {label: t.newPersonName||'Name'},
-          h('div', {className:'flex gap-2 items-center'},
-            h('div', {className:'flex-1'}, h(TextInput, {type:'text', value:editName, onChange:e=>setEditName(e.target.value), placeholder:'Enter correct name'})),
-            h('button', {type:'button', onClick:handlePickContact, className:'w-[46px] h-[46px] rounded-[14px] bg-white border border-[#F3E8D3] flex items-center justify-center text-[20px] shrink-0', title: t.pickContact || 'Contact'}, '📇')
-          )
-        ),
-        h(Field, {label: 'Mobile / Contact'},
-          h('div', null,
-            h('div', {className:'flex gap-2 items-center'},
-              h('div', {className:'flex-1'}, h(TextInput, {type:'text', value:editMobile, onChange:e=>setEditMobile(e.target.value), placeholder:'Mobile'})),
-              h('button', {type:'button', onClick:handlePickContact, className:'w-[46px] h-[46px] rounded-[14px] bg-white border border-[#F3E8D3] flex items-center justify-center text-[18px] shrink-0', title: t.pickContact || 'Contact'}, '📞')
-            ),
-            contactMsg ? h('p', {className:'text-[11px] text-[#8B7355] mt-1.5'}, contactMsg) : null
-          )
-        ),
+        h(Field, {label: t.newPersonName||'Name'}, h(TextInput, {type:'text', value:editName, onChange:e=>setEditName(e.target.value), placeholder:'Enter correct name'})),
+        h(Field, {label: 'Mobile / Contact'}, h(TextInput, {type:'text', value:editMobile, onChange:e=>setEditMobile(e.target.value), placeholder:'Mobile'})),
         h('div', {className:'flex gap-2 pt-2'},
           h('button', {onClick:()=>setEditingPerson(false), className:'flex-1 py-3 rounded-full bg-white border border-[#F3E8D3] text-[#2D2A26] font-bold'}, t.cancel||'Cancel'),
           h('button', {onClick:savePersonEdit, className:'flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold'}, t.save||'Save')
-        ),
-        showNumberPicker ? h('div', {className:'fixed inset-0 z-[85] flex items-end justify-center'},
-          h('div', {className:'absolute inset-0 bg-black/40', onClick:()=>{ setShowNumberPicker(false); }}),
-          h('div', {className:'relative w-full max-w-[460px] bg-white rounded-t-[24px] border border-[#F3E8D3] max-h-[70vh] overflow-y-auto'},
-            h('div', {className:'flex items-center justify-between p-4 border-b border-[#F3E8D3]'},
-              h('p', {className:'font-bold text-[14px]'}, 'Select Number'),
-              h('button', {onClick:()=>setShowNumberPicker(false), className:'w-8 h-8 rounded-full bg-[#F3E8D3] flex items-center justify-center'}, '✕')
-            ),
-            h('div', {className:'p-3 grid grid-cols-1 gap-2'},
-              contactNumbers.map((num, i) => h('button', {
-                key:i, type:'button',
-                onClick:()=>selectNumber(num),
-                className:'w-full text-left px-4 py-3.5 rounded-[14px] border-2 bg-[#FFFBF7] border-[#F3E8D3] hover:border-[#2D2A26] hover:bg-white transition-all flex items-center justify-between'
-              },
-                h('div', {className:'flex items-center gap-3'},
-                  h('span', {className:'text-[18px]'}, '📞'),
-                  h('span', {className:'text-[14px] font-bold'}, num)
-                ),
-                h('span', {className:'text-[12px] text-[#8B7355]'}, 'Select')
-              ))
-            )
-          )
-        ) : null
+        )
       )
     ) : null,
     h(ConfirmModal, {
@@ -1409,40 +1369,68 @@ const PDF_FONT = "'Noto Sans Bengali','Hind Siliguri','Nirmala UI','Kalpurush',s
 
 
 
-
 function renderReportPages(o){
   const t = o.t, from = o.from, to = o.to, lang=o.lang||'bn';
   const W = 2480, H = 3508, M = 120;
   const pages = []; let cv, ctx, y = 0; let tableHeaderActive=false;
-  const hidePerson = true;
-  const hideCategory = false;
-  let wDate=250, wPerson=hidePerson?0:320, wCat=hideCategory?0:320, wNote=500, wFrom=250, wTo=250, wAmt=350;
-  const extra = (hidePerson?320:0)+(hideCategory?320:0);
-  wNote += extra;
-  let curX=M;
-  const cDate = {x:curX, w:wDate}; curX+=wDate;
-  const cPerson = {x:curX, w:wPerson}; curX+=wPerson;
-  const cCat = {x:curX, w:wCat}; curX+=wCat;
-  const cNote = {x:curX, w:wNote}; curX+=wNote;
-  const cFrom = {x:curX, w:wFrom}; curX+=wFrom;
-  const cTo = {x:curX, w:wTo}; curX+=wTo;
-  const cAmount = {x:curX, w:wAmt};
-  const cAmt = cAmount;
-  const cMedia = cFrom;
-  const cPersonW = cPerson;
+
+  let hidePersonCol = false;
+  let hideCategoryCol = false;
+  let singleChannel = false;
+  function buildCols(hP, hC, sC){
+    hidePersonCol = !!hP;
+    hideCategoryCol = !!hC;
+    singleChannel = !!sC;
+    const dateW=250;
+    const personW=hidePersonCol?0:320;
+    const catW=hideCategoryCol?0:320;
+    const baseNoteW=500;
+    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
+    let noteW = baseNoteW + extra;
+    if(singleChannel){
+      // single channel: From+To merged into one channel col of 500, extra goes to note
+      // Note already includes extra, channel width 500
+    }
+    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
+    const amtW=350;
+    let x=M;
+    const cDate = {x:x, w:dateW}; x+=dateW;
+    const cPerson = {x:x, w:personW}; x+=personW;
+    const cCat = {x:x, w:catW}; x+=catW;
+    const cNote = {x:x, w:noteW}; x+=noteW;
+    const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
+    const cTo = {x:x, w:toW}; x+=toW;
+    const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
+    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmount = cAmt;
+    return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
+  }
+  let cols = buildCols(false,false,false);
+  let cDate = cols.cDate;
+  let cPerson = cols.cPerson;
+  let cCat = cols.cCat;
+  let cNote = cols.cNote;
+  let cFrom = cols.cFrom;
+  let cTo = cols.cTo;
+  let cChannel = cols.cChannel;
+  let cAmt = cols.cAmt;
+  let cAmount = cols.cAmount;
+  let cMedia = cols.cMedia;
+  let cPersonW = cols.cPersonW;
+
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
-  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'User: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'Designation: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'Address: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'Mobile: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['Developer','Md. Abdus Salam','Bantra, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
+  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
-  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'..').width>maxW) str=str.slice(0,-1); return str+'..'; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function drawCellRect(x,w,h, fill){ if(w<=0) return; if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'Download: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
@@ -1450,38 +1438,62 @@ function renderReportPages(o){
     ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   }
   function ensure(hh){ if(y + hh > H - M - 100){ newPage(); } }
-  function drawTableHeader(){
-    const hh1=50, hh2=50, totalH=100;
+  
+  function drawTableHeader(opts){
+    opts = opts||{};
+    const hP = !!opts.hidePerson;
+    const hC = !!opts.hideCategory;
+    const sC = !!opts.singleChannel;
+    const newCols = buildCols(hP, hC, sC);
+    cDate = newCols.cDate; cPerson = newCols.cPerson; cCat = newCols.cCat; cNote = newCols.cNote; cFrom = newCols.cFrom; cTo = newCols.cTo; cChannel = newCols.cChannel; cAmt = newCols.cAmt; cAmount = newCols.cAmount; cMedia = newCols.cMedia; cPersonW = newCols.cPersonW;
+    cols = newCols;
+    const hh1=50, hh2=50, totalH= sC ? 50 : 100;
     ctx.fillStyle='#F3E8D3';
-    if(cDate.w>0) ctx.fillRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.fillRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.fillRect(cNote.x, y, cNote.w, totalH);
-    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmount.w>0) ctx.fillRect(cAmount.x, y, cAmount.w, totalH);
-    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.fillRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+      ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    }
+    if(!sC) ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    else ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
     ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
-    if(cDate.w>0) ctx.strokeRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.strokeRect(cNote.x, y, cNote.w, totalH);
-    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmount.w>0) ctx.strokeRect(cAmount.x, y, cAmount.w, totalH);
-    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.strokeRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    }
+    ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    if(cDate.w>0) ctx.fillText('Date', cDate.x+10, y+32);
-    if(cPerson.w>0) ctx.fillText('Person', cPerson.x+10, y+32);
-    if(cCat.w>0) ctx.fillText('Category', cCat.x+10, y+32);
-    if(cNote.w>0) ctx.fillText('Note', cNote.x+10, y+32);
-    ctx.textAlign='center';
-    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
-    ctx.textAlign='left';
-    ctx.fillText('From', cFrom.x+10, y+hh1+32);
-    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.fillText('Date', cDate.x+10, y+32);
+    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    if(sC){
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cChannel.x + cChannel.w/2, y+32);
+    } else {
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+      ctx.textAlign='left';
+      ctx.fillText('From', cFrom.x+10, y+hh1+32);
+      ctx.fillText('To', cTo.x+10, y+hh1+32);
+    }
     ctx.textAlign='right';
-    if(cAmount.w>0) ctx.fillText('Amount', cAmount.x+cAmount.w-10, y+32);
+    ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
     ctx.textAlign='left';
     y+=totalH;
   }
@@ -1489,8 +1501,8 @@ function renderReportPages(o){
     cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M;
     drawTopHeader();
     if(tableHeaderActive){
-      ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + formatDateForPdf(from) + ' -> ' + formatDateForPdf(to), M, y); y+=60;
-      drawTableHeader();
+      ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + formatDateForPdf(from) + ' → ' + formatDateForPdf(to), M, y); y+=60;
+      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false});
     }
   }
   function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
@@ -1500,15 +1512,24 @@ function renderReportPages(o){
     const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
     return map[id] || id;
   }
-  function getFromTo(item){
+    function getFromTo(item){
     const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-    const tRaw = item.toChannel || item.toMedium || '';
+    let tRaw = item.toChannel || item.toMedium || '';
+    // For person loans, ensure To is not empty - fallback to Cash or From
+    if(!tRaw){
+      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
+        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+        // If From and To same, keep To as same to show
+        if(tRaw===fRaw) tRaw = fRaw;
+        else if(!tRaw) tRaw = 'Cash';
+      }
+    }
     const f = mediumLabel(fRaw);
     const t2 = mediumLabel(tRaw);
     return {from:f, to:t2};
   }
   newPage();
-  ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + formatDateForPdf(from) + ' -> ' + formatDateForPdf(to), M, y); y+=60;
+  ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + formatDateForPdf(from) + ' → ' + formatDateForPdf(to), M, y); y+=60;
   const all = [];
   (o.transactions||[]).forEach(tx=>{
     if(inRange(tx.date)) all.push({date:tx.date, person:'', category:tx.category, cat:tx.category, personName:'', note:tx.note||'', fromChannel:tx.fromChannel||tx.fromMedium||tx.channel||tx.medium||tx.method||tx.media||'Cash', toChannel:tx.toChannel||tx.toMedium||'', medium:tx.medium||tx.method||tx.media||'Cash', amount:tx.amount, type:tx.type});
@@ -1536,45 +1557,42 @@ function renderReportPages(o){
   all.sort((a,b)=>a.date.localeCompare(b.date));
   if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
     heading(t.reportHeading||'Report');
-    drawTableHeader();
+    drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false});
     tableHeaderActive=true;
     let grand=0;
     all.forEach(item=>{
       const ch = getFromTo(item);
       font(24,false);
-      const personLines=hidePerson?[]:wrapLines(item.personName||item.person||'', cPerson.w-20);
-      const catLines=hideCategory?[]:wrapLines(item.category||'', cCat.w-20);
+      const personLines=wrapLines(typeof personText!=='undefined' ? personText : (item.personName||item.person||''), cPerson.w-20);
+      const catLines=wrapLines(item.category||'', cCat.w-20);
       const noteLines=wrapLines(item.note||'', cNote.w-20);
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
       const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
       const h=Math.max(70, maxLines*32+30);
       ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
+      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      if(cDate.w>0) ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePerson) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
-      if(!hideCategory) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
+      if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+      if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
       ctx.fillStyle='#5D4E37';
       noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
       ctx.fillStyle='#2D2A26';
-      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
-      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+28+i*30); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); }); }
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      if(cAmount.w>0) ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
+      ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
     y+=10; ensure(100); const th=80; 
-    const totalRowW = cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w;
-    drawCellRect(cDate.x, totalRowW, th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
-
 
 
 
@@ -1612,176 +1630,288 @@ function buildPdfFromJpegs(jpegs){
 
 
 
-
 function renderPersonLoanPages(o){
   const t=o.t, person=o.person, kind=o.kind;
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0; let tableHeaderActive=false; let currentSectionTitle='';
-  let wDate=250;
-  function computeCols(hideP, hideC){
-    let wd=wDate, wp=hideP?0:320, wc=hideC?0:320, wn=500, wf=250, wt=250, wa=350;
-    const extra = (hideP?320:0)+(hideC?320:0);
-    wn+=extra;
-    let cx=M;
-    const cd={x:cx,w:wd}; cx+=wd;
-    const cp={x:cx,w:wp}; cx+=wp;
-    const cc={x:cx,w:wc}; cx+=wc;
-    const cn={x:cx,w:wn}; cx+=wn;
-    const cf={x:cx,w:wf}; cx+=wf;
-    const ct={x:cx,w:wt}; cx+=wt;
-    const ca={x:cx,w:wa};
-    return {cDate:cd,cPerson:cp,cCat:cc,cNote:cn,cFrom:cf,cTo:ct,cAmt:ca,cAmount:ca};
+
+  let hidePersonCol = false;
+  let hideCategoryCol = false;
+  let singleChannel = false;
+  function buildCols(hP, hC, sC){
+    hidePersonCol = !!hP;
+    hideCategoryCol = !!hC;
+    singleChannel = !!sC;
+    const dateW=250;
+    const personW=hidePersonCol?0:320;
+    const catW=hideCategoryCol?0:320;
+    const baseNoteW=500;
+    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
+    let noteW = baseNoteW + extra;
+    if(singleChannel){
+      // single channel: From+To merged into one channel col of 500, extra goes to note
+      // Note already includes extra, channel width 500
+    }
+    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
+    const amtW=350;
+    let x=M;
+    const cDate = {x:x, w:dateW}; x+=dateW;
+    const cPerson = {x:x, w:personW}; x+=personW;
+    const cCat = {x:x, w:catW}; x+=catW;
+    const cNote = {x:x, w:noteW}; x+=noteW;
+    const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
+    const cTo = {x:x, w:toW}; x+=toW;
+    const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
+    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmount = cAmt;
+    return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
   }
-  let curCols = computeCols(false,false);
-  let cDate = curCols.cDate, cPerson = curCols.cPerson, cCat = curCols.cCat, cNote = curCols.cNote, cFrom = curCols.cFrom, cTo = curCols.cTo, cAmt = curCols.cAmt;
-  let cAmount = cAmt;
-  const cMedia = cFrom;
-  const cPersonW = cPerson;
+  let cols = buildCols(false,false,false);
+  let cDate = cols.cDate;
+  let cPerson = cols.cPerson;
+  let cCat = cols.cCat;
+  let cNote = cols.cNote;
+  let cFrom = cols.cFrom;
+  let cTo = cols.cTo;
+  let cChannel = cols.cChannel;
+  let cAmt = cols.cAmt;
+  let cAmount = cols.cAmount;
+  let cMedia = cols.cMedia;
+  let cPersonW = cols.cPersonW;
+
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
-  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'User: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'Designation: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'Address: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'Mobile: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['Developer','Md. Abdus Salam','Bantra, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
+  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
-  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'..').width>maxW) str=str.slice(0,-1); return str+'..'; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function drawCellRect(x,w,h, fill){ if(w<=0) return; if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
-  function drawTopHeader(){
-    const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'Download: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
-    let _maxDevW=0; const devBlockW=900;
-    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
-    const devBlockX=W-M-_maxDevW; let ry=y;
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
-    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
-  }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function ensure(hh){ if(y+hh>H-M-100) newPage(); }
-  function drawTableHeaderWithFlags(hideP, hideC){
-    curCols = computeCols(hideP, hideC);
-    cDate=curCols.cDate; cPerson=curCols.cPerson; cCat=curCols.cCat; cNote=curCols.cNote; cFrom=curCols.cFrom; cTo=curCols.cTo; cAmt=curCols.cAmt; cAmount=cAmt;
-    const hh1=50, hh2=50, totalH=100;
+  
+  function drawTableHeader(opts){
+    opts = opts||{};
+    const hP = !!opts.hidePerson;
+    const hC = !!opts.hideCategory;
+    const sC = !!opts.singleChannel;
+    const newCols = buildCols(hP, hC, sC);
+    cDate = newCols.cDate; cPerson = newCols.cPerson; cCat = newCols.cCat; cNote = newCols.cNote; cFrom = newCols.cFrom; cTo = newCols.cTo; cChannel = newCols.cChannel; cAmt = newCols.cAmt; cAmount = newCols.cAmount; cMedia = newCols.cMedia; cPersonW = newCols.cPersonW;
+    cols = newCols;
+    const hh1=50, hh2=50, totalH= sC ? 50 : 100;
     ctx.fillStyle='#F3E8D3';
-    if(cDate.w>0) ctx.fillRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.fillRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.fillRect(cNote.x, y, cNote.w, totalH);
-    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmt.w>0) ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
-    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.fillRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+      ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    }
+    if(!sC) ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    else ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
     ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
-    if(cDate.w>0) ctx.strokeRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.strokeRect(cNote.x, y, cNote.w, totalH);
-    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmt.w>0) ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
-    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.strokeRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    }
+    ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    if(cDate.w>0) ctx.fillText('Date', cDate.x+10, y+32);
-    if(cPerson.w>0) ctx.fillText('Person', cPerson.x+10, y+32);
-    if(cCat.w>0) ctx.fillText('Category', cCat.x+10, y+32);
-    if(cNote.w>0) ctx.fillText('Note', cNote.x+10, y+32);
-    ctx.textAlign='center';
-    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
-    ctx.textAlign='left';
-    ctx.fillText('From', cFrom.x+10, y+hh1+32);
-    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.fillText('Date', cDate.x+10, y+32);
+    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    if(sC){
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cChannel.x + cChannel.w/2, y+32);
+    } else {
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+      ctx.textAlign='left';
+      ctx.fillText('From', cFrom.x+10, y+hh1+32);
+      ctx.fillText('To', cTo.x+10, y+hh1+32);
+    }
     ctx.textAlign='right';
-    if(cAmt.w>0) ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
+    ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
     ctx.textAlign='left';
     y+=totalH;
-    return curCols;
   }
-  function newPage(){
-    cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M;
-    drawTopHeader();
-    ensure(60); font(38,true); ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit((person.name||'')+' - '+(kind==='given'?t.loansGiven:t.loansTaken), W-M*2), M, y); y+=50;
-    ctx.strokeStyle='#C9A86A'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=30;
-    if(tableHeaderActive){
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; drawTopHeader(); if(currentSectionTitle){ ensure(140); const mergedH = 75; const fullW = (cAmount.x + cAmount.w) - cDate.x; drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF'); font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(currentSectionTitle, W-M*2), cDate.x+15, y+48); ctx.textAlign='left'; y+=mergedH+8; } if(tableHeaderActive){ drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); } }
+  function headingOld(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
+  function mediumLabel(id){
+    if(!id) return '';
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
+    return map[id] || id;
+  }
+    function getFromTo(item){
+    const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+    let tRaw = item.toChannel || item.toMedium || '';
+    // For person loans, ensure To is not empty - fallback to Cash or From
+    if(!tRaw){
+      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
+        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+        // If From and To same, keep To as same to show
+        if(tRaw===fRaw) tRaw = fRaw;
+        else if(!tRaw) tRaw = 'Cash';
+      }
+    }
+    const f = mediumLabel(fRaw);
+    const t2 = mediumLabel(tRaw);
+    return {from:f, to:t2};
+  }
+  function rowData(item, isPay){
+    const ch = getFromTo(item);
+    const dateStr = formatDateForPdf(item.date||'');
+    const personText = (item.personName || person.name || '')+'';
+    const noteText = (item.note || '')+'';
+    font(24,false);
+    const personLines = wrapLines(personText, cPerson.w-20);
+    const catLines = wrapLines('', cCat.w-20); // Category empty for person loan
+    const noteLines = wrapLines(noteText, cNote.w-20);
+    const fromLines = wrapLines(ch.from||'', cFrom.w-20);
+    const toLines = wrapLines(ch.to||'', cTo.w-20);
+    const maxLines = Math.max(personLines.length, noteLines.length, fromLines.length, toLines.length, 1);
+    const h = Math.max(70, maxLines*32+30);
+    ensure(h+10);
+    drawCellRect(cDate.x,cDate.w,h,'#FFFFFF');
+    if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF');
+    if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF');
+    drawCellRect(cNote.x,cNote.w,h,'#FFFFFF');
+    drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF');
+    drawCellRect(cTo.x,cTo.w,h,'#FFFFFF');
+    drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
+    const baseY=y;
+    ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
+    ctx.fillText(fit(dateStr, cDate.w-20), cDate.x+10, baseY+32);
+    if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+    if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+    ctx.fillStyle='#5D4E37';
+    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
+    ctx.fillStyle='#2D2A26';
+    fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
+    toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
+    ctx.fillStyle=isPay?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
+    ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
+    ctx.textAlign='left';
+    y+=h;
+  }
+  newPage();
+  font(44,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(person.name+(person.mobile?' • '+person.mobile:''), W-M*2), M, y); y+=70;
+  const totalLoaned=person.loans.reduce((a,l)=>a+l.amount,0); const totalPaid=person.payments.reduce((a,p)=>a+p.amount,0); const balance=totalLoaned-totalPaid;
+  font(38,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((kind==='given'?t.youWillGet:t.youOwe)+': '+fmtMoney(balance), W-M*2), M, y); y+=60;
+  font(36,true); ctx.fillStyle='#000000'; ctx.fillText(fit(t.total+': '+fmtMoney(totalLoaned)+' • '+(kind==='given'?t.totalReturned:t.totalRepaid)+': '+fmtMoney(totalPaid), W-M*2), M, y); y+=50;
+
+  const isMulti = person.loans.length>0 && person.payments.length>0;
+
+  if(isMulti){
+    ensure(20);
+    ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
+    if(!person.loans.length){
+      ensure(140);
+      const mergedH = 75;
+      const fullW = (cAmount.x + cAmount.w) - cDate.x;
+      drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
+      font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
+      ctx.textAlign='left';
+      y+=mergedH+8;
+      ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
+    } else {
+      ensure(140);
+      const mergedH = 75;
+      const fullW = (cAmount.x + cAmount.w) - cDate.x;
+      drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
+      font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      currentSectionTitle = t.loanHistory||'Loan Entries';
+      ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
+      ctx.textAlign='left';
+      y+=mergedH+8;
+      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
+      ensure(90); const thL=80; const first4W = cAmount.x - cDate.x;
+      drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
+      font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50);
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thL;
+    }
+    y+=60;
+    if(!person.payments.length){
+      ensure(140);
+      font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(t.paymentHistory||'Payment', W-M*2), M, y); y+=80;
+      ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
+    } else {
+      ensure(140);
+      const mergedH = 75;
+      const fullW = (cAmount.x + cAmount.w) - cDate.x;
+      drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
+      font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      currentSectionTitle = t.paymentHistory||'Payment';
+      ctx.fillText(fit(t.paymentHistory||'Payment', W-M*2), cDate.x+15, y+48);
+      ctx.textAlign='left';
+      y+=mergedH+8;
+      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
+      ensure(90); const thP=80; const first4W = cAmount.x - cDate.x;
+      drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
+      font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50);
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thP;
+    }
+  } else {
+    if(!person.loans.length){
+      headingOld(t.loanHistory);
+      ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
+    } else {
+      ensure(140);
+      const mergedH = 75;
+      const fullW = (cAmount.x + cAmount.w) - cDate.x;
+      drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
+      font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      currentSectionTitle = t.loanHistory||'Loan Entries';
+      ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
+      ctx.textAlign='left';
+      y+=mergedH+8;
+      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
+      ensure(90); const thL=80; const first4W = cAmount.x - cDate.x;
+      drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
+      font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50);
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thL+20;
+    }
+    if(!person.payments.length){
+      headingOld(t.paymentHistory);
+      ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
+    } else {
+      ensure(140);
+      const mergedH = 75;
+      const fullW = (cAmount.x + cAmount.w) - cDate.x;
+      drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
+      font(38,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+      ctx.fillText('Payment', cDate.x+15, y+48);
+      ctx.textAlign='left';
+      y+=mergedH+8;
+      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false});
+      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
+      ensure(90); const thP=80; const first4W = cAmount.x - cDate.x;
+      drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
+      font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+50);
+      ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thP+20;
     }
   }
-  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
-  function mediumLabel(id){ if(!id) return ''; const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'}; return map[id]||id; }
-  function getFromTo(item){ const fRaw=item.fromChannel||item.fromMedium||item.channel||item.medium||item.method||item.media||'Bank'; const tRaw=item.toChannel||item.toMedium||''; return {from:mediumLabel(fRaw), to:mediumLabel(tRaw)}; }
-  newPage();
-  const loans = person.loans||[];
-  const payments = person.payments||[];
-  let grandTotal=0;
-  if(loans.length){
-    const secTitle = kind==='given' ? (isEn?'Given':'Given') : (isEn?'Taken':'Taken');
-    heading(secTitle+' ('+loans.length+')');
-    const hideP = true;
-    const hideC = false;
-    drawTableHeaderWithFlags(hideP, hideC);
-    tableHeaderActive=true;
-    currentSectionTitle=secTitle;
-    loans.forEach(item=>{
-      const ch=getFromTo(item);
-      font(24,false);
-      const noteLines=wrapLines(item.note||'', cNote.w-20);
-      const fromLines=wrapLines(ch.from||'', cFrom.w-20);
-      const toLines=wrapLines(ch.to||'', cTo.w-20);
-      const maxLines=Math.max(noteLines.length, fromLines.length, toLines.length,1);
-      const h=Math.max(70, maxLines*32+30);
-      ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
-      const baseY=y;
-      ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      if(cDate.w>0) ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
-      ctx.fillStyle='#2D2A26';
-      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
-      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
-      ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      if(cAmt.w>0) ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
-      ctx.textAlign='left'; y+=h; grandTotal+=item.amount;
-    });
-  }
-  if(payments.length){
-    const secTitle2 = kind==='given' ? (isEn?'Return':'Return') : (isEn?'Repayment':'Repayment');
-    heading(secTitle2+' ('+payments.length+')');
-    const hideP2 = false;
-    const hideC2 = true;
-    drawTableHeaderWithFlags(hideP2, hideC2);
-    tableHeaderActive=true;
-    currentSectionTitle=secTitle2;
-    payments.forEach(item=>{
-      const ch=getFromTo(item);
-      font(24,false);
-      const noteLines=wrapLines(item.note||'', cNote.w-20);
-      const fromLines=wrapLines(ch.from||'', cFrom.w-20);
-      const toLines=wrapLines(ch.to||'', cTo.w-20);
-      const maxLines=Math.max(noteLines.length, fromLines.length, toLines.length,1);
-      const h=Math.max(70, maxLines*32+30);
-      ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
-      const baseY=y;
-      ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      if(cDate.w>0) ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(cPerson.w>0) ctx.fillText(fit(person.name||'', cPerson.w-20), cPerson.x+10, baseY+32);
-      ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
-      ctx.fillStyle='#2D2A26';
-      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
-      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
-      ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      if(cAmt.w>0) ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
-      ctx.textAlign='left'; y+=h;
-    });
-  }
-  y+=10; ensure(100); const th=80;
-  const totalRowW = cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w;
-  drawCellRect(cDate.x,totalRowW,th,'#FFF8E1'); drawCellRect(cAmt.x,cAmt.w,th,'#FFF8E1');
-  font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Given: '+fmtMoney(loans.reduce((s,x)=>s+x.amount,0)), cDate.x+15, y+50);
-  ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grandTotal), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
-
 
 
 
@@ -1801,43 +1931,68 @@ function buildPersonLoanPdfBlob
 
 
 
-
 function renderAllLoansPages(o){
   const t=o.t, lang=o.lang||'bn', kind=o.kind, people=o.people||[], from=o.from||'', to=o.to||'';
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0; let tableHeaderActive=false;
-  const kLow = String(kind||'').toLowerCase();
-  let hidePerson = false, hideCategory = false;
-  if(kLow.includes('given') || kLow.includes('taken')){
-    hidePerson = true;
-  } else if(kLow.includes('return') || kLow.includes('repayment')){
-    hideCategory = true;
+
+  let hidePersonCol = false;
+  let hideCategoryCol = false;
+  let singleChannel = false;
+  function buildCols(hP, hC, sC){
+    hidePersonCol = !!hP;
+    hideCategoryCol = !!hC;
+    singleChannel = !!sC;
+    const dateW=250;
+    const personW=hidePersonCol?0:320;
+    const catW=hideCategoryCol?0:320;
+    const baseNoteW=500;
+    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
+    let noteW = baseNoteW + extra;
+    if(singleChannel){
+      // single channel: From+To merged into one channel col of 500, extra goes to note
+      // Note already includes extra, channel width 500
+    }
+    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
+    const amtW=350;
+    let x=M;
+    const cDate = {x:x, w:dateW}; x+=dateW;
+    const cPerson = {x:x, w:personW}; x+=personW;
+    const cCat = {x:x, w:catW}; x+=catW;
+    const cNote = {x:x, w:noteW}; x+=noteW;
+    const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
+    const cTo = {x:x, w:toW}; x+=toW;
+    const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
+    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmount = cAmt;
+    return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
   }
-  let wDate=250, wPerson=hidePerson?0:320, wCat=hideCategory?0:320, wNote=500, wFrom=250, wTo=250, wAmt=350;
-  const extra = (hidePerson?320:0)+(hideCategory?320:0);
-  wNote += extra;
-  let curX=M;
-  const cDate = {x:curX, w:wDate}; curX+=wDate;
-  const cPerson = {x:curX, w:wPerson}; curX+=wPerson;
-  const cCat = {x:curX, w:wCat}; curX+=wCat;
-  const cNote = {x:curX, w:wNote}; curX+=wNote;
-  const cFrom = {x:curX, w:wFrom}; curX+=wFrom;
-  const cTo = {x:curX, w:wTo}; curX+=wTo;
-  const cAmt = {x:curX, w:wAmt};
-  const cAmount = cAmt;
+  let cols = buildCols(false,false,false);
+  let cDate = cols.cDate;
+  let cPerson = cols.cPerson;
+  let cCat = cols.cCat;
+  let cNote = cols.cNote;
+  let cFrom = cols.cFrom;
+  let cTo = cols.cTo;
+  let cChannel = cols.cChannel;
+  let cAmt = cols.cAmt;
+  let cAmount = cols.cAmount;
+  let cMedia = cols.cMedia;
+  let cPersonW = cols.cPersonW;
+
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
-  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'User: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'Designation: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'Address: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'Mobile: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['Developer','Md. Abdus Salam','Bantra, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
+  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
-  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'..').width>maxW) str=str.slice(0,-1); return str+'..'; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function drawCellRect(x,w,h, fill){ if(w<=0) return; if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'Download: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
@@ -1845,96 +2000,129 @@ function renderAllLoansPages(o){
     ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   }
   function ensure(hh){ if(y+hh>H-M-100) newPage(); }
-  function drawTableHeader(){
-    const hh1=50, hh2=50, totalH=100;
+  
+  function drawTableHeader(opts){
+    opts = opts||{};
+    const hP = !!opts.hidePerson;
+    const hC = !!opts.hideCategory;
+    const sC = !!opts.singleChannel;
+    const newCols = buildCols(hP, hC, sC);
+    cDate = newCols.cDate; cPerson = newCols.cPerson; cCat = newCols.cCat; cNote = newCols.cNote; cFrom = newCols.cFrom; cTo = newCols.cTo; cChannel = newCols.cChannel; cAmt = newCols.cAmt; cAmount = newCols.cAmount; cMedia = newCols.cMedia; cPersonW = newCols.cPersonW;
+    cols = newCols;
+    const hh1=50, hh2=50, totalH= sC ? 50 : 100;
     ctx.fillStyle='#F3E8D3';
-    if(cDate.w>0) ctx.fillRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.fillRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.fillRect(cNote.x, y, cNote.w, totalH);
-    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmt.w>0) ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
-    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.fillRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+      ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    }
+    if(!sC) ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    else ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
     ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
-    if(cDate.w>0) ctx.strokeRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.strokeRect(cNote.x, y, cNote.w, totalH);
-    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmt.w>0) ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
-    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.strokeRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    }
+    ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    if(cDate.w>0) ctx.fillText('Date', cDate.x+10, y+32);
-    if(cPerson.w>0) ctx.fillText('Person', cPerson.x+10, y+32);
-    if(cCat.w>0) ctx.fillText('Category', cCat.x+10, y+32);
-    if(cNote.w>0) ctx.fillText('Note', cNote.x+10, y+32);
-    ctx.textAlign='center';
-    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
-    ctx.textAlign='left';
-    ctx.fillText('From', cFrom.x+10, y+hh1+32);
-    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.fillText('Date', cDate.x+10, y+32);
+    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    if(sC){
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cChannel.x + cChannel.w/2, y+32);
+    } else {
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+      ctx.textAlign='left';
+      ctx.fillText('From', cFrom.x+10, y+hh1+32);
+      ctx.fillText('To', cTo.x+10, y+hh1+32);
+    }
     ctx.textAlign='right';
-    if(cAmt.w>0) ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
+    ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
     ctx.textAlign='left';
     y+=totalH;
   }
-  function newPage(){
-    cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M;
-    drawTopHeader();
-    ensure(60); font(38,true); ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit((kind==='given'?t.loansGiven:t.loansTaken)+' - All', W-M*2), M, y); y+=50;
-    if(from||to){ font(22,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.period+': '+(from||'...')+' -> '+(to||'...'), M, y); y+=30; }
-    ctx.strokeStyle='#C9A86A'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=30;
-    if(tableHeaderActive){ drawTableHeader(); }
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; drawTopHeader(); if(tableHeaderActive){ drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); } }
+  function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
+  function mediumLabel(id){
+    if(!id) return '';
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
+    return map[id] || id;
   }
-  function inRange(d){ if(!from&&!to) return true; if(from&&d<from) return false; if(to&&d>to) return false; return !!d; }
-  function mediumLabel(id){ if(!id) return ''; const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'}; return map[id]||id; }
-  function getFromTo(item){ const fRaw=item.fromChannel||item.fromMedium||item.channel||item.medium||item.method||item.media||'Bank'; const tRaw=item.toChannel||item.toMedium||''; return {from:mediumLabel(fRaw), to:mediumLabel(tRaw)}; }
+    function getFromTo(item){
+    const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+    let tRaw = item.toChannel || item.toMedium || '';
+    // For person loans, ensure To is not empty - fallback to Cash or From
+    if(!tRaw){
+      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
+        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+        // If From and To same, keep To as same to show
+        if(tRaw===fRaw) tRaw = fRaw;
+        else if(!tRaw) tRaw = 'Cash';
+      }
+    }
+    const f = mediumLabel(fRaw);
+    const t2 = mediumLabel(tRaw);
+    return {from:f, to:t2};
+  }
   newPage();
-  const all=[];
-  people.forEach(p=>{
-    p.loans.forEach(l=>{ if(inRange(l.date)) all.push({date:l.date, person:p.name, personName:p.name, note:l.note||'', fromChannel:l.fromChannel||l.medium||'Bank', toChannel:l.toChannel||'', amount:l.amount}); });
-    p.payments.forEach(pay=>{ if(inRange(pay.date)) all.push({date:pay.date, person:p.name, personName:p.name, note:pay.note||'', fromChannel:pay.fromChannel||pay.method||'Bank', toChannel:pay.toChannel||'', amount:pay.amount}); });
-  });
-  all.sort((a,b)=>a.date.localeCompare(b.date));
+  if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; const fDisp=from?formatDateForPdf(from):'...'; const tDisp=to?formatDateForPdf(to):'...'; ctx.fillText(t.period + ': ' + fDisp + ' → ' + tDisp, M, y); y+=60; }
+  let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, category:'', cat:'', personName:p.name, type:'loan', amount:l.amount, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||l.method||l.media||'', toChannel:l.toChannel||l.toMedium||'', medium:l.medium||l.method||l.media||'', method:l.medium||l.method||l.media||'', media:l.medium||l.method||l.media||'', note:l.note||''})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, category:'', cat:'', personName:p.name, type:'payment', amount:pay.amount, fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||pay.medium||pay.media||'', toChannel:pay.toChannel||pay.toMedium||'', medium:pay.method||pay.medium||pay.media||'', method:pay.method||pay.medium||pay.media||'', media:pay.method||pay.medium||pay.media||'', note:pay.note||''})); }); all.sort((a,b)=>a.date.localeCompare(b.date));
   if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
-    drawTableHeader(); tableHeaderActive=true;
-    let total=0;
+    heading((lang==='en'?'All '+(kind==='given'?'Given':'Taken')+' History - '+all.length+' records':'সব '+(kind==='given'?'প্রদান':'গ্রহণ')+' - '+all.length+' রেকর্ড'), '#2D2A26');
+    drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false});
+    tableHeaderActive=true;
+    let grand=0;
     all.forEach(item=>{
-      const ch=getFromTo(item);
+      const ch = getFromTo(item);
       font(24,false);
-      const personLines=hidePerson?[]:wrapLines(item.personName||'', cPerson.w-20);
+      const personLines=wrapLines(item.personName||item.person||'', cPerson.w-20);
+      const catLines=wrapLines(item.category||'', cCat.w-20);
       const noteLines=wrapLines(item.note||'', cNote.w-20);
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
-      const maxLines=Math.max(personLines.length, noteLines.length, fromLines.length, toLines.length,1);
+      const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
       const h=Math.max(70, maxLines*32+30);
       ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
+      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      if(cDate.w>0) ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePerson) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
+      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
       ctx.fillStyle='#5D4E37';
       noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
       ctx.fillStyle='#2D2A26';
-      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
-      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
-      ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      if(cAmt.w>0) ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
-      ctx.textAlign='left'; y+=h; total+=item.amount;
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+28+i*30); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); }); }
+      ctx.fillStyle=item.type==='payment'?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
+      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
+      ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
-    y+=10; ensure(100); const th=80;
-    const totalRowW = cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w;
-    drawCellRect(cDate.x,totalRowW,th,'#FFF8E1'); drawCellRect(cAmt.x,cAmt.w,th,'#FFF8E1');
+    y+=10; ensure(100); const th=80; 
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
-    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(total), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
+    ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
-
 
 
 
@@ -1954,41 +2142,69 @@ function buildAllLoansPdfBlob(o){
 
 
 
-
 function renderHistoryPages(o){
   const t=o.t, lang=o.lang||'bn', filter=o.filter||'all', list=o.list||[];
   const W=2480,H=3508,M=120;
   const pages=[]; let cv,ctx,y=0;
   let tableHeaderActive=false;
-  const fLow = String(filter||'').toLowerCase();
-  const hidePerson = fLow.includes('income') || fLow.includes('expense');
-  const hideCategory = !hidePerson && (fLow.includes('given') || fLow.includes('taken') || fLow.includes('return') || fLow.includes('repayment'));
-  let wDate=250, wPerson=hidePerson?0:320, wCat=hideCategory?0:320, wNote=500, wFrom=250, wTo=250, wAmt=350;
-  const extra = (hidePerson?320:0)+(hideCategory?320:0);
-  wNote += extra;
-  let curX=M;
-  const cDate = {x:curX, w:wDate}; curX+=wDate;
-  const cPerson = {x:curX, w:wPerson}; curX+=wPerson;
-  const cCat = {x:curX, w:wCat}; curX+=wCat;
-  const cNote = {x:curX, w:wNote}; curX+=wNote;
-  const cFrom = {x:curX, w:wFrom}; curX+=wFrom;
-  const cTo = {x:curX, w:wTo}; curX+=wTo;
-  const cAmt = {x:curX, w:wAmt};
-  const cAmount = cAmt;
-  const cMedia = cFrom;
+
+  let hidePersonCol = false;
+  let hideCategoryCol = false;
+  let singleChannel = false;
+  function buildCols(hP, hC, sC){
+    hidePersonCol = !!hP;
+    hideCategoryCol = !!hC;
+    singleChannel = !!sC;
+    const dateW=250;
+    const personW=hidePersonCol?0:320;
+    const catW=hideCategoryCol?0:320;
+    const baseNoteW=500;
+    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
+    let noteW = baseNoteW + extra;
+    if(singleChannel){
+      // single channel: From+To merged into one channel col of 500, extra goes to note
+      // Note already includes extra, channel width 500
+    }
+    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
+    const amtW=350;
+    let x=M;
+    const cDate = {x:x, w:dateW}; x+=dateW;
+    const cPerson = {x:x, w:personW}; x+=personW;
+    const cCat = {x:x, w:catW}; x+=catW;
+    const cNote = {x:x, w:noteW}; x+=noteW;
+    const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
+    const cTo = {x:x, w:toW}; x+=toW;
+    const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
+    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmount = cAmt;
+    return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
+  }
+  let cols = buildCols(false,false,false);
+  let cDate = cols.cDate;
+  let cPerson = cols.cPerson;
+  let cCat = cols.cCat;
+  let cNote = cols.cNote;
+  let cFrom = cols.cFrom;
+  let cTo = cols.cTo;
+  let cChannel = cols.cChannel;
+  let cAmt = cols.cAmt;
+  let cAmount = cols.cAmount;
+  let cMedia = cols.cMedia;
+  let cPersonW = cols.cPersonW;
+
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
-  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'User: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'Designation: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'Address: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'Mobile: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['Developer','Md. Abdus Salam','Bantra, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+  let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
+  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
-  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'..').width>maxW) str=str.slice(0,-1); return str+'..'; }
+  function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
-  function drawCellRect(x,w,h, fill){ if(w<=0) return; if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
-    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'Download: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
@@ -1996,38 +2212,62 @@ function renderHistoryPages(o){
     ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   }
   function ensure(hh){ if(y+hh>H-M-100) newPage(); }
-  function drawTableHeader(){
-    const hh1=50, hh2=50, totalH=100;
+  
+  function drawTableHeader(opts){
+    opts = opts||{};
+    const hP = !!opts.hidePerson;
+    const hC = !!opts.hideCategory;
+    const sC = !!opts.singleChannel;
+    const newCols = buildCols(hP, hC, sC);
+    cDate = newCols.cDate; cPerson = newCols.cPerson; cCat = newCols.cCat; cNote = newCols.cNote; cFrom = newCols.cFrom; cTo = newCols.cTo; cChannel = newCols.cChannel; cAmt = newCols.cAmt; cAmount = newCols.cAmount; cMedia = newCols.cMedia; cPersonW = newCols.cPersonW;
+    cols = newCols;
+    const hh1=50, hh2=50, totalH= sC ? 50 : 100;
     ctx.fillStyle='#F3E8D3';
-    if(cDate.w>0) ctx.fillRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.fillRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.fillRect(cNote.x, y, cNote.w, totalH);
-    ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmt.w>0) ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
-    ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.fillRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    ctx.fillRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.fillRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.fillRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+      ctx.fillRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.fillRect(cTo.x, y+hh1, cTo.w, hh2);
+      ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    }
+    if(!sC) ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
+    else ctx.fillRect(cAmt.x, y, cAmt.w, totalH);
     ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
-    if(cDate.w>0) ctx.strokeRect(cDate.x, y, cDate.w, totalH);
-    if(cPerson.w>0) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
-    if(cCat.w>0) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
-    if(cNote.w>0) ctx.strokeRect(cNote.x, y, cNote.w, totalH);
-    ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
-    if(cAmt.w>0) ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
-    ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
-    ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    ctx.strokeRect(cDate.x, y, cDate.w, totalH);
+    if(!hP) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
+    if(!hC) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    ctx.strokeRect(cNote.x, y, cNote.w, totalH);
+    if(sC){
+      ctx.strokeRect(cChannel.x, y, cChannel.w, totalH);
+    } else {
+      ctx.strokeRect(cFrom.x, y, cFrom.w+cTo.w, hh1);
+      ctx.strokeRect(cFrom.x, y+hh1, cFrom.w, hh2);
+      ctx.strokeRect(cTo.x, y+hh1, cTo.w, hh2);
+    }
+    ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
-    if(cDate.w>0) ctx.fillText('Date', cDate.x+10, y+32);
-    if(cPerson.w>0) ctx.fillText('Person', cPerson.x+10, y+32);
-    if(cCat.w>0) ctx.fillText('Category', cCat.x+10, y+32);
-    if(cNote.w>0) ctx.fillText('Note', cNote.x+10, y+32);
-    ctx.textAlign='center';
-    ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
-    ctx.textAlign='left';
-    ctx.fillText('From', cFrom.x+10, y+hh1+32);
-    ctx.fillText('To', cTo.x+10, y+hh1+32);
+    ctx.fillText('Date', cDate.x+10, y+32);
+    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
+    ctx.fillText('Note', cNote.x+10, y+32);
+    if(sC){
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cChannel.x + cChannel.w/2, y+32);
+    } else {
+      ctx.textAlign='center';
+      ctx.fillText('Channel', cFrom.x + (cFrom.w+cTo.w)/2, y+32);
+      ctx.textAlign='left';
+      ctx.fillText('From', cFrom.x+10, y+hh1+32);
+      ctx.fillText('To', cTo.x+10, y+hh1+32);
+    }
     ctx.textAlign='right';
-    if(cAmt.w>0) ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
+    ctx.fillText('Amount', cAmt.x+cAmt.w-10, y+32);
     ctx.textAlign='left';
     y+=totalH;
   }
@@ -2037,67 +2277,75 @@ function renderHistoryPages(o){
     ensure(140); y+=10; font(38, true); ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(filter==='all'?t.history+' - All':t.history+' - '+filter, W-M*2), M, y); y+=50;
     font(22,false); ctx.fillStyle='#8B7355'; ctx.fillText('Total Records: '+list.length, M, y); y+=10;
     ctx.strokeStyle='#C9A86A'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=30;
-    if(tableHeaderActive){
-      drawTableHeader();
-    }
+    if(tableHeaderActive){ const _isIncH = filter==='income'; const _isExpH = filter==='expense'; const _isPLoanH = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment'; drawTableHeader({hidePerson: _isIncH||_isExpH, hideCategory: _isPLoanH, singleChannel: _isExpH}); }
   }
   function mediumLabel(id){
     if(!id) return '';
     const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
     return map[id] || id;
   }
-  function getFromTo(item){
+    function getFromTo(item){
     const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-    const tRaw = item.toChannel || item.toMedium || '';
+    let tRaw = item.toChannel || item.toMedium || '';
+    // For person loans, ensure To is not empty - fallback to Cash or From
+    if(!tRaw){
+      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
+        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
+        // If From and To same, keep To as same to show
+        if(tRaw===fRaw) tRaw = fRaw;
+        else if(!tRaw) tRaw = 'Cash';
+      }
+    }
     const f = mediumLabel(fRaw);
     const t2 = mediumLabel(tRaw);
     return {from:f, to:t2};
   }
   newPage();
   if(!list.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
-    drawTableHeader();
+    const isInc = filter==='income';
+    const isExp = filter==='expense';
+    const isPLoan = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment';
+    drawTableHeader({hidePerson: isInc||isExp, hideCategory: isPLoan, singleChannel: isExp});
     tableHeaderActive=true;
     let total=0;
     list.forEach(item=>{
       const ch = getFromTo(item);
+      // RULE: Person transaction -> Person column, Category transaction -> Category column
       const isPersonTx = item.personName || item.personId || (item.type && (item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='given' || item.type==='taken' || item.type==='return' || item.type==='repayment'));
       const catText = isPersonTx ? '' : (item.category || item.categoryBn || item.cat || '')+'';
       const personText = isPersonTx ? (item.personName || item.person || '')+'' : '';
       const noteText = (item.note || '')+'';
       font(24,false);
-      const catLines=hideCategory?[]:wrapLines(catText, cCat.w-20);
+      const catLines=wrapLines(catText, cCat.w-20);
       const noteLines=wrapLines(noteText, cNote.w-20);
-      const personLines=hidePerson?[]:wrapLines(typeof personText!=='undefined' ? personText : (item.personName||item.person||''), cPerson.w-20);
+      const personLines=wrapLines(typeof personText!=='undefined' ? personText : (item.personName||item.person||''), cPerson.w-20);
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
       const maxLines=Math.max(catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length,1);
       const h=Math.max(70, maxLines*32+30);
       ensure(h+10);
-      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
+      drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      if(cDate.w>0) ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePerson) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
-      if(!hideCategory) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
+      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
+      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
       ctx.fillStyle='#5D4E37';
       noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
       ctx.fillStyle='#2D2A26';
-      fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
-      toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+28+i*30); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); }); }
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      if(cAmt.w>0) ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
+      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; total+=item.amount;
     });
     y+=10; ensure(100); const th=80; 
-    const totalRowW = cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w;
-    drawCellRect(cDate.x, totalRowW, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+list.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(total), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
-
 
 
 
@@ -2843,19 +3091,15 @@ setTimeout(()=>{
       h('div', null,
         h('h2', {className:'text-[18px] font-bold mb-3'}, t.loansReceivables),
         h('div', {className:'grid grid-cols-2 gap-3'},
-          h('div', {onClick:()=>setPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform space-y-1'},
-            h('p', {className:'text-[12px] font-bold text-[#8B7355] mb-1'}, t.totalGiven),
-            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#8B7355]'}, lang==='en'?'Given:':'দিয়েছি:'), h('span', {className:'font-bold'}, fmtMoney(totalGivenAmt))),
-            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#2E7D32]'}, lang==='en'?'Returned:':'ফেরত পেয়েছি:'), h('span', {className:'font-bold text-[#2E7D32]'}, fmtMoney(totalReturnedAmt))),
-            h('div', {className:'h-[1px] bg-[#F3E8D3] my-1'}),
-            h('div', {className:'flex justify-between text-[12px]'}, h('span', {className:'font-bold text-[#2D2A26]'}, lang==='en'?'Due:':'পাওনা আছে:'), h('span', {className:'font-bold text-[15px] text-[#2D2A26]'}, fmtMoney(totalGivenAmt - totalReturnedAmt)))
+          h('div', {onClick:()=>setPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalGiven),
+            h('p', {className:'text-[18px] font-bold'}, fmtMoney(totalGivenAmt)),
+            h('p', {className:'text-[11px] text-[#2E7D32] mt-1'}, fmtMoney(totalReturnedAmt) + ' ' + t.totalReturned)
           ),
-          h('div', {onClick:()=>setPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform space-y-1'},
-            h('p', {className:'text-[12px] font-bold text-[#8B7355] mb-1'}, t.totalTaken),
-            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#8B7355]'}, lang==='en'?'Taken:':'নিয়েছি:'), h('span', {className:'font-bold'}, fmtMoney(totalTakenAmt))),
-            h('div', {className:'flex justify-between text-[11px]'}, h('span', {className:'text-[#B71C1C]'}, lang==='en'?'Repaid:':'ফেরত দিয়েছি:'), h('span', {className:'font-bold text-[#B71C1C]'}, fmtMoney(totalRepaidAmt))),
-            h('div', {className:'h-[1px] bg-[#F3E8D3] my-1'}),
-            h('div', {className:'flex justify-between text-[12px]'}, h('span', {className:'font-bold text-[#2D2A26]'}, lang==='en'?'Due:':'দিতে হবে:'), h('span', {className:'font-bold text-[15px] text-[#B71C1C]'}, fmtMoney(totalTakenAmt - totalRepaidAmt)))
+          h('div', {onClick:()=>setPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalTaken),
+            h('p', {className:'text-[18px] font-bold'}, fmtMoney(totalTakenAmt)),
+            h('p', {className:'text-[11px] text-[#B71C1C] mt-1'}, fmtMoney(totalRepaidAmt) + ' ' + t.totalRepaid)
           )
         ),
         // NEW: Calendar icon + PDF buttons like Report button - added under Loans & Receivable
