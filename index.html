@@ -1160,27 +1160,45 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
       h('div', {className:'mt-3 grid grid-cols-3 gap-2'},
         h('button', {onClick: ()=>{
           try{
-            const genAt = new Date();
-            const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
-            const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
-            downloadPdfBlob(blob, person.name + '-loan-history.pdf');
-          }catch(e){ console.error('PDF Error'); }
+            var genAt = new Date();
+            var resolveName = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
+            var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
+            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'Lifestyle')};
+            var blob = (typeof buildPersonLoanPdfBlob==='function' ? buildPersonLoanPdfBlob(opts) : null);
+            if(!blob) throw new Error('blob null');
+            if(typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
+            else if(typeof shareOrDownloadPdf==='function') shareOrDownloadPdf(blob, (person.name||'person') + '-loan-history.pdf', (person.name||'person')+' History');
+          }catch(e){ console.error('PDF Error', e); try{ alert('PDF তৈরি করতে সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
         }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
         h('button', {onClick: ()=>{
           try{
-            const genAt = new Date();
-            const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
-            const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
-            try{ var pages=renderPersonLoanPages({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName}); showPdfPreviewFromCanvases(pages); }catch(e){ viewPdfBlob(blob); }
-          }catch(e){ console.error('PDF Error'); }
+            var genAt = new Date();
+            var resolveName = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
+            var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
+            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'Lifestyle')};
+            try{
+              if(typeof renderPersonLoanPages==='function' && typeof showPdfPreviewFromCanvases==='function'){
+                var pages=renderPersonLoanPages(opts);
+                showPdfPreviewFromCanvases(pages);
+                return;
+              }
+            }catch(e){ console.error('Preview canvas failed', e); }
+            var blob = (typeof buildPersonLoanPdfBlob==='function' ? buildPersonLoanPdfBlob(opts) : null);
+            if(blob && typeof viewPdfBlob==='function') viewPdfBlob(blob);
+            else if(blob && typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
+          }catch(e){ console.error('PDF View Error', e); try{ alert('PDF View সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
         }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
         h('button', {onClick: async ()=>{
           try{
-            const genAt = new Date();
-            const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
-            const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
-            await shareOrDownloadPdf(blob, person.name + '-loan-history.pdf', person.name + ' History');
-          }catch(e){ console.error('PDF Error'); }
+            var genAt = new Date();
+            var resolveName = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
+            var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
+            var opts = {t:t, lang:lang, person:person, kind:kind, userName: resolveName, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: (t.appName||'Lifestyle')};
+            var blob = (typeof buildPersonLoanPdfBlob==='function' ? buildPersonLoanPdfBlob(opts) : null);
+            if(!blob) throw new Error('blob null');
+            if(typeof shareOrDownloadPdf==='function') await shareOrDownloadPdf(blob, (person.name||'person') + '-loan-history.pdf', (person.name||'person') + ' History');
+            else if(typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
+          }catch(e){ console.error('PDF Share Error', e); try{ alert('Share সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
         }, className:'py-2.5 rounded-full bg-[#2D2A26] text-white text-[11px] font-bold'}, '📤 Share')
       )
     ),
@@ -1653,6 +1671,21 @@ function renderPersonLoanPages(o){
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
+  function drawTopHeader(){
+    const leftX = M; let ly = y;
+    font(52,true); ctx.fillStyle='#000000'; ctx.fillText(fit(o.appName || t.appName || 'Lifestyle',800),leftX,ly); ly+=60; font(28,true); ctx.fillStyle='#2D2A26'; ctx.fillText(fit((isEn?'Download: ':'ডাউনলোড: ')+dateStr+' '+timeStr,1000),leftX,ly); ly+=44; font(26,false); profileLinesCache.forEach(pl=>{ ctx.fillText(fit(pl,1000),leftX,ly); ly+=36; });
+    let _maxDevW=0; const devBlockW=900;
+    devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
+    const devBlockX=W-M-_maxDevW; let ry=y;
+    devLines.forEach((dl,i)=>{
+       font(i===0?30:24, i===0);
+       ctx.fillStyle = '#2D2A26';
+       ctx.textAlign='left';
+       ctx.fillText(fit(dl, devBlockW), devBlockX, ry);
+       ry+=38;
+     });
+    ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
+  }
   function ensure(hh){ if(y+hh>H-M-100) newPage(); }
   
   function drawTableHeader(opts){
@@ -3043,19 +3076,19 @@ setTimeout(()=>{
         h('h2', {className:'text-[18px] font-bold mb-3'}, t.loansReceivables),
         h('div', {className:'grid grid-cols-2 gap-3'},
           h('div', {onClick:()=>setPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalGiven),
+            h('p', {className:'text-[13px] font-extrabold text-[#8B7355] mb-1 tracking-wide'}, t.totalGiven),
             h('div', {className:'space-y-1 mt-1'},
-              h('p', {className:'text-[13px] font-bold text-[#2D2A26]'}, (lang==='en'?'Given: ':'দিয়েছি: ') + fmtMoney(totalGivenAmt)),
-              h('p', {className:'text-[11px] text-[#2E7D32]'}, (lang==='en'?'Returned: ':'ফেরত পেয়েছি: ') + fmtMoney(totalReturnedAmt)),
-              h('p', {className:'text-[11px] font-bold text-[#1A4D8F] bg-[#E3F2FD] rounded-full px-2 py-0.5 inline-block'}, (lang==='en'?'To Get: ':'পাব: ') + fmtMoney(totalGivenAmt - totalReturnedAmt))
+              h('p', {className:'text-[14px] font-black text-[#2D2A26] leading-tight'}, (lang==='en'?'Given: ':'দিয়েছি: ') + fmtMoney(totalGivenAmt)),
+              h('p', {className:'text-[12px] font-bold text-[#2E7D32]'}, (lang==='en'?'Returned: ':'ফেরত পেয়েছি: ') + fmtMoney(totalReturnedAmt)),
+              h('p', {className:'text-[13px] font-extrabold text-[#1A4D8F] bg-[#E3F2FD] rounded-full px-2.5 py-1 inline-block'}, (lang==='en'?'To Get: ':'পাব: ') + fmtMoney(totalGivenAmt - totalReturnedAmt))
             )
           ),
           h('div', {onClick:()=>setPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalTaken),
+            h('p', {className:'text-[13px] font-extrabold text-[#8B7355] mb-1 tracking-wide'}, t.totalTaken),
             h('div', {className:'space-y-1 mt-1'},
-              h('p', {className:'text-[13px] font-bold text-[#2D2A26]'}, (lang==='en'?'Taken: ':'নিয়েছি: ') + fmtMoney(totalTakenAmt)),
-              h('p', {className:'text-[11px] text-[#8B7355]'}, (lang==='en'?'Repaid: ':'ফেরত দিয়েছি: ') + fmtMoney(totalRepaidAmt)),
-              h('p', {className:'text-[11px] font-bold text-[#B71C1C] bg-[#FFEBEE] rounded-full px-2 py-0.5 inline-block'}, (lang==='en'?'To Pay: ':'দিতে হবে: ') + fmtMoney(totalTakenAmt - totalRepaidAmt))
+              h('p', {className:'text-[14px] font-black text-[#2D2A26] leading-tight'}, (lang==='en'?'Taken: ':'নিয়েছি: ') + fmtMoney(totalTakenAmt)),
+              h('p', {className:'text-[12px] font-bold text-[#8B7355]'}, (lang==='en'?'Repaid: ':'ফেরত দিয়েছি: ') + fmtMoney(totalRepaidAmt)),
+              h('p', {className:'text-[13px] font-extrabold text-[#B71C1C] bg-[#FFEBEE] rounded-full px-2.5 py-1 inline-block'}, (lang==='en'?'To Pay: ':'দিতে হবে: ') + fmtMoney(totalTakenAmt - totalRepaidAmt))
             )
           )
         ),
