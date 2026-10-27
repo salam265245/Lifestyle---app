@@ -670,16 +670,12 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
   const [cat, setCat] = useState(initial ? {en:initial.category, bn:initial.categoryBn} : loadLS('lifestyle_draft_tx_'+type+'_cat', null));
   const [date, setDate] = useState(initial ? initial.date : today());
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_tx_'+type+'_note', ''));
-  const [medium, setMedium] = useState(()=>{ const def = type==='income' ? 'Bank Account' : 'Cash'; return initial ? (initial.medium || def) : (loadLS('lifestyle_draft_tx_'+type+'_medium', def) || def); });
-  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || 'Cash') : loadLS('lifestyle_draft_tx_'+type+'_fromChannel', 'Cash'));
-  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || (type==='income'?'Bank Account':'Cash')) : loadLS('lifestyle_draft_tx_'+type+'_toChannel', type==='income'?'Bank Account':'Cash'));
+  const [channel, setChannel] = useState(initial ? (initial.channel || initial.fromChannel || initial.medium || 'Cash') : 'Cash')
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_amount', amount); }catch(e){} } }, [amount, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_cat', cat); }catch(e){} } }, [cat, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_date', date); }catch(e){} } }, [date, type, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_note', note); }catch(e){} } }, [note, type, initial]);
-  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_medium', medium); }catch(e){} } }, [medium, type, initial]);
-  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_fromChannel', fromChannel); }catch(e){} } }, [fromChannel, type, initial]);
-  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_toChannel', toChannel); }catch(e){} } }, [toChannel, type, initial]);
+  useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_channel', channel); }catch(e){} } }, [channel, type, initial]);
   function submit(){
     if(!amount || !cat) return;
     if(!initial){
@@ -688,38 +684,20 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
         saveLS('lifestyle_draft_tx_'+type+'_cat', null);
         saveLS('lifestyle_draft_tx_'+type+'_date', '');
         saveLS('lifestyle_draft_tx_'+type+'_note', '');
+        saveLS('lifestyle_draft_tx_'+type+'_channel', '');
         saveLS('lifestyle_draft_tx_'+type+'_medium', '');
         saveLS('lifestyle_draft_tx_'+type+'_fromChannel', '');
         saveLS('lifestyle_draft_tx_'+type+'_toChannel', '');
       }catch(e){}
     }
-    if(type==='income'){
-      onSave({
+    onSave({
         id: initial ? initial.id : uid(),
         type,
         amount: parseFloat(amount) || 0,
         category: cat.en, categoryBn: cat.bn,
         date, note,
-        medium: toChannel,
-        fromChannel: fromChannel,
-        toChannel: toChannel,
-        fromMedium: fromChannel,
-        toMedium: toChannel,
-        channel: fromChannel
+        medium: channel, channel: channel, fromChannel: channel, toChannel: channel, fromMedium: channel, toMedium: channel
       });
-    } else {
-      onSave({
-        id: initial ? initial.id : uid(),
-        type,
-        amount: parseFloat(amount) || 0,
-        category: cat.en, categoryBn: cat.bn,
-        date, note, medium,
-        fromChannel: medium,
-        toChannel: '',
-        fromMedium: medium,
-        toMedium: ''
-      });
-    }
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
     h('div', {className:'sticky z-20 bg-[#FFFBF7] px-5 py-3 border-b border-[#F3E8D3] flex gap-2', style:{top:'44px'}},
@@ -731,31 +709,23 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
       h(Field, {label: t.category}, h(CategoryPicker, {t, lang, type, value:cat, onChange:setCat})),
       h('div', {className:'grid grid-cols-2 gap-3'},
         h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
-        type==='income' ?
-          h('div', {className:'grid grid-cols-2 gap-3 col-span-2'},
-            h(Field, {label: lang==='en'?'From Channel':'কোথা থেকে'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
-              MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
-            )),
-            h(Field, {label: lang==='en'?'To Channel':'কোন মাধ্যমে পেলাম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
-              MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
-            ))
-          )
-        :
-          h(Field, {label: t.medium}, h(Select, {value:medium, onChange:e=>setMedium(e.target.value)},
-            MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
-          ))
+        h(Field, {label: t.medium || 'Channel'}, h(Select, {value:channel, onChange:e=>setChannel(e.target.value)},
+          MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+        ))
       ),
       h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)}))
     )
   );
 }
 
+
+
 /* ---------- Loan entry form (for a person) ---------- */
 function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_loanentry_amount', ''));
   const [date, setDate] = useState(initial ? initial.date : today());
-  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_loanentry_fromChannel', 'Cash'));
-  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || 'Cash') : loadLS('lifestyle_draft_loanentry_toChannel', 'Cash'));
+  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.channel || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_loanentry_fromChannel', 'Cash'));
+  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || initial.to || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_loanentry_toChannel', 'Cash'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_loanentry_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_amount', amount); }catch(e){} } }, [amount, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_loanentry_date', date); }catch(e){} } }, [date, initial]);
@@ -795,8 +765,8 @@ function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
 function PaymentForm({ t, lang, initial, onSave }){
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_payment_amount', ''));
   const [date, setDate] = useState(initial ? initial.date : today());
-  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_payment_fromChannel', 'Cash'));
-  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || 'Cash') : loadLS('lifestyle_draft_payment_toChannel', 'Cash'));
+  const [fromChannel, setFromChannel] = useState(initial ? (initial.fromChannel || initial.fromMedium || initial.channel || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_payment_fromChannel', 'Cash'));
+  const [toChannel, setToChannel] = useState(initial ? (initial.toChannel || initial.toMedium || initial.to || initial.medium || initial.method || 'Cash') : loadLS('lifestyle_draft_payment_toChannel', 'Cash'));
   const [note, setNote] = useState(initial ? initial.note : loadLS('lifestyle_draft_payment_note', ''));
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_amount', amount); }catch(e){} } }, [amount, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_payment_date', date); }catch(e){} } }, [date, initial]);
@@ -1381,18 +1351,15 @@ function renderReportPages(o){
     hidePersonCol = !!hP;
     hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=250;
-    const personW=hidePersonCol?0:320;
-    const catW=hideCategoryCol?0:320;
-    const baseNoteW=500;
-    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
-    let noteW = baseNoteW + extra;
-    if(singleChannel){
-      // single channel: From+To merged into one channel col of 500, extra goes to note
-      // Note already includes extra, channel width 500
-    }
-    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
-    const amtW=350;
+    const dateW=220;
+    const personW=hidePersonCol?0:300;
+    const catW=hideCategoryCol?0:300;
+    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    const amtW=320;
+    const totalW = 2480 - 240;
+    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let noteW = totalW - usedWithoutNote;
+    if(noteW < 400) noteW = 400;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
@@ -1401,7 +1368,7 @@ function renderReportPages(o){
     const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
     const cTo = {x:x, w:toW}; x+=toW;
     const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
-    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmt = {x:x, w:amtW};
     const cAmount = cAmt;
     return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
   }
@@ -1423,7 +1390,7 @@ function renderReportPages(o){
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+  const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
@@ -1434,7 +1401,14 @@ function renderReportPages(o){
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
+    devLines.forEach((dl,i)=>{
+       font(i===0?30:24, i===0);
+       ctx.fillStyle = '#2D2A26';
+       ctx.textAlign='left';
+       // dl এর প্রথম 2 অক্ষর আইকন হিসেবে আলাদা করে আঁকো
+       ctx.fillText(fit(dl, devBlockW), devBlockX, ry);
+       ry+=38;
+     });
     ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   }
   function ensure(hh){ if(y + hh > H - M - 100){ newPage(); } }
@@ -1479,7 +1453,7 @@ function renderReportPages(o){
     ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
     ctx.fillText('Date', cDate.x+10, y+32);
-    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hP) ctx.fillText((typeof lang!=='undefined'&&lang==='en'||typeof isEn!=='undefined'&&isEn?'Person':'ব্যক্তি'), cPerson.x+10, y+32);
     if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
     ctx.fillText('Note', cNote.x+10, y+32);
     if(sC){
@@ -1514,18 +1488,11 @@ function renderReportPages(o){
   }
     function getFromTo(item){
     const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-    let tRaw = item.toChannel || item.toMedium || '';
-    // For person loans, ensure To is not empty - fallback to Cash or From
-    if(!tRaw){
-      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
-        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-        // If From and To same, keep To as same to show
-        if(tRaw===fRaw) tRaw = fRaw;
-        else if(!tRaw) tRaw = 'Cash';
-      }
-    }
-    const f = mediumLabel(fRaw);
-    const t2 = mediumLabel(tRaw);
+    let tRaw = item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const toC = tRaw || item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const fromC = fRaw || item.fromChannel || item.fromMedium || item.channel || item.medium || 'Cash';
+    const f = mediumLabel(fromC);
+    const t2 = mediumLabel(toC);
     return {from:f, to:t2};
   }
   newPage();
@@ -1585,8 +1552,8 @@ function renderReportPages(o){
       ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
-    y+=10; ensure(100); const th=80; 
-    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
+    y+=10; ensure(80); const th=55; 
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+(singleChannel?cChannel.w:(cFrom.w+cTo.w)), th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
@@ -1642,18 +1609,15 @@ function renderPersonLoanPages(o){
     hidePersonCol = !!hP;
     hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=250;
-    const personW=hidePersonCol?0:320;
-    const catW=hideCategoryCol?0:320;
-    const baseNoteW=500;
-    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
-    let noteW = baseNoteW + extra;
-    if(singleChannel){
-      // single channel: From+To merged into one channel col of 500, extra goes to note
-      // Note already includes extra, channel width 500
-    }
-    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
-    const amtW=350;
+    const dateW=220;
+    const personW=hidePersonCol?0:300;
+    const catW=hideCategoryCol?0:300;
+    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    const amtW=320;
+    const totalW = 2480 - 240;
+    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let noteW = totalW - usedWithoutNote;
+    if(noteW < 400) noteW = 400;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
@@ -1662,11 +1626,11 @@ function renderPersonLoanPages(o){
     const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
     const cTo = {x:x, w:toW}; x+=toW;
     const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
-    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmt = {x:x, w:amtW};
     const cAmount = cAmt;
     return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
   }
-  let cols = buildCols(false,false,false);
+  let cols = buildCols(false,true,false);
   let cDate = cols.cDate;
   let cPerson = cols.cPerson;
   let cCat = cols.cCat;
@@ -1684,7 +1648,7 @@ function renderPersonLoanPages(o){
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+  const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
@@ -1731,7 +1695,7 @@ function renderPersonLoanPages(o){
     ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
     ctx.fillText('Date', cDate.x+10, y+32);
-    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hP) ctx.fillText((typeof lang!=='undefined'&&lang==='en'||typeof isEn!=='undefined'&&isEn?'Person':'ব্যক্তি'), cPerson.x+10, y+32);
     if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
     ctx.fillText('Note', cNote.x+10, y+32);
     if(sC){
@@ -1758,18 +1722,11 @@ function renderPersonLoanPages(o){
   }
     function getFromTo(item){
     const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-    let tRaw = item.toChannel || item.toMedium || '';
-    // For person loans, ensure To is not empty - fallback to Cash or From
-    if(!tRaw){
-      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
-        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-        // If From and To same, keep To as same to show
-        if(tRaw===fRaw) tRaw = fRaw;
-        else if(!tRaw) tRaw = 'Cash';
-      }
-    }
-    const f = mediumLabel(fRaw);
-    const t2 = mediumLabel(tRaw);
+    let tRaw = item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const toC = tRaw || item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const fromC = fRaw || item.fromChannel || item.fromMedium || item.channel || item.medium || 'Cash';
+    const f = mediumLabel(fromC);
+    const t2 = mediumLabel(toC);
     return {from:f, to:t2};
   }
   function rowData(item, isPay){
@@ -1943,18 +1900,15 @@ function renderAllLoansPages(o){
     hidePersonCol = !!hP;
     hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=250;
-    const personW=hidePersonCol?0:320;
-    const catW=hideCategoryCol?0:320;
-    const baseNoteW=500;
-    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
-    let noteW = baseNoteW + extra;
-    if(singleChannel){
-      // single channel: From+To merged into one channel col of 500, extra goes to note
-      // Note already includes extra, channel width 500
-    }
-    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
-    const amtW=350;
+    const dateW=220;
+    const personW=hidePersonCol?0:300;
+    const catW=hideCategoryCol?0:300;
+    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    const amtW=320;
+    const totalW = 2480 - 240;
+    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let noteW = totalW - usedWithoutNote;
+    if(noteW < 400) noteW = 400;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
@@ -1963,11 +1917,11 @@ function renderAllLoansPages(o){
     const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
     const cTo = {x:x, w:toW}; x+=toW;
     const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
-    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmt = {x:x, w:amtW};
     const cAmount = cAmt;
     return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
   }
-  let cols = buildCols(false,false,false);
+  let cols = buildCols(false,true,false);
   let cDate = cols.cDate;
   let cPerson = cols.cPerson;
   let cCat = cols.cCat;
@@ -1985,7 +1939,7 @@ function renderAllLoansPages(o){
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+  const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
@@ -1996,7 +1950,14 @@ function renderAllLoansPages(o){
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
+    devLines.forEach((dl,i)=>{
+       font(i===0?30:24, i===0);
+       ctx.fillStyle = '#2D2A26';
+       ctx.textAlign='left';
+       // dl এর প্রথম 2 অক্ষর আইকন হিসেবে আলাদা করে আঁকো
+       ctx.fillText(fit(dl, devBlockW), devBlockX, ry);
+       ry+=38;
+     });
     ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   }
   function ensure(hh){ if(y+hh>H-M-100) newPage(); }
@@ -2041,7 +2002,7 @@ function renderAllLoansPages(o){
     ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
     ctx.fillText('Date', cDate.x+10, y+32);
-    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hP) ctx.fillText((typeof lang!=='undefined'&&lang==='en'||typeof isEn!=='undefined'&&isEn?'Person':'ব্যক্তি'), cPerson.x+10, y+32);
     if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
     ctx.fillText('Note', cNote.x+10, y+32);
     if(sC){
@@ -2068,18 +2029,11 @@ function renderAllLoansPages(o){
   }
     function getFromTo(item){
     const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-    let tRaw = item.toChannel || item.toMedium || '';
-    // For person loans, ensure To is not empty - fallback to Cash or From
-    if(!tRaw){
-      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
-        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-        // If From and To same, keep To as same to show
-        if(tRaw===fRaw) tRaw = fRaw;
-        else if(!tRaw) tRaw = 'Cash';
-      }
-    }
-    const f = mediumLabel(fRaw);
-    const t2 = mediumLabel(tRaw);
+    let tRaw = item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const toC = tRaw || item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const fromC = fRaw || item.fromChannel || item.fromMedium || item.channel || item.medium || 'Cash';
+    const f = mediumLabel(fromC);
+    const t2 = mediumLabel(toC);
     return {from:f, to:t2};
   }
   newPage();
@@ -2115,8 +2069,8 @@ function renderAllLoansPages(o){
       ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
-    y+=10; ensure(100); const th=80; 
-    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
+    y+=10; ensure(80); const th=55; 
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+(singleChannel?cChannel.w:(cFrom.w+cTo.w)), th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
@@ -2155,18 +2109,15 @@ function renderHistoryPages(o){
     hidePersonCol = !!hP;
     hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=250;
-    const personW=hidePersonCol?0:320;
-    const catW=hideCategoryCol?0:320;
-    const baseNoteW=500;
-    const extra = (hidePersonCol?320:0) + (hideCategoryCol?320:0);
-    let noteW = baseNoteW + extra;
-    if(singleChannel){
-      // single channel: From+To merged into one channel col of 500, extra goes to note
-      // Note already includes extra, channel width 500
-    }
-    const fromW=250, toW=singleChannel?0:250, channelW=singleChannel?500:500;
-    const amtW=350;
+    const dateW=220;
+    const personW=hidePersonCol?0:300;
+    const catW=hideCategoryCol?0:300;
+    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    const amtW=320;
+    const totalW = 2480 - 240;
+    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let noteW = totalW - usedWithoutNote;
+    if(noteW < 400) noteW = 400;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
@@ -2175,7 +2126,7 @@ function renderHistoryPages(o){
     const cFrom = {x:x, w:singleChannel?channelW:fromW}; x+= (singleChannel?channelW:fromW);
     const cTo = {x:x, w:toW}; x+=toW;
     const cChannel = {x:cFrom.x, w:singleChannel?channelW:(fromW+toW)};
-    const cAmt = {x:W-M-amtW, w:amtW};
+    const cAmt = {x:x, w:amtW};
     const cAmount = cAmt;
     return {cDate,cPerson,cCat,cNote,cFrom,cTo,cChannel,cAmt,cAmount,cMedia:cFrom,cPersonW:cPerson, channelW:channelW};
   }
@@ -2197,7 +2148,7 @@ function renderHistoryPages(o){
   const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
-  const devLines=['💻Developer','👤Md. Abdus Salam','📍Bantra, Kalaroa, Satkhira','📞Mobile: +8801737265245','✉️Email: salamwgp@gmail.com'];
+  const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
   function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
@@ -2208,7 +2159,14 @@ function renderHistoryPages(o){
     let _maxDevW=0; const devBlockW=900;
     devLines.forEach(dl=>{ const _w=ctx.measureText(fit(dl,devBlockW)).width; if(_w>_maxDevW) _maxDevW=_w; });
     const devBlockX=W-M-_maxDevW; let ry=y;
-    devLines.forEach((dl,i)=>{ font(i===0?30:24,i===0); ctx.fillStyle=i===0?'#000000':'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(dl,devBlockW),devBlockX,ry); ry+=38; });
+    devLines.forEach((dl,i)=>{
+       font(i===0?30:24, i===0);
+       ctx.fillStyle = '#2D2A26';
+       ctx.textAlign='left';
+       // dl এর প্রথম 2 অক্ষর আইকন হিসেবে আলাদা করে আঁকো
+       ctx.fillText(fit(dl, devBlockW), devBlockX, ry);
+       ry+=38;
+     });
     ctx.textAlign='left'; y=Math.max(ly,ry)+30; ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
   }
   function ensure(hh){ if(y+hh>H-M-100) newPage(); }
@@ -2253,7 +2211,7 @@ function renderHistoryPages(o){
     ctx.strokeRect(cAmt.x, y, cAmt.w, totalH);
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
     ctx.fillText('Date', cDate.x+10, y+32);
-    if(!hP) ctx.fillText('Person', cPerson.x+10, y+32);
+    if(!hP) ctx.fillText((typeof lang!=='undefined'&&lang==='en'||typeof isEn!=='undefined'&&isEn?'Person':'ব্যক্তি'), cPerson.x+10, y+32);
     if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
     ctx.fillText('Note', cNote.x+10, y+32);
     if(sC){
@@ -2277,7 +2235,7 @@ function renderHistoryPages(o){
     ensure(140); y+=10; font(38, true); ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(filter==='all'?t.history+' - All':t.history+' - '+filter, W-M*2), M, y); y+=50;
     font(22,false); ctx.fillStyle='#8B7355'; ctx.fillText('Total Records: '+list.length, M, y); y+=10;
     ctx.strokeStyle='#C9A86A'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=30;
-    if(tableHeaderActive){ const _isIncH = filter==='income'; const _isExpH = filter==='expense'; const _isPLoanH = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment'; drawTableHeader({hidePerson: _isIncH||_isExpH, hideCategory: _isPLoanH, singleChannel: _isExpH}); }
+    if(tableHeaderActive){ const _isIncH = filter==='income'; const _isExpH = filter==='expense'; const _isPLoanH = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment'; drawTableHeader({hidePerson: _isIncH||_isExpH, hideCategory: _isPLoanH, singleChannel: _isIncH||_isExpH}); }
   }
   function mediumLabel(id){
     if(!id) return '';
@@ -2286,18 +2244,11 @@ function renderHistoryPages(o){
   }
     function getFromTo(item){
     const fRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-    let tRaw = item.toChannel || item.toMedium || '';
-    // For person loans, ensure To is not empty - fallback to Cash or From
-    if(!tRaw){
-      if(item.type==='loan' || item.type==='payment' || item.type==='loan_given' || item.type==='loan_taken' || item.type==='return_received' || item.type==='repayment' || item.type==='return' || item.kind==='loan_given' || item.kind==='loan_taken' || item.kind==='return' || item.kind==='repayment'){
-        tRaw = item.fromChannel || item.fromMedium || item.channel || item.medium || item.method || item.media || 'Cash';
-        // If From and To same, keep To as same to show
-        if(tRaw===fRaw) tRaw = fRaw;
-        else if(!tRaw) tRaw = 'Cash';
-      }
-    }
-    const f = mediumLabel(fRaw);
-    const t2 = mediumLabel(tRaw);
+    let tRaw = item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const toC = tRaw || item.toChannel || item.toMedium || item.to || item.medium || item.method || 'Cash';
+    const fromC = fRaw || item.fromChannel || item.fromMedium || item.channel || item.medium || 'Cash';
+    const f = mediumLabel(fromC);
+    const t2 = mediumLabel(toC);
     return {from:f, to:t2};
   }
   newPage();
@@ -2305,7 +2256,7 @@ function renderHistoryPages(o){
     const isInc = filter==='income';
     const isExp = filter==='expense';
     const isPLoan = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment';
-    drawTableHeader({hidePerson: isInc||isExp, hideCategory: isPLoan, singleChannel: isExp});
+    drawTableHeader({hidePerson: isInc||isExp, hideCategory: isPLoan, singleChannel: isInc||isExp});
     tableHeaderActive=true;
     let total=0;
     list.forEach(item=>{
@@ -2322,7 +2273,8 @@ function renderHistoryPages(o){
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
       const maxLines=Math.max(catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length,1);
-      const h=Math.max(70, maxLines*32+30);
+      let h=Math.max(55, maxLines*26+20);
+      if(filter==='income' || filter==='expense'){ h=55; }
       ensure(h+10);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
@@ -2338,8 +2290,8 @@ function renderHistoryPages(o){
       ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; total+=item.amount;
     });
-    y+=10; ensure(100); const th=80; 
-    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+cFrom.w+cTo.w, th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
+    y+=10; ensure(80); const th=55; 
+    drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+(singleChannel?cChannel.w:(cFrom.w+cTo.w)), th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+list.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(total), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
   }
@@ -3017,7 +2969,6 @@ setTimeout(()=>{
         list = list.filter(x=>x.type===historyFilter);
       }
     }
-    // NEW: Date range filter with two calendars
     if(historyFrom){
       list = list.filter(x=> x.date && x.date >= historyFrom);
     }
@@ -3194,9 +3145,10 @@ setTimeout(()=>{
       ) : h('div', {className:'space-y-2.5'},
         filteredHistory.map(x => h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
           h('div', {className:'flex-1 min-w-0'},
-            h('p', {className:'font-semibold text-[13px] truncate'}, lang==='en'?x.category:x.categoryBn),
-            h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' \u2022 '+x.note:''))
+            h('p', {className:'font-bold text-[14px] truncate text-[#2D2A26] cursor-pointer hover:underline ' + (['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? 'text-[#1A4D8F]' : ''), onClick:()=>{ const isLT=['loan_given','loan_taken','return_received','repayment'].includes(x.type); if(isLT && x.personId){ const list = (x.personKind==='taken' || x.type==='loan_taken' || x.type==='repayment') ? peopleTaken : peopleGiven; const pers = list.find(p=>p.id===x.personId); if(pers){ openPerson(pers ? (list===peopleTaken?'taken':'given') : x.personKind, pers); } } }}, (['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? (x.personName||'Unknown Person') : (lang==='en'?x.category:x.categoryBn))),
+            h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.personName && ['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? ' • 👤 '+x.personName : '') + (x.note?' • '+x.note:'') + (x.fromChannel?' • '+x.fromChannel:'') + (x.toChannel && x.toChannel!==x.fromChannel ? ' → '+x.toChannel:''))
           ),
+
           h('div', {className:'text-right'},
             h('p', {className:'font-bold text-[14px] ' + (x.type==='income'?'text-[#2E7D32]':'text-[#B71C1C]')}, (x.type==='income'?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
             h('div', {className:'flex gap-2 justify-end mt-1'},
