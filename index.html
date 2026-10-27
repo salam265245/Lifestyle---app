@@ -1443,7 +1443,7 @@ function renderReportPages(o){
     ctx.fillStyle='#F3E8D3';
     ctx.fillRect(cDate.x, y, cDate.w, totalH);
     if(!hP) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
-    if(!hC) ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    // Category column removed per requirement
     ctx.fillRect(cNote.x, y, cNote.w, totalH);
     if(sC){
       ctx.fillRect(cChannel.x, y, cChannel.w, totalH);
@@ -1625,11 +1625,11 @@ function renderPersonLoanPages(o){
   let singleChannel = false;
   function buildCols(hP, hC, sC){
     hidePersonCol = !!hP;
-    hideCategoryCol = !!hC;
+    hideCategoryCol = true;
     singleChannel = !!sC;
     const dateW=220;
     const personW=hidePersonCol?0:300;
-    const catW=hideCategoryCol?0:300;
+    const catW=0;
     const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
     const amtW=320;
     const totalW = 2480 - 240;
@@ -1700,7 +1700,7 @@ function renderPersonLoanPages(o){
     ctx.fillStyle='#F3E8D3';
     ctx.fillRect(cDate.x, y, cDate.w, totalH);
     if(!hP) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
-    if(!hC) ctx.fillRect(cCat.x, y, cCat.w, totalH);
+    // Category column removed
     ctx.fillRect(cNote.x, y, cNote.w, totalH);
     if(sC){
       ctx.fillRect(cChannel.x, y, cChannel.w, totalH);
@@ -1716,7 +1716,7 @@ function renderPersonLoanPages(o){
     ctx.strokeStyle='#8B7355'; ctx.lineWidth=2;
     ctx.strokeRect(cDate.x, y, cDate.w, totalH);
     if(!hP) ctx.strokeRect(cPerson.x, y, cPerson.w, totalH);
-    if(!hC) ctx.strokeRect(cCat.x, y, cCat.w, totalH);
+    // Category column removed
     ctx.strokeRect(cNote.x, y, cNote.w, totalH);
     if(sC){
       ctx.strokeRect(cChannel.x, y, cChannel.w, totalH);
@@ -1729,7 +1729,7 @@ function renderPersonLoanPages(o){
     font(26,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
     ctx.fillText('Date', cDate.x+10, y+32);
     if(!hP) ctx.fillText((typeof lang!=='undefined'&&lang==='en'||typeof isEn!=='undefined'&&isEn?'Person':'ব্যক্তি'), cPerson.x+10, y+32);
-    if(!hC) ctx.fillText('Category', cCat.x+10, y+32);
+    // Category header removed
     ctx.fillText('Note', cNote.x+10, y+32);
     if(sC){
       ctx.textAlign='center';
