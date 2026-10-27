@@ -1899,6 +1899,48 @@ function renderPersonLoanPages(o){
       ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalPaid), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thP+20;
     }
   }
+
+  // --- Summary Excel at bottom: Total Loan Entries, Total Payment, Overdue ---
+  try{
+    y+=60;
+    ensure(350);
+    font(40,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    const summaryTitle = (isEn ? 'Summary' : 'সারসংক্ষেপ');
+    ctx.fillText(fit(summaryTitle, W-M*2), M, y);
+    y+=50;
+    const sLabelW = cAmount.x - cDate.x;
+    const sAmtW = cAmount.w;
+    const sRowH = 70;
+    ensure(sRowH+10);
+    drawCellRect(cDate.x, sLabelW, sRowH, '#F3E8D3');
+    drawCellRect(cAmount.x, sAmtW, sRowH, '#F3E8D3');
+    font(28,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
+    ctx.fillText(fit(isEn?'Description':'বিবরণ', sLabelW-20), cDate.x+12, y+44);
+    ctx.textAlign='right';
+    ctx.fillText(fit(isEn?'Amount':'টাকা', sAmtW-20), cAmount.x+sAmtW-12, y+44);
+    ctx.textAlign='left';
+    y+=sRowH;
+    const rows = [
+      {label: 'Total Loan Entries', labelBn: 'মোট ঋণ', amount: totalLoaned},
+      {label: 'Total Payment', labelBn: 'মোট পরিশোধ', amount: totalPaid},
+      {label: 'Overdue', labelBn: 'বকেয়া', amount: balance}
+    ];
+    rows.forEach((r, ri)=>{
+      ensure(sRowH+10);
+      const fill = ri%2===0 ? '#FFFFFF' : '#FFFBF0';
+      drawCellRect(cDate.x, sLabelW, sRowH, fill);
+      drawCellRect(cAmount.x, sAmtW, sRowH, fill);
+      font(26,false); ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
+      const lbl = isEn ? r.label : (r.labelBn || r.label);
+      ctx.fillText(fit(lbl, sLabelW-20), cDate.x+12, y+42);
+      ctx.fillStyle = ri===2 ? (balance>0 ? '#B71C1C' : '#2E7D32') : '#000000';
+      ctx.textAlign='right'; font(26,true);
+      ctx.fillText(fit(fmtMoney(r.amount), sAmtW-20), cAmount.x+sAmtW-12, y+42);
+      ctx.textAlign='left';
+      y+=sRowH;
+    });
+  }catch(e){ console.error('Summary table error', e); }
+
   pages.forEach((c,i)=>{ const g=c.getContext('2d'); g.font='700 28px '+PDF_FONT; g.fillStyle='#8B7355'; g.textAlign='center'; g.fillText(t.appName+' • '+(i+1)+' / '+pages.length,W/2,H-60); });
   return pages;
 }
