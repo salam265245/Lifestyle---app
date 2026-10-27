@@ -1395,7 +1395,7 @@ function renderReportPages(o){
     singleChannel = !!sC;
     const dateW=220;
     const personW=hidePersonCol?0:300;
-    const catW=hideCategoryCol?0:300;
+    const catW=hideCategoryCol?0:850;
     const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
     const amtW=320;
     const totalW = 2480 - 240;
@@ -1578,18 +1578,18 @@ function renderReportPages(o){
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
       const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
-      const h=Math.max(70, maxLines*32+30);
-      ensure(h+10);
+      const h=Math.max(90, maxLines*42+50);
+      ensure(h+20);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
       ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
-      if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+      if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
+      if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
       ctx.fillStyle='#2D2A26';
-      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+28+i*30); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); }); }
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+36+i*42); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); }); }
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
       ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
@@ -1798,8 +1798,8 @@ function renderPersonLoanPages(o){
     const fromLines = wrapLines(ch.from||'', cFrom.w-20);
     const toLines = wrapLines(ch.to||'', cTo.w-20);
     const maxLines = Math.max(personLines.length, noteLines.length, fromLines.length, toLines.length, 1);
-    const h = Math.max(70, maxLines*32+30);
-    ensure(h+10);
+    const h = Math.max(90, maxLines*42+50);
+    ensure(h+20);
     drawCellRect(cDate.x,cDate.w,h,'#FFFFFF');
     if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF');
     if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF');
@@ -1810,13 +1810,13 @@ function renderPersonLoanPages(o){
     const baseY=y;
     ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
     ctx.fillText(fit(dateStr, cDate.w-20), cDate.x+10, baseY+32);
-    if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
-    if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+    if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
+    if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
     ctx.fillStyle='#5D4E37';
-    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
+    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
     ctx.fillStyle='#2D2A26';
-    fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); });
-    toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); });
+    fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); });
+    toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); });
     ctx.fillStyle=isPay?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
     ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
     ctx.textAlign='left';
@@ -2001,7 +2001,7 @@ function renderAllLoansPages(o){
     singleChannel = !!sC;
     const dateW=220;
     const personW=hidePersonCol?0:300;
-    const catW=hideCategoryCol?0:300;
+    const catW=hideCategoryCol?0:850;
     const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
     const amtW=320;
     const totalW = 2480 - 240;
@@ -2152,18 +2152,18 @@ function renderAllLoansPages(o){
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
       const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
-      const h=Math.max(70, maxLines*32+30);
-      ensure(h+10);
+      const h=Math.max(90, maxLines*42+50);
+      ensure(h+20);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
       ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
-      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
+      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
       ctx.fillStyle='#2D2A26';
-      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+28+i*30); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); }); }
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+36+i*42); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); }); }
       ctx.fillStyle=item.type==='payment'?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
       ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
@@ -2210,7 +2210,7 @@ function renderHistoryPages(o){
     singleChannel = !!sC;
     const dateW=220;
     const personW=hidePersonCol?0:300;
-    const catW=hideCategoryCol?0:300;
+    const catW=hideCategoryCol?0:850;
     const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
     const amtW=320;
     const totalW = 2480 - 240;
@@ -2374,17 +2374,17 @@ function renderHistoryPages(o){
       const maxLines=Math.max(catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length,1);
       let h=Math.max(55, maxLines*26+20);
       if(filter==='income' || filter==='expense'){ h=55; }
-      ensure(h+10);
+      ensure(h+20);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
       ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+28+i*30); });
-      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+28+i*30); });
+      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
+      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+28+i*30); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
       ctx.fillStyle='#2D2A26';
-      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+28+i*30); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+28+i*30); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+28+i*30); }); }
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+36+i*42); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); }); }
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
       ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
       ctx.textAlign='left'; y+=h; total+=item.amount;
@@ -3253,12 +3253,20 @@ setTimeout(()=>{
         ),
         // FIXED: Calendar icons like Report button - same style + LOCKED Expense Category Dropdown
         h('div', {className:'pt-1 border-t border-[#F3E8D3] space-y-2.5'},
-          h('div', {className:'grid grid-cols-2 gap-3'},
-            h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:historyFrom, onChange:e=>setHistoryFrom(e.target.value)})),
-            h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value)}))
+          h('div', {className:'flex flex-col'},
+            h('div', {className:'flex justify-end mb-1'},
+              (historyFrom || historyTo) ? h('button', {onClick:()=>{ setHistoryFrom(''); setHistoryTo(''); }, className:'px-3 py-1 rounded-full bg-[#F9F5EB] border border-[#F3E8D3] text-[#8B7355] text-[10px] font-bold'}, '✕ Date Clear') : null
+            ),
+            h('div', {className:'grid grid-cols-2 gap-3'},
+              h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:historyFrom, onChange:e=>setHistoryFrom(e.target.value)})),
+              h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value)}))
+            )
           ),
                     historyFilter==='income' ? h('div', {className:'relative'},
-            h('label', {className:'text-[11px] font-semibold text-[#8B7355] mb-1 block'}, lang==='en' ? 'Filter by Category' : 'খাত অনুযায়ী ফিল্টার'),
+            h('div', {className:'flex justify-between items-center mb-1'},
+              h('label', {className:'text-[11px] font-semibold text-[#8B7355] block'}, lang==='en' ? 'Filter by Category' : 'খাত অনুযায়ী ফিল্টার'),
+              (historyExpenseCategory || historyIncomeCategory) ? h('button', {onClick:()=>{ setHistoryExpenseCategory(''); setHistoryExpenseCategorySearch(''); setHistoryExpenseCategoryOpen(false); setHistoryIncomeCategory(''); setHistoryIncomeCategorySearch(''); setHistoryIncomeCategoryOpen(false); }, className:'px-2.5 py-1 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, lang==='en'?'✕ Expense Clear':'✕ Expense Clear') : null
+            ),
             h('div', {className:'relative'},
               h('input', {
                 value: historyIncomeCategoryOpen ? historyIncomeCategorySearch : (historyIncomeCategory ? (INCOME_CATEGORIES.find(it=>it.en===historyIncomeCategory||it.bn===historyIncomeCategory)?.[lang==='en'?'en':'bn'] || historyIncomeCategory) : ''),
@@ -3294,7 +3302,10 @@ setTimeout(()=>{
             ) : null
           ) : null,
           historyFilter==='expense' ? h('div', {className:'relative'},
-            h('label', {className:'text-[11px] font-semibold text-[#8B7355] mb-1 block'}, lang==='en' ? 'Filter by Category' : 'খাত অনুযায়ী ফিল্টার'),
+            h('div', {className:'flex justify-between items-center mb-1'},
+              h('label', {className:'text-[11px] font-semibold text-[#8B7355] block'}, lang==='en' ? 'Filter by Category' : 'খাত অনুযায়ী ফিল্টার'),
+              (historyExpenseCategory || historyIncomeCategory) ? h('button', {onClick:()=>{ setHistoryExpenseCategory(''); setHistoryExpenseCategorySearch(''); setHistoryExpenseCategoryOpen(false); setHistoryIncomeCategory(''); setHistoryIncomeCategorySearch(''); setHistoryIncomeCategoryOpen(false); }, className:'px-2.5 py-1 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, lang==='en'?'✕ Expense Clear':'✕ Expense Clear') : null
+            ),
             h('div', {className:'relative'},
               h('input', {
                 value: historyExpenseCategoryOpen ? historyExpenseCategorySearch : (historyExpenseCategory ? (EXPENSE_CATEGORIES.flatMap(g=>g.items).find(it=>it.en===historyExpenseCategory||it.bn===historyExpenseCategory)?.[lang==='en'?'en':'bn'] || historyExpenseCategory) : ''),
@@ -3332,8 +3343,7 @@ setTimeout(()=>{
             ) : null
           ) : null,
           h('div', {className:'flex justify-between items-center'},
-            h('div', {className:'text-[10px] text-[#8B7355]'}, (historyExpenseCategory ? (lang==='en'?'Category: ':'খাত: ') + historyExpenseCategory : (historyIncomeCategory ? (lang==='en'?'Category: ':'খাত: ') + historyIncomeCategory : ''))),
-            (historyFrom || historyTo || historyExpenseCategory || historyIncomeCategory) ? h('button', {onClick:()=>{ setHistoryFrom(''); setHistoryTo(''); setHistoryExpenseCategory(''); setHistoryExpenseCategorySearch(''); setHistoryExpenseCategoryOpen(false); setHistoryIncomeCategory(''); setHistoryIncomeCategorySearch(''); setHistoryIncomeCategoryOpen(false); }, className:'px-3 py-1.5 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ Clear') : null
+            h('div', {className:'text-[10px] text-[#8B7355]'}, (historyExpenseCategory ? (lang==='en'?'Category: ':'খাত: ') + historyExpenseCategory : (historyIncomeCategory ? (lang==='en'?'Category: ':'খাত: ') + historyIncomeCategory : '')))
           )
         ),
         h('p', {className:'text-[10px] text-[#8B7355] px-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+(historyFrom||historyTo ? ' • '+(historyFrom||'...')+' to '+(historyTo||'...') : '')+' • '+filteredHistory.length+' records • User, Date, Time included')
@@ -3573,19 +3583,19 @@ setTimeout(()=>{
         h('div', {className:'w-full mt-4 space-y-3'},
           h('div', null,
             h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Full Name':'পূর্ণ নাম'),
-            h(TextInput, {value:userName, onChange:e=>setUserName(e.target.value), placeholder: lang==='en'?'Your full name':'আপনার নাম', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-bold outline-none'})
+            h(TextInput, {value:userName, onChange:e=>setUserName(e.target.value), placeholder:'Md. Abdus Salam', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-bold outline-none placeholder:text-[#8B7355]/40 placeholder:font-normal'})
           ),
           h('div', null,
             h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Designation / Title':'পদবী'),
-            h(TextInput, {value:userDesignation, onChange:e=>setUserDesignation(e.target.value), placeholder: lang==='en'?'Ex: Teacher, Businessman':'যেমন: শিক্ষক, ব্যবসায়ী', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-medium outline-none'})
+            h(TextInput, {value:userDesignation, onChange:e=>setUserDesignation(e.target.value), placeholder:'Service Holder', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-medium outline-none placeholder:text-[#8B7355]/40 placeholder:font-normal'})
           ),
           h('div', null,
             h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Address':'ঠিকানা'),
-            h(TextInput, {value:userAddress, onChange:e=>setUserAddress(e.target.value), placeholder: lang==='en'?'Your address':'আপনার ঠিকানা', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-medium outline-none'})
+            h(TextInput, {value:userAddress, onChange:e=>setUserAddress(e.target.value), placeholder:'Bantra, Kalaroa, Satkhira', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-medium outline-none placeholder:text-[#8B7355]/40 placeholder:font-normal'})
           ),
           h('div', null,
             h('label', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Mobile Number':'মোবাইল নাম্বার'),
-            h(TextInput, {type:'tel', value:userMobile, onChange:e=>setUserMobile(e.target.value), placeholder: '+8801XXXXXXXXX', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-medium outline-none'})
+            h(TextInput, {type:'tel', value:userMobile, onChange:e=>setUserMobile(e.target.value), placeholder: '+8801737265245', className:'w-full mt-1.5 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] font-medium placeholder:text-[#8B7355]/40 placeholder:font-normal outline-none'})
           ),
           h('button', {
             onClick:()=>{
