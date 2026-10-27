@@ -3044,13 +3044,19 @@ setTimeout(()=>{
         h('div', {className:'grid grid-cols-2 gap-3'},
           h('div', {onClick:()=>setPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalGiven),
-            h('p', {className:'text-[18px] font-bold'}, fmtMoney(totalGivenAmt)),
-            h('p', {className:'text-[11px] text-[#2E7D32] mt-1'}, fmtMoney(totalReturnedAmt) + ' ' + t.totalReturned)
+            h('div', {className:'space-y-1 mt-1'},
+              h('p', {className:'text-[13px] font-bold text-[#2D2A26]'}, (lang==='en'?'Given: ':'দিয়েছি: ') + fmtMoney(totalGivenAmt)),
+              h('p', {className:'text-[11px] text-[#2E7D32]'}, (lang==='en'?'Returned: ':'ফেরত পেয়েছি: ') + fmtMoney(totalReturnedAmt)),
+              h('p', {className:'text-[11px] font-bold text-[#1A4D8F] bg-[#E3F2FD] rounded-full px-2 py-0.5 inline-block'}, (lang==='en'?'To Get: ':'পাব: ') + fmtMoney(totalGivenAmt - totalReturnedAmt))
+            )
           ),
           h('div', {onClick:()=>setPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[12px] font-semibold text-[#8B7355] mb-1'}, t.totalTaken),
-            h('p', {className:'text-[18px] font-bold'}, fmtMoney(totalTakenAmt)),
-            h('p', {className:'text-[11px] text-[#B71C1C] mt-1'}, fmtMoney(totalRepaidAmt) + ' ' + t.totalRepaid)
+            h('div', {className:'space-y-1 mt-1'},
+              h('p', {className:'text-[13px] font-bold text-[#2D2A26]'}, (lang==='en'?'Taken: ':'নিয়েছি: ') + fmtMoney(totalTakenAmt)),
+              h('p', {className:'text-[11px] text-[#8B7355]'}, (lang==='en'?'Repaid: ':'ফেরত দিয়েছি: ') + fmtMoney(totalRepaidAmt)),
+              h('p', {className:'text-[11px] font-bold text-[#B71C1C] bg-[#FFEBEE] rounded-full px-2 py-0.5 inline-block'}, (lang==='en'?'To Pay: ':'দিতে হবে: ') + fmtMoney(totalTakenAmt - totalRepaidAmt))
+            )
           )
         ),
         // NEW: Calendar icon + PDF buttons like Report button - added under Loans & Receivable
