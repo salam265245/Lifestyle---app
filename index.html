@@ -2822,6 +2822,14 @@ function App(){
   // NEW: History date range filter - two calendars for All/Income/Expense/Given/Taken/Return/Repayment/Bank
   const [historyFrom, setHistoryFrom] = useState(thisMonth() + '-01');
   const [historyTo, setHistoryTo] = useState(today());
+  // LOCKED: History Expense Category Filter - DO NOT REMOVE
+  const [historyExpenseCategory, setHistoryExpenseCategory] = useState('');
+  const [historyExpenseCategorySearch, setHistoryExpenseCategorySearch] = useState('');
+  const [historyExpenseCategoryOpen, setHistoryExpenseCategoryOpen] = useState(false);
+  // LOCKED: History Income Category Filter - DO NOT MODIFY
+  const [historyIncomeCategory, setHistoryIncomeCategory] = useState('');
+  const [historyIncomeCategorySearch, setHistoryIncomeCategorySearch] = useState('');
+  const [historyIncomeCategoryOpen, setHistoryIncomeCategoryOpen] = useState(false);
 
   useEffect(()=>{ saveLS('lifestyle_lang', lang); }, [lang]);
   useEffect(()=>{ saveLS('lifestyle_transactions', transactions); }, [transactions]);
@@ -3076,10 +3084,18 @@ setTimeout(()=>{
     }
     if(search){
       const s = search.toLowerCase();
-      list = list.filter(x => (x.category||'').toLowerCase().includes(s) || (x.note||'').toLowerCase().includes(s) || (x.personName||'').toLowerCase().includes(s));
+      list = list.filter(x => (x.category||'').toLowerCase().includes(s) || (x.categoryBn||'').toLowerCase().includes(s) || (x.note||'').toLowerCase().includes(s) || (x.personName||'').toLowerCase().includes(s));
+    }
+    // LOCKED: Expense Category Filter - exact from EXPENSE_CATEGORIES
+    if(historyFilter==='expense' && historyExpenseCategory){
+      list = list.filter(x => (x.category||'')===historyExpenseCategory || (x.categoryBn||'')===historyExpenseCategory);
+    }
+    // LOCKED: Income Category Filter - exact from INCOME_CATEGORIES
+    if(historyFilter==='income' && historyIncomeCategory){
+      list = list.filter(x => x.category===historyIncomeCategory || x.categoryBn===historyIncomeCategory);
     }
     return list.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||''));
-  }, [transactions, peopleGiven, peopleTaken, bankLoans, historyFilter, search, historyFrom, historyTo]);
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, historyFilter, search, historyFrom, historyTo, historyExpenseCategory, historyIncomeCategory]);
 
   /* ---- render pages ---- */
   let pageContent = null;
@@ -3235,13 +3251,90 @@ setTimeout(()=>{
             h('button', {onClick:()=>handleHistoryPdf('share'), className:'px-2.5 py-1.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[10px] font-bold'}, '🔗 Share')
           )
         ),
-        // FIXED: Calendar icons like Report button - same style
-        h('div', {className:'pt-1 border-t border-[#F3E8D3] space-y-2'},
+        // FIXED: Calendar icons like Report button - same style + LOCKED Expense Category Dropdown
+        h('div', {className:'pt-1 border-t border-[#F3E8D3] space-y-2.5'},
           h('div', {className:'grid grid-cols-2 gap-3'},
             h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:historyFrom, onChange:e=>setHistoryFrom(e.target.value)})),
             h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:historyTo, onChange:e=>setHistoryTo(e.target.value)}))
           ),
-          (historyFrom || historyTo) ? h('div', {className:'flex justify-end'}, h('button', {onClick:()=>{ setHistoryFrom(''); setHistoryTo(''); }, className:'px-3 py-1.5 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ Clear')) : null
+                    historyFilter==='income' ? h('div', {className:'relative'},
+            h('label', {className:'text-[11px] font-semibold text-[#8B7355] mb-1 block'}, lang==='en' ? 'Filter by Category' : 'খাত অনুযায়ী ফিল্টার'),
+            h('div', {className:'relative'},
+              h('input', {
+                value: historyIncomeCategoryOpen ? historyIncomeCategorySearch : (historyIncomeCategory ? (INCOME_CATEGORIES.find(it=>it.en===historyIncomeCategory||it.bn===historyIncomeCategory)?.[lang==='en'?'en':'bn'] || historyIncomeCategory) : ''),
+                onChange: e=>{ setHistoryIncomeCategorySearch(e.target.value); setHistoryIncomeCategoryOpen(true); },
+                onFocus: ()=>{ setHistoryIncomeCategoryOpen(true); setHistoryIncomeCategorySearch(''); },
+                placeholder: lang==='en' ? 'Search category (English/Bangla)...' : 'খাত খুঁজুন (বাংলা/English)...',
+                className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] outline-none focus:border-[#C9A86A]'
+              }),
+              historyIncomeCategory ? h('button', {onClick:()=>{ setHistoryIncomeCategory(''); setHistoryIncomeCategorySearch(''); setHistoryIncomeCategoryOpen(false); }, className:'absolute right-2 top-1/2 -translate-y-1/2 text-[12px] bg-[#FFEBEE] rounded-full w-6 h-6 flex items-center justify-center'}, '✕') : null
+            ),
+            historyIncomeCategoryOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[220px] overflow-y-auto'},
+              (()=>{
+                const q = (historyIncomeCategorySearch||'').toLowerCase().trim();
+                let filtered = INCOME_CATEGORIES;
+                if(q){
+                  filtered = INCOME_CATEGORIES.filter(it=> it.en.toLowerCase().includes(q) || it.bn.includes(q));
+                }
+                filtered = filtered.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en) : a.bn.localeCompare(b.bn, 'bn'));
+                const list = [{en:'All Categories', bn:'সব খাত', icon:'📋', isAll:true}, ...filtered];
+                return list.map(it=> h('button', {
+                  key: it.en,
+                  onClick: ()=>{
+                    if(it.isAll){ setHistoryIncomeCategory(''); } else { setHistoryIncomeCategory(it.en); }
+                    setHistoryIncomeCategoryOpen(false);
+                    setHistoryIncomeCategorySearch('');
+                  },
+                  className:'w-full text-left px-3 py-2 hover:bg-[#F9F5EB] flex items-center gap-2 text-[12px] ' + (historyIncomeCategory===it.en ? 'bg-[#F9F5EB] font-bold' : '')
+                },
+                  h('span', null, it.icon||''),
+                  h('span', {className:'flex-1'}, lang==='en' ? it.en : (it.bn + ' - ' + it.en))
+                ));
+              })()
+            ) : null
+          ) : null,
+          historyFilter==='expense' ? h('div', {className:'relative'},
+            h('label', {className:'text-[11px] font-semibold text-[#8B7355] mb-1 block'}, lang==='en' ? 'Filter by Category' : 'খাত অনুযায়ী ফিল্টার'),
+            h('div', {className:'relative'},
+              h('input', {
+                value: historyExpenseCategoryOpen ? historyExpenseCategorySearch : (historyExpenseCategory ? (EXPENSE_CATEGORIES.flatMap(g=>g.items).find(it=>it.en===historyExpenseCategory||it.bn===historyExpenseCategory)?.[lang==='en'?'en':'bn'] || historyExpenseCategory) : ''),
+                onChange: e=>{ setHistoryExpenseCategorySearch(e.target.value); setHistoryExpenseCategoryOpen(true); },
+                onFocus: ()=>{ setHistoryExpenseCategoryOpen(true); setHistoryExpenseCategorySearch(''); },
+                placeholder: lang==='en' ? 'Search category (English/Bangla)...' : 'খাত খুঁজুন (বাংলা/English)...',
+                className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] outline-none focus:border-[#C9A86A]'
+              }),
+              historyExpenseCategory ? h('button', {onClick:()=>{ setHistoryExpenseCategory(''); setHistoryExpenseCategorySearch(''); setHistoryExpenseCategoryOpen(false); }, className:'absolute right-2 top-1/2 -translate-y-1/2 text-[12px] bg-[#FFEBEE] rounded-full w-6 h-6 flex items-center justify-center'}, '✕') : null
+            ),
+            historyExpenseCategoryOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[220px] overflow-y-auto'},
+              (()=>{ 
+                const allItems = EXPENSE_CATEGORIES.flatMap(g=> g.items.map(it=> ({...it, group: g.en, groupBn: g.bn, groupIcon: g.icon})));
+                const q = (historyExpenseCategorySearch||'').toLowerCase().trim();
+                let filtered = allItems;
+                if(q){
+                  filtered = allItems.filter(it=> (it.en||'').toLowerCase().includes(q) || (it.bn||'').includes(historyExpenseCategorySearch) || (it.group||'').toLowerCase().includes(q) || (it.groupBn||'').includes(historyExpenseCategorySearch));
+                }
+                filtered = filtered.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en) : a.bn.localeCompare(b.bn, 'bn'));
+                const list = [{en:'All Categories', bn:'সব খাত', icon:'📋', isAll:true}, ...filtered];
+                return list.map(it=> h('button', {
+                  key: it.en + (it.group||''),
+                  onClick: ()=>{
+                    if(it.isAll){ setHistoryExpenseCategory(''); } else { setHistoryExpenseCategory(it.en); }
+                    setHistoryExpenseCategoryOpen(false);
+                    setHistoryExpenseCategorySearch('');
+                  },
+                  className:'w-full text-left px-3 py-2 hover:bg-[#F9F5EB] flex items-center gap-2 text-[12px] ' + (historyExpenseCategory===it.en ? 'bg-[#F9F5EB] font-bold' : '')
+                },
+                  h('span', null, it.icon||''),
+                  h('span', {className:'flex-1'}, lang==='en' ? it.en : (it.bn + ' - ' + it.en)),
+                  it.group ? h('span', {className:'text-[10px] text-[#8B7355]'}, lang==='en'?it.group:it.groupBn) : null
+                ));
+              })()
+            ) : null
+          ) : null,
+          h('div', {className:'flex justify-between items-center'},
+            h('div', {className:'text-[10px] text-[#8B7355]'}, (historyExpenseCategory ? (lang==='en'?'Category: ':'খাত: ') + historyExpenseCategory : (historyIncomeCategory ? (lang==='en'?'Category: ':'খাত: ') + historyIncomeCategory : ''))),
+            (historyFrom || historyTo || historyExpenseCategory || historyIncomeCategory) ? h('button', {onClick:()=>{ setHistoryFrom(''); setHistoryTo(''); setHistoryExpenseCategory(''); setHistoryExpenseCategorySearch(''); setHistoryExpenseCategoryOpen(false); setHistoryIncomeCategory(''); setHistoryIncomeCategorySearch(''); setHistoryIncomeCategoryOpen(false); }, className:'px-3 py-1.5 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ Clear') : null
+          )
         ),
         h('p', {className:'text-[10px] text-[#8B7355] px-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+(historyFrom||historyTo ? ' • '+(historyFrom||'...')+' to '+(historyTo||'...') : '')+' • '+filteredHistory.length+' records • User, Date, Time included')
       ),
