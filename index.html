@@ -3275,7 +3275,7 @@ setTimeout(()=>{
                 placeholder: lang==='en' ? 'Search category (English/Bangla)...' : 'খাত খুঁজুন (বাংলা/English)...',
                 className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] outline-none focus:border-[#C9A86A]'
               }),
-              historyIncomeCategory ? h('button', {onClick:()=>{ setHistoryIncomeCategory(''); setHistoryIncomeCategorySearch(''); setHistoryIncomeCategoryOpen(false); }, className:'absolute right-2 top-1/2 -translate-y-1/2 text-[12px] bg-[#FFEBEE] rounded-full w-6 h-6 flex items-center justify-center'}, '✕') : null
+              null // X button removed
             ),
             historyIncomeCategoryOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[220px] overflow-y-auto'},
               (()=>{
@@ -3314,7 +3314,7 @@ setTimeout(()=>{
                 placeholder: lang==='en' ? 'Search category (English/Bangla)...' : 'খাত খুঁজুন (বাংলা/English)...',
                 className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] outline-none focus:border-[#C9A86A]'
               }),
-              historyExpenseCategory ? h('button', {onClick:()=>{ setHistoryExpenseCategory(''); setHistoryExpenseCategorySearch(''); setHistoryExpenseCategoryOpen(false); }, className:'absolute right-2 top-1/2 -translate-y-1/2 text-[12px] bg-[#FFEBEE] rounded-full w-6 h-6 flex items-center justify-center'}, '✕') : null
+              null // X button removed
             ),
             historyExpenseCategoryOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[220px] overflow-y-auto'},
               (()=>{ 
