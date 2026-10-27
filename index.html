@@ -389,7 +389,31 @@ function calcEMI(principal, ratePct, months){
 function loadLS(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
 }
-function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+function saveLS(key, val){
+  try{
+    localStorage.setItem(key, JSON.stringify(val));
+  }catch(e){
+    try{
+      var isQuota = e && (e.name==='QuotaExceededError' || e.code===22 || String(e).toLowerCase().indexOf('quota')!==-1);
+      if(isQuota){
+        try{
+          var keysToRemove=[];
+          for(var i=0;i<localStorage.length;i++){
+            var k=localStorage.key(i);
+            if(k && k.indexOf('lifestyle_draft_')===0) keysToRemove.push(k);
+          }
+          keysToRemove.forEach(function(k){ try{ localStorage.removeItem(k); }catch(_){} });
+        }catch(_){}
+        try{ localStorage.setItem(key, JSON.stringify(val)); return; }catch(e2){}
+        if(key!=='lifestyle_profile_photo'){
+          try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(_){}
+          try{ localStorage.setItem(key, JSON.stringify(val)); return; }catch(e3){}
+        }
+      }
+      console.warn('saveLS failed', key, e);
+    }catch(e2){}
+  }
+}
 /* UNIVERSAL CONTACT PICKER - reusable everywhere */
 function getContactPickerFlow(){ return { directGooglePicker: true, noDoneButton: true, autoFillSingle: true, bottomSheetForMultiple: true }; }
 
@@ -2740,10 +2764,10 @@ function App(){
           try{
             const tToday = today();
             const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-            if(d.transactions) setTransactions(fixDates(d.transactions));
-            if(d.peopleGiven) setPeopleGiven(d.peopleGiven);
-            if(d.peopleTaken) setPeopleTaken(d.peopleTaken);
-            if(d.bankLoans) setBankLoans(d.bankLoans);
+            if(d.transactions && d.transactions.length) setTransactions(prev=> mergeById(prev, fixDates(d.transactions)));
+            if(d.peopleGiven && d.peopleGiven.length) setPeopleGiven(prev=> mergePeople(prev, d.peopleGiven));
+            if(d.peopleTaken && d.peopleTaken.length) setPeopleTaken(prev=> mergePeople(prev, d.peopleTaken));
+            if(d.bankLoans && d.bankLoans.length) setBankLoans(prev=> mergeById(prev, d.bankLoans));
             if(d.userName) setUserName(d.userName);
             if(d.userDesignation) setUserDesignation(d.userDesignation);
             if(d.userAddress) setUserAddress(d.userAddress);
