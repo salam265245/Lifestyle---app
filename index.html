@@ -1164,7 +1164,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
             const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
             downloadPdfBlob(blob, person.name + '-loan-history.pdf');
-          }catch(e){ alert('PDF Error'); }
+          }catch(e){ console.error('PDF Error'); }
         }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
         h('button', {onClick: ()=>{
           try{
@@ -1172,7 +1172,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
             const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
             try{ var pages=renderPersonLoanPages({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName}); showPdfPreviewFromCanvases(pages); }catch(e){ viewPdfBlob(blob); }
-          }catch(e){ alert('PDF Error'); }
+          }catch(e){ console.error('PDF Error'); }
         }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
         h('button', {onClick: async ()=>{
           try{
@@ -1180,7 +1180,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             const resolve = (typeof userName!=='undefined' && userName) ? userName : ((typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User');
             const lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || ''; const lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || ''; const lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || ''; const blob = buildPersonLoanPdfBlob({t, lang, person, kind, userName: resolve, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName});
             await shareOrDownloadPdf(blob, person.name + '-loan-history.pdf', person.name + ' History');
-          }catch(e){ alert('PDF Error'); }
+          }catch(e){ console.error('PDF Error'); }
         }, className:'py-2.5 rounded-full bg-[#2D2A26] text-white text-[11px] font-bold'}, '📤 Share')
       )
     ),
@@ -1283,7 +1283,7 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
       if(mode==='view'){ try{ var pages=renderAllLoansPages({t, lang, kind, people: filteredPeople, userName: resolved, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName, from: filterFrom, to: filterTo}); showPdfPreviewFromCanvases(pages); }catch(e){ viewPdfBlob(blob); } }
       else if(mode==='share') shareOrDownloadPdf(blob, fname, 'All ' + kind + ' history');
       else downloadPdfBlob(blob, fname);
-    }catch(e){ alert('PDF Error: '+e.message); }
+    }catch(e){ console.error('PDF Error'); }
   }
   return h('div', {className:'pt-5 pb-6 space-y-4'},
     h('div', {className:'flex items-center justify-between'},
@@ -2344,12 +2344,12 @@ function showPdfPreviewFromCanvases(pages){
     pages.forEach(function(c,i){
       try{
         var img=document.createElement('img');
-        img.src=c.toDataURL('image/jpeg', 0.92);
+        img.src=c.toDataURL('image/jpeg', 0.85);
         img.style.cssText='width:100%;max-width:800px;height:auto;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.5);border-radius:4px;';
         scroll.appendChild(img);
       }catch(e){}
     });
-  }catch(e){ alert('Preview failed: '+e.message); }
+  }catch(e){ console.error('Preview failed', e); }
 }
 
 function viewPdfBlob(blob){
@@ -2370,7 +2370,7 @@ function viewPdfBlob(blob){
     closeBtn.onclick=closeViewer;
     frame.src=url;
     setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 600000);
-  }catch(e){ alert('View failed'); }
+  }catch(e){ console.error('View failed'); }
 }
 
 
@@ -2378,7 +2378,7 @@ function viewPdfBlob(blob){
 function buildReportPdfBlob(o){
   const pages = renderReportPages(o);
   const jpegs = pages.map(c => {
-    const b64 = c.toDataURL('image/jpeg', 1.0).split(',')[1];
+    const b64 = c.toDataURL('image/jpeg', 0.85).split(',')[1];
     const bin = atob(b64), bytes = new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
     return {bytes, w:c.width, h:c.height};
@@ -3585,6 +3585,251 @@ setTimeout(()=>{
     )
   );
 }
+
+
+// ===== OVERRIDE: UNIFIED ROBUST PDF ENGINE - FIXED FOR WEBVIEW/APK =====
+function isWebViewDetected(){
+  try{
+    var ua = (navigator.userAgent||'').toLowerCase();
+    return /wv|webview|android.*version/.test(ua) || !!window.AndroidInterface || typeof Android !== 'undefined' || !!window.ReactNativeWebView;
+  }catch(e){ return false; }
+}
+function canvasToJpegBytes(canvas, quality){
+  try{
+    quality = quality || 0.85;
+    var b64 = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+    var bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return {bytes:bytes, w:canvas.width, h:canvas.height};
+  }catch(e){ console.error('canvasToJpegBytes failed', e); throw e; }
+}
+var _orig_buildPdfFromJpegs = (typeof buildPdfFromJpegs!=='undefined'?buildPdfFromJpegs:null);
+function buildPdfFromJpegs(jpegs){
+  try{
+    if(!jpegs || !jpegs.length) throw new Error('No pages');
+    var enc = new TextEncoder(), chunks = [], offsets = [];
+    var len = 0;
+    function push(x){ var b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); len += b.length; }
+    var n = jpegs.length, total = 2 + 3*n;
+    push('%PDF-1.4\n');
+    offsets[1] = len; push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+    var kids = []; for(var i=0;i<n;i++) kids.push((3+i*3)+' 0 R');
+    offsets[2] = len; push('2 0 obj\n<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + n + ' >>\nendobj\n');
+    for(var i=0;i<n;i++){
+      var pg = 3+i*3, ct = pg+1, im = pg+2, j = jpegs[i];
+      offsets[pg] = len;
+      push(pg + ' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 ' + im + ' 0 R >> >> /Contents ' + ct + ' 0 R >>\nendobj\n');
+      var content = 'q 595 0 0 842 0 0 cm /Im0 Do Q';
+      offsets[ct] = len;
+      push(ct + ' 0 obj\n<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream\nendobj\n');
+      offsets[im] = len;
+      push(im + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + j.w + ' /Height ' + j.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + j.bytes.length + ' >>\nstream\n');
+      push(j.bytes); push('\nendstream\nendobj\n');
+    }
+    var xref = len;
+    var x = 'xref\n0 ' + (total+1) + '\n0000000000 65535 f \n';
+    for(var i=1;i<=total;i++) x += String(offsets[i]).padStart(10,'0') + ' 00000 n \n';
+    push(x + 'trailer\n<< /Size ' + (total+1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+    return new Blob(chunks, {type:'application/pdf'});
+  }catch(e){ console.error('buildPdfFromJpegs failed', e); throw e; }
+}
+function buildPersonLoanPdfBlob(o){ try{ var pages = renderPersonLoanPages(o); var jpegs = pages.map(function(c){ return canvasToJpegBytes(c, 0.85); }); return buildPdfFromJpegs(jpegs); }catch(e){ console.error(e); throw e; } }
+function buildAllLoansPdfBlob(o){ try{ var pages = renderAllLoansPages(o); var jpegs = pages.map(function(c){ return canvasToJpegBytes(c, 0.85); }); return buildPdfFromJpegs(jpegs); }catch(e){ console.error(e); throw e; } }
+function buildHistoryPdfBlob(o){ try{ var pages = renderHistoryPages(o); var jpegs = pages.map(function(c){ return canvasToJpegBytes(c, 0.85); }); return buildPdfFromJpegs(jpegs); }catch(e){ console.error(e); throw e; } }
+function buildReportPdfBlob(o){ try{ var pages = renderReportPages(o); var jpegs = pages.map(function(c){ return canvasToJpegBytes(c, 0.85); }); return buildPdfFromJpegs(jpegs); }catch(e){ console.error(e); throw e; } }
+function downloadPdfBlob(blob, filename){
+  var url = null, a = null;
+  try{
+    var isWV = isWebViewDetected();
+    if(isWV){
+      try{
+        var reader = new FileReader();
+        reader.onload = function(){
+          try{
+            var dataUrl = reader.result;
+            a = document.createElement('a');
+            a.href = dataUrl; a.download = filename || 'file.pdf'; a.target = '_blank';
+            document.body.appendChild(a); a.click();
+            setTimeout(function(){ try{ a.remove(); }catch(e){} }, 2000);
+            try{ window.open(dataUrl, '_blank'); }catch(e){}
+          }catch(e){ console.error(e); }
+        };
+        reader.readAsDataURL(blob);
+        url = URL.createObjectURL(blob);
+        try{ window.open(url, '_blank'); }catch(e){}
+        setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 10000);
+        return;
+      }catch(e){ console.error(e); }
+    }
+    url = URL.createObjectURL(blob);
+    a = document.createElement('a'); a.href = url; a.download = filename || 'file.pdf';
+    document.body.appendChild(a); a.click();
+  }catch(e){
+    console.error('downloadPdfBlob error', e);
+    try{ if(!url) url = URL.createObjectURL(blob); window.open(url, '_blank'); }catch(e2){}
+  }finally{
+    setTimeout(function(){ try{ if(url) URL.revokeObjectURL(url); }catch(e){} try{ if(a) a.remove(); }catch(e){} }, 4000);
+  }
+}
+function showPdfPreviewFromCanvases(pages){
+  try{
+    var oldEl = document.getElementById('pdfViewModal');
+    if(oldEl) oldEl.remove();
+    var modal = document.createElement('div');
+    modal.id='pdfViewModal';
+    modal.style.cssText='position:fixed;inset:0;z-index:99999;background:#0f0f0f;display:flex;flex-direction:column;';
+    modal.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1f1f1f;color:#fff;flex-shrink:0;"><span style="font-weight:700;font-size:15px;">PDF Preview - '+pages.length+' page(s)</span><button id="pdfViewClose" style="background:#fff;color:#000;border:none;border-radius:20px;padding:6px 14px;font-weight:700;cursor:pointer;">✕ Close</button></div><div id="pdfViewScroll" style="flex:1;overflow:auto;background:#2a2a2a;padding:12px;display:flex;flex-direction:column;align-items:center;gap:12px;"></div>';
+    document.body.appendChild(modal);
+    document.body.style.overflow='hidden';
+    var scroll=modal.querySelector('#pdfViewScroll');
+    var closeBtn=modal.querySelector('#pdfViewClose');
+    function closeViewer(){ try{ modal.remove(); }catch(e){} document.body.style.overflow=''; }
+    closeBtn.onclick=closeViewer;
+    modal.addEventListener('click', function(e){ if(e.target===modal) closeViewer(); });
+    pages.forEach(function(c,i){
+      try{
+        var img=document.createElement('img');
+        img.src=c.toDataURL('image/jpeg', 0.85);
+        img.style.cssText='width:100%;max-width:800px;height:auto;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.5);border-radius:4px;';
+        scroll.appendChild(img);
+      }catch(e){ console.error(i,e); }
+    });
+  }catch(e){ console.error('showPdfPreviewFromCanvases', e); }
+}
+function viewPdfBlob(blob){
+  try{
+    var oldEl=document.getElementById('pdfViewModal');
+    if(oldEl) oldEl.remove();
+    var modal=document.createElement('div');
+    modal.id='pdfViewModal';
+    modal.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;';
+    modal.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1f1f1f;color:#fff;"><span style="font-weight:700;">PDF View</span><button id="pdfViewClose" style="background:#fff;color:#000;border:none;border-radius:20px;padding:6px 14px;font-weight:700;cursor:pointer;">✕ Close</button></div><div id="pdfViewContainer" style="flex:1;overflow:auto;background:#fff;display:flex;align-items:center;justify-content:center;"><span style="color:#666;">Loading PDF...</span></div>';
+    document.body.appendChild(modal);
+    document.body.style.overflow='hidden';
+    var container=modal.querySelector('#pdfViewContainer');
+    var closeBtn=modal.querySelector('#pdfViewClose');
+    var url=null;
+    function closeViewer(){ try{ if(url) URL.revokeObjectURL(url); }catch(e){} try{ modal.remove(); }catch(e){} document.body.style.overflow=''; }
+    closeBtn.onclick=closeViewer;
+    modal.addEventListener('click', function(e){ if(e.target===modal) closeViewer(); });
+    var isWV = isWebViewDetected();
+    if(isWV){
+      try{
+        var reader=new FileReader();
+        reader.onload=function(){ try{ var dataUrl=reader.result; container.innerHTML='<iframe style="flex:1;width:100%;height:100%;border:none;" src="'+dataUrl+'"></iframe>'; }catch(e){} };
+        reader.readAsDataURL(blob);
+        return;
+      }catch(e){}
+    }
+    url=URL.createObjectURL(blob);
+    container.innerHTML='<iframe style="flex:1;width:100%;height:100%;border:none;background:#fff;" src="'+url+'"></iframe>';
+    setTimeout(function(){ try{ URL.revokeObjectURL(url); url=null; }catch(e){} }, 600000);
+  }catch(e){ console.error('viewPdfBlob', e); }
+}
+async function shareOrDownloadPdf(blob, filename, title){
+  var isWV = false; try{ isWV = isWebViewDetected(); }catch(e){}
+  try{
+    var file = new File([blob], filename, {type:'application/pdf'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title: title||filename}); return 'shared'; }
+      catch(e){ if(e && e.name==='AbortError') return 'cancelled'; }
+    }
+  }catch(e){}
+  try{
+    if(isWV){
+      var url = URL.createObjectURL(blob);
+      try{ window.open(url, '_blank'); }catch(e){}
+      var reader = new FileReader();
+      reader.onload = function(){
+        try{
+          var dataUrl = reader.result;
+          var a2=document.createElement('a'); a2.href=dataUrl; a2.download=filename; a2.target='_blank';
+          document.body.appendChild(a2); a2.click(); setTimeout(function(){ try{ a2.remove(); }catch(e){} }, 2000);
+        }catch(e){}
+      };
+      reader.readAsDataURL(blob);
+      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 10000);
+      return 'downloaded';
+    }else{
+      var url2 = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href=url2; a.download=filename; document.body.appendChild(a); a.click();
+      setTimeout(function(){ try{ URL.revokeObjectURL(url2); a.remove(); }catch(e){} }, 4000);
+      return 'downloaded';
+    }
+  }catch(e){
+    try{
+      var r = new FileReader();
+      var dataUrl = await new Promise(function(res,rej){ r.onload=function(){res(r.result);}; r.onerror=rej; r.readAsDataURL(blob); });
+      window.open(dataUrl, '_blank');
+      return 'downloaded';
+    }catch(e2){ return 'failed'; }
+  }
+}
+function handleCombinedPdf(mode){
+  try{
+    mode = mode || 'download';
+    var genAt = new Date();
+    var resolved = (typeof getResolvedUserName==='function' ? getResolvedUserName() : (typeof userName!=='undefined' ? userName : '')) || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+    var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
+    var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
+    var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
+    var filteredPeople = people;
+    if(typeof filterFrom!=='undefined' && typeof filterTo!=='undefined' && (filterFrom || filterTo)){
+      filteredPeople = people.map(function(p){
+        var fLoans = p.loans.filter(function(l){ if(filterFrom && l.date < filterFrom) return false; if(filterTo && l.date > filterTo) return false; return true; });
+        var fPays = p.payments.filter(function(pay){ if(filterFrom && pay.date < filterFrom) return false; if(filterTo && pay.date > filterTo) return false; return true; });
+        return Object.assign({}, p, {loans: fLoans, payments: fPays});
+      }).filter(function(p){ return p.loans.length>0 || p.payments.length>0; });
+    }
+    var oAll = {t:t, lang:lang, kind:kind, people: filteredPeople, userName: resolved, userDesignation: lsD, userAddress: lsA, userMobile: lsM, generatedAt: genAt, appName: t.appName, from: (typeof filterFrom!=='undefined'?filterFrom:''), to: (typeof filterTo!=='undefined'?filterTo:'')};
+    var fnameAll = (kind==='given'?'all-given-history':'all-taken-history') + '.pdf';
+    var titleAll = 'All ' + kind + ' history';
+    if(mode==='view'){
+      try{ var pages=renderAllLoansPages(oAll); showPdfPreviewFromCanvases(pages); }catch(e){ try{ var blob=buildAllLoansPdfBlob(oAll); viewPdfBlob(blob); }catch(e2){} }
+    } else if(mode==='download'){
+      var blob=buildAllLoansPdfBlob(oAll); downloadPdfBlob(blob, fnameAll);
+    } else {
+      var blob=buildAllLoansPdfBlob(oAll); shareOrDownloadPdf(blob, fnameAll, titleAll);
+    }
+  }catch(e){ console.error(e); }
+}
+function handleHistoryPdf(mode){
+  mode = mode || 'view';
+  try{
+    var genAt=new Date();
+    var resolvedUN = (typeof userName!=='undefined' && userName) || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+    var o={t:t, lang:lang, filter:historyFilter, list:filteredHistory, userName:resolvedUN, userDesignation: (typeof userDesignation!=='undefined'?userDesignation:''), userAddress: (typeof userAddress!=='undefined'?userAddress:''), userMobile: (typeof userMobile!=='undefined'?userMobile:''), generatedAt:genAt, appName:t.appName};
+    var fname='Lifestyle-History-'+historyFilter+'-'+(typeof today==='function'?today():'')+'.pdf';
+    var title=(t.history||'History')+' - '+historyFilter;
+    if(mode==='view'){
+      try{ var pages=renderHistoryPages(o); showPdfPreviewFromCanvases(pages); }catch(e){ try{ var blob=buildHistoryPdfBlob(o); viewPdfBlob(blob); }catch(e2){} }
+    } else if(mode==='download'){
+      try{ var blob=buildHistoryPdfBlob(o); downloadPdfBlob(blob,fname); if(typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }catch(e){ console.error(e); }
+    } else {
+      try{ var blob=buildHistoryPdfBlob(o); shareOrDownloadPdf(blob,fname,title).then(function(res){ if(res==='downloaded' && typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }); }catch(e){ console.error(e); }
+    }
+  }catch(e){ console.error(e); }
+}
+async function handleReportPdf(mode){
+  mode = mode || 'share';
+  if(typeof setReportBusy==='function') setReportBusy(true);
+  try{
+    var genAt = new Date();
+    var resolvedUN = (typeof userName!=='undefined' && userName) || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+    var o = {t:t, lang:lang, from:reportFrom, to:reportTo, transactions:transactions, peopleGiven:peopleGiven, peopleTaken:peopleTaken, bankLoans:bankLoans, userName: resolvedUN, userDesignation: (typeof userDesignation!=='undefined'?userDesignation:''), userAddress: (typeof userAddress!=='undefined'?userAddress:''), userMobile: (typeof userMobile!=='undefined'?userMobile:''), generatedAt: genAt, appName: t.appName};
+    var filename = 'Lifestyle-Report-' + reportFrom + '-to-' + reportTo + '.pdf';
+    var title = (t.reportHeading||'Report') + ' ' + reportFrom + ' to ' + reportTo;
+    if(mode==='download'){
+      try{ var blob=buildReportPdfBlob(o); downloadPdfBlob(blob, filename); if(typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }catch(e){ console.error(e); }
+    } else if(mode==='view'){
+      try{ var pages=renderReportPages(o); showPdfPreviewFromCanvases(pages); }catch(e){ try{ var blob=buildReportPdfBlob(o); viewPdfBlob(blob); }catch(e2){} }
+    } else {
+      try{ var blob=buildReportPdfBlob(o); var res = await shareOrDownloadPdf(blob, filename, title); if(res === 'downloaded' && typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }catch(e){ console.error(e); }
+    }
+  }catch(e){ console.error(e); }
+  if(typeof setReportBusy==='function') setReportBusy(false);
+}
+
 
 ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
