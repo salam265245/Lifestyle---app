@@ -2583,6 +2583,7 @@ function App(){
   const [transactions, setTransactions] = useState(initial.transactions);
   const [peopleGiven, setPeopleGiven] = useState(initial.peopleGiven);
   const [peopleTaken, setPeopleTaken] = useState(initial.peopleTaken);
+  const [peopleTrash, setPeopleTrash] = useState(loadLS('lifestyle_people_trash', []));
   const [bankLoans, setBankLoans] = useState(initial.bankLoans);
 
   const [userName, setUserName] = useState(loadLS('lifestyle_user_name', ''));
@@ -2596,6 +2597,7 @@ function App(){
   useEffect(()=>{ try{ saveLS('lifestyle_last_historyFilter', historyFilter); }catch(e){} }, [historyFilter]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonKind', openPersonKind); }catch(e){} }, [openPersonKind]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonId', openPersonId); }catch(e){} }, [openPersonId]);
+  useEffect(()=>{ try{ saveLS('lifestyle_people_trash', peopleTrash); }catch(e){} }, [peopleTrash]);
   const photoInputRef = useRef(null);
   function handlePhotoChange(e){
     const file = e.target.files && e.target.files[0];
@@ -2928,10 +2930,35 @@ setTimeout(()=>{
     setPeople(list => list.map(p => p.id===updated.id ? updated : p));
   }
   function deletePerson(kind, id){
+    const list = kind==='given' ? peopleGiven : peopleTaken;
+    const person = list.find(p=>p.id===id);
+    if(person){
+      const trashItem = {trashId: (typeof uid==='function'?uid():Date.now()+''+Math.random()), kind: kind, person: person, deletedAt: new Date().toISOString(), name: person.name};
+      setPeopleTrash(prev=> [trashItem, ...prev]);
+    }
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
     setPeople(list => list.filter(p=>p.id!==id));
     setPage(kind);
     setOpenPersonId(null);
+  }
+  function restorePerson(trashId){
+    const item = peopleTrash.find(t=>t.trashId===trashId);
+    if(!item) return;
+    const setPeople = item.kind==='given' ? setPeopleGiven : setPeopleTaken;
+    setPeople(prev=> {
+      if(prev.some(p=>p.id===item.person.id)) return prev;
+      return [item.person, ...prev];
+    });
+    setPeopleTrash(prev=> prev.filter(t=>t.trashId!==trashId));
+  }
+  function permanentDeletePerson(trashId){
+    if(!confirm('এটা স্থায়ীভাবে মুছে যাবে, ফিরে পাবেন না। নিশ্চিত?')) return;
+    setPeopleTrash(prev=> prev.filter(t=>t.trashId!==trashId));
+  }
+  function emptyTrash(){
+    if(peopleTrash.length===0) return;
+    if(!confirm('সব Recycle Bin খালি করবেন?')) return;
+    setPeopleTrash([]);
   }
 
   function saveBankLoan(loan){
@@ -3540,6 +3567,7 @@ setTimeout(()=>{
           })
         )
       ),
+
       h('div', {className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3]'},
         h('h3', {className:'font-bold text-[14px] mb-3'}, t.pdfTitle),
         h('div', {className:'grid grid-cols-2 gap-3'},
@@ -3550,6 +3578,33 @@ setTimeout(()=>{
           h('button', {onClick:()=>handleReportPdf('download'), disabled:reportBusy, className:'py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[12px] font-bold disabled:opacity-50'}, reportBusy ? t.preparing : (lang==='en' ? '📄 Download PDF' : '📄 Download PDF')),
           h('button', {onClick:()=>handleReportPdf('view'), disabled:reportBusy, className:'py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[12px] font-bold disabled:opacity-50'}, reportBusy ? t.preparing : (lang==='en' ? '👁️ View' : '👁️ View')),
           h('button', {onClick:()=>handleReportPdf('share'), disabled:reportBusy, className:'py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[12px] font-bold disabled:opacity-50'}, reportBusy ? t.preparing : (lang==='en' ? '📤 Share' : '📤 Share'))
+        )
+      ),
+      // --- Recycle Bin Section ---
+      h('div', {className:'bg-white rounded-[20px] border-2 border-[#FFCDD2] p-4'},
+        h('div', {className:'flex items-center justify-between mb-3'},
+          h('div', {className:'flex items-center gap-2'},
+            h('span', {className:'text-[20px]'}, '♻️'),
+            h('h3', {className:'font-bold text-[14px]'}, lang==='en'?'Recycle Bin':'Recycle Bin'),
+            h('span', {className:'text-[10px] bg-[#FFEBEE] text-[#C62828] px-2 py-1 rounded-full font-bold'}, peopleTrash.length + (lang==='en'?' items':' জন'))
+          ),
+          peopleTrash.length>0 ? h('button', {onClick:emptyTrash, className:'text-[11px] text-[#C62828] font-bold px-3 py-1 rounded-full border border-[#FFCDD2]'}, lang==='en'?'Empty All':'সব খালি') : null
+        ),
+        peopleTrash.length===0 ? h('p', {className:'text-[12px] text-[#8B7355] text-center py-6'}, lang==='en'?'Recycle Bin is empty. Deleted people will appear here for restore.':'Recycle Bin খালি। ভুল করে ডিলিট করলে এখানে পাবেন।') :
+        h('div', {className:'space-y-2 max-h-[420px] overflow-y-auto'},
+          ...peopleTrash.map(item => 
+            h('div', {key:item.trashId, className:'flex items-center justify-between bg-[#FFFBF7] border border-[#F3E8D3] rounded-[14px] p-3'},
+              h('div', {className:'flex-1'},
+                h('p', {className:'text-[13px] font-bold'}, item.person.name),
+                h('p', {className:'text-[11px] text-[#8B7355]'}, (item.kind==='given'?'Given':'Taken') + ' • ' + new Date(item.deletedAt).toLocaleDateString() + (item.person.mobile ? ' • ' + item.person.mobile : '')),
+                h('p', {className:'text-[11px] text-[#8B7355] mt-1'}, 'Balance: ৳' + (item.person.loans.reduce((a,l)=>a+l.amount,0) - item.person.payments.reduce((a,p)=>a+p.amount,0)) + ' • Loans: ' + item.person.loans.length)
+              ),
+              h('div', {className:'flex items-center gap-2 ml-2'},
+                h('button', {onClick:()=>restorePerson(item.trashId), className:'px-3 py-2 rounded-[10px] bg-[#E8F5E9] border border-[#C8E6C9] text-[11px] font-bold text-[#2E7D32]'}, '↩ ' + (lang==='en'?'Restore':'Restore')),
+                h('button', {onClick:()=>permanentDeletePerson(item.trashId), className:'w-9 h-9 rounded-full bg-white border border-[#FFCDD2] flex items-center justify-center text-[14px]'}, '🗑')
+              )
+            )
+          )
         )
       )
     );
