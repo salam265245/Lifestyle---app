@@ -2449,7 +2449,7 @@ function renderHistoryPages(o){
     ensure(140); y+=10; font(38, true); ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(filter==='all'?t.history+' - All':t.history+' - '+filter, W-M*2), M, y); y+=50;
     font(22,false); ctx.fillStyle='#8B7355'; ctx.fillText('Total Records: '+list.length, M, y); y+=10;
     ctx.strokeStyle='#C9A86A'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=30;
-    if(tableHeaderActive){ const _isIncH = filter==='income'; const _isExpH = filter==='expense'; const _isPLoanH = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment'; const _isBankH = (filter||'').toString().toLowerCase().includes('bank'); drawTableHeader({hidePerson: _isIncH||_isExpH||_isBankH, hideCategory: _isPLoanH, singleChannel: _isIncH||_isExpH}); }
+    if(tableHeaderActive){ const _isIncH = (filter||'').toString().toLowerCase().includes('income'); const _isExpH = (filter||'').toString().toLowerCase().includes('expense'); const _isPLoanH = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment'; const _isBankH = (filter||'').toString().toLowerCase().includes('bank'); drawTableHeader({hidePerson: _isIncH||_isExpH||_isBankH, hideCategory: _isPLoanH, singleChannel: _isIncH||_isExpH}); }
   }
   function mediumLabel(id){
     if(!id) return '';
@@ -2467,8 +2467,8 @@ function renderHistoryPages(o){
   }
   newPage();
   if(!list.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
-    const isInc = filter==='income';
-    const isExp = filter==='expense';
+    const isInc = (filter||'').toString().toLowerCase().includes('income');
+    const isExp = (filter||'').toString().toLowerCase().includes('expense');
     const isPLoan = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment';
     const isBank = (filter||'').toString().toLowerCase().includes('bank');
     drawTableHeader({hidePerson: isInc||isExp||isBank, hideCategory: isPLoan, singleChannel: isInc||isExp});
@@ -3008,6 +3008,9 @@ function App(){
   const [historyExpenseCategory, setHistoryExpenseCategory] = useState('');
   const [historyExpenseCategorySearch, setHistoryExpenseCategorySearch] = useState('');
   const [historyExpenseCategoryOpen, setHistoryExpenseCategoryOpen] = useState(false);
+  // LOCKED: Category Detail Date Filter - From/To for specific expense category - DO NOT REMOVE
+  const [categoryDetailFromDate, setCategoryDetailFromDate] = useState(thisMonth() + '-01');
+  const [categoryDetailToDate, setCategoryDetailToDate] = useState(today());
   // LOCKED: History Income Category Filter - DO NOT MODIFY
   const [historyIncomeCategory, setHistoryIncomeCategory] = useState('');
   const [historyIncomeCategorySearch, setHistoryIncomeCategorySearch] = useState('');
@@ -3601,7 +3604,8 @@ setTimeout(()=>{
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
   } else if(page === 'categoryDetail' && openCategoryName){
-    const catTransactions = transactions.filter(function(tx){ return tx.type===openCategoryKind && (tx.category===openCategoryName || tx.categoryBn===openCategoryName); }).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    const _allCatTransactions = transactions.filter(function(tx){ return tx.type===openCategoryKind && (tx.category===openCategoryName || tx.categoryBn===openCategoryName); }).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    const catTransactions = _allCatTransactions.filter(function(tx){ if(categoryDetailFromDate && tx.date < categoryDetailFromDate) return false; if(categoryDetailToDate && tx.date > categoryDetailToDate) return false; return true; });
     const catTotal = catTransactions.reduce(function(s,x){ return s+x.amount; },0);
     const catCount = catTransactions.length;
     function handleCategoryPdf(mode){
@@ -3641,6 +3645,16 @@ setTimeout(()=>{
           h('button', {onClick:function(){ handleCategoryPdf('download'); }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
           h('button', {onClick:function(){ handleCategoryPdf('view'); }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
           h('button', {onClick:function(){ handleCategoryPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[11px] font-bold'}, '📤 Share')
+        )
+      ),
+      h('div', {className:'bg-white rounded-[16px] p-2.5 border border-[#F3E8D3] grid grid-cols-2 gap-2.5'},
+        h('div', {className:'flex flex-col gap-1'},
+          h('label', {className:'text-[11px] font-bold text-[#2D2A26] ml-1'}, 'From'),
+          h('input', {type:'date', value:categoryDetailFromDate, onChange:function(e){ setCategoryDetailFromDate(e.target.value); }, className:'w-full bg-[#FFFBF5] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] text-[#2D2A26] outline-none'})
+        ),
+        h('div', {className:'flex flex-col gap-1'},
+          h('label', {className:'text-[11px] font-bold text-[#2D2A26] ml-1'}, 'To'),
+          h('input', {type:'date', value:categoryDetailToDate, onChange:function(e){ setCategoryDetailToDate(e.target.value); }, className:'w-full bg-[#FFFBF5] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] text-[#2D2A26] outline-none'})
         )
       ),
       catTransactions.length===0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'}, h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)) :
