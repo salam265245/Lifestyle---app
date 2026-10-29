@@ -1393,15 +1393,40 @@ function renderReportPages(o){
     hidePersonCol = !!hP;
     hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=220;
-    const personW=hidePersonCol?0:300;
-    const catW=hideCategoryCol?0:850;
-    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
-    const amtW=320;
     const totalW = 2480 - 240;
-    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let dateW=220;
+    let personW=hidePersonCol?0:300;
+    let catW=hideCategoryCol?0:850;
+    let fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    let amtW=320;
+    let usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
     let noteW = totalW - usedWithoutNote;
-    if(noteW < 400) noteW = 400;
+    // FIXED: Amount column fit - ensure total never exceeds page
+    if(noteW < 200){
+      let deficit = 200 - noteW;
+      // first shrink category
+      if(!hideCategoryCol && catW > 400){
+        let cut = Math.min(catW-400, deficit);
+        catW -= cut;
+        deficit -= cut;
+      }
+      // then shrink person
+      if(deficit>0 && !hidePersonCol && personW > 180){
+        let cut = Math.min(personW-180, deficit);
+        personW -= cut;
+        deficit -= cut;
+      }
+      // then shrink date slightly if still needed
+      if(deficit>0 && dateW > 180){
+        let cut = Math.min(dateW-180, deficit);
+        dateW -= cut;
+        deficit -= cut;
+      }
+      usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+      noteW = totalW - usedWithoutNote;
+      if(noteW < 100) noteW = 100;
+    }
+    if(noteW < 100) noteW = 100;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
@@ -1467,7 +1492,7 @@ function renderReportPages(o){
     ctx.fillStyle='#F3E8D3';
     ctx.fillRect(cDate.x, y, cDate.w, totalH);
     if(!hP) ctx.fillRect(cPerson.x, y, cPerson.w, totalH);
-    // Category column removed per requirement
+    if(!hC) ctx.fillRect(cCat.x, y, cCat.w, totalH); // FIXED: Category header color restored
     ctx.fillRect(cNote.x, y, cNote.w, totalH);
     if(sC){
       ctx.fillRect(cChannel.x, y, cChannel.w, totalH);
@@ -1654,17 +1679,42 @@ function renderPersonLoanPages(o){
   let singleChannel = false;
   function buildCols(hP, hC, sC){
     hidePersonCol = !!hP;
-    hideCategoryCol = true;
+    hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=220;
-    const personW=hidePersonCol?0:300;
-    const catW=0;
-    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
-    const amtW=320;
     const totalW = 2480 - 240;
-    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let dateW=220;
+    let personW=hidePersonCol?0:300;
+    let catW=hideCategoryCol?0:850;
+    let fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    let amtW=320;
+    let usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
     let noteW = totalW - usedWithoutNote;
-    if(noteW < 400) noteW = 400;
+    // FIXED: Amount column fit - ensure total never exceeds page
+    if(noteW < 200){
+      let deficit = 200 - noteW;
+      // first shrink category
+      if(!hideCategoryCol && catW > 400){
+        let cut = Math.min(catW-400, deficit);
+        catW -= cut;
+        deficit -= cut;
+      }
+      // then shrink person
+      if(deficit>0 && !hidePersonCol && personW > 180){
+        let cut = Math.min(personW-180, deficit);
+        personW -= cut;
+        deficit -= cut;
+      }
+      // then shrink date slightly if still needed
+      if(deficit>0 && dateW > 180){
+        let cut = Math.min(dateW-180, deficit);
+        dateW -= cut;
+        deficit -= cut;
+      }
+      usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+      noteW = totalW - usedWithoutNote;
+      if(noteW < 100) noteW = 100;
+    }
+    if(noteW < 100) noteW = 100;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
@@ -2009,15 +2059,40 @@ function renderAllLoansPages(o){
     hidePersonCol = !!hP;
     hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=220;
-    const personW=hidePersonCol?0:300;
-    const catW=hideCategoryCol?0:850;
-    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
-    const amtW=320;
     const totalW = 2480 - 240;
-    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let dateW=220;
+    let personW=hidePersonCol?0:300;
+    let catW=hideCategoryCol?0:850;
+    let fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    let amtW=320;
+    let usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
     let noteW = totalW - usedWithoutNote;
-    if(noteW < 400) noteW = 400;
+    // FIXED: Amount column fit - ensure total never exceeds page
+    if(noteW < 200){
+      let deficit = 200 - noteW;
+      // first shrink category
+      if(!hideCategoryCol && catW > 400){
+        let cut = Math.min(catW-400, deficit);
+        catW -= cut;
+        deficit -= cut;
+      }
+      // then shrink person
+      if(deficit>0 && !hidePersonCol && personW > 180){
+        let cut = Math.min(personW-180, deficit);
+        personW -= cut;
+        deficit -= cut;
+      }
+      // then shrink date slightly if still needed
+      if(deficit>0 && dateW > 180){
+        let cut = Math.min(dateW-180, deficit);
+        dateW -= cut;
+        deficit -= cut;
+      }
+      usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+      noteW = totalW - usedWithoutNote;
+      if(noteW < 100) noteW = 100;
+    }
+    if(noteW < 100) noteW = 100;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
@@ -2223,15 +2298,40 @@ function renderHistoryPages(o){
     hidePersonCol = !!hP;
     hideCategoryCol = !!hC;
     singleChannel = !!sC;
-    const dateW=220;
-    const personW=hidePersonCol?0:300;
-    const catW=hideCategoryCol?0:850;
-    const fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
-    const amtW=320;
     const totalW = 2480 - 240;
-    const usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+    let dateW=220;
+    let personW=hidePersonCol?0:300;
+    let catW=hideCategoryCol?0:850;
+    let fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
+    let amtW=320;
+    let usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
     let noteW = totalW - usedWithoutNote;
-    if(noteW < 400) noteW = 400;
+    // FIXED: Amount column fit - ensure total never exceeds page
+    if(noteW < 200){
+      let deficit = 200 - noteW;
+      // first shrink category
+      if(!hideCategoryCol && catW > 400){
+        let cut = Math.min(catW-400, deficit);
+        catW -= cut;
+        deficit -= cut;
+      }
+      // then shrink person
+      if(deficit>0 && !hidePersonCol && personW > 180){
+        let cut = Math.min(personW-180, deficit);
+        personW -= cut;
+        deficit -= cut;
+      }
+      // then shrink date slightly if still needed
+      if(deficit>0 && dateW > 180){
+        let cut = Math.min(dateW-180, deficit);
+        dateW -= cut;
+        deficit -= cut;
+      }
+      usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
+      noteW = totalW - usedWithoutNote;
+      if(noteW < 100) noteW = 100;
+    }
+    if(noteW < 100) noteW = 100;
     let x=M;
     const cDate = {x:x, w:dateW}; x+=dateW;
     const cPerson = {x:x, w:personW}; x+=personW;
