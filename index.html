@@ -1435,7 +1435,7 @@ function renderReportPages(o){
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW || maxW<=0) return [str||'']; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { if(part) lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); if(lines.length>5){ const first4=lines.slice(0,4); const rest=lines.slice(4).join(' '); first4.push(rest); return first4.slice(0,5); } return lines; }
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
@@ -1572,29 +1572,34 @@ function renderReportPages(o){
     all.forEach(item=>{
       const ch = getFromTo(item);
       font(24,false);
-      const personLines=wrapLines(typeof personText!=='undefined' ? personText : (item.personName||item.person||''), cPerson.w-20);
+      const dateLines=wrapLines(formatDateForPdf(item.date), cDate.w-20);
       const catLines=wrapLines(item.category||'', cCat.w-20);
       const noteLines=wrapLines(item.note||'', cNote.w-20);
+      const personLines=wrapLines(item.personName||item.person||'', cPerson.w-20);
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
-      const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
-      const h=Math.max(90, maxLines*42+50);
-      ensure(h+20);
+      const maxLines=Math.max(dateLines.length, catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length, 1);
+      const lineH=28;
+      const pad=22;
+      let h = maxLines*lineH + pad;
+      if(h<45) h=45;
+      if(h>400) h=400;
+      ensure(h+10);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
-      if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+22);
+      if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+22+i*lineH); });
+      if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+22+i*lineH); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+22+i*lineH); });
       ctx.fillStyle='#2D2A26';
-      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+36+i*42); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); }); }
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+22+i*lineH); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+22+i*lineH); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+22+i*lineH); }); }
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
+      ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+22);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
-    y+=10; ensure(80); const th=55; 
+    y+=10; ensure(80); const th=45; 
     drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+(singleChannel?cChannel.w:(cFrom.w+cTo.w)), th, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=th;
@@ -1693,7 +1698,7 @@ function renderPersonLoanPages(o){
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW || maxW<=0) return [str||'']; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { if(part) lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); if(lines.length>5){ const first4=lines.slice(0,4); const rest=lines.slice(4).join(' '); first4.push(rest); return first4.slice(0,5); } return lines; }
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
@@ -1770,7 +1775,7 @@ function renderPersonLoanPages(o){
     ctx.textAlign='left';
     y+=totalH;
   }
-  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; drawTopHeader(); if(currentSectionTitle){ ensure(140); const mergedH = 75; const fullW = (cAmount.x + cAmount.w) - cDate.x; drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF'); font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(currentSectionTitle, W-M*2), cDate.x+15, y+48); ctx.textAlign='left'; y+=mergedH+8; } if(tableHeaderActive){ drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); } }
+  function newPage(){ cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M; drawTopHeader(); if(currentSectionTitle){ ensure(140); const mergedH = 45; const fullW = (cAmount.x + cAmount.w) - cDate.x; drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF'); font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText(fit(currentSectionTitle, W-M*2), cDate.x+15, y+48); ctx.textAlign='left'; y+=mergedH+8; } if(tableHeaderActive){ drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); } }
   function headingOld(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
   function mediumLabel(id){
     if(!id) return '';
@@ -1792,13 +1797,18 @@ function renderPersonLoanPages(o){
     const personText = (item.personName || person.name || '')+'';
     const noteText = (item.note || '')+'';
     font(24,false);
-    const personLines = wrapLines(personText, cPerson.w-20);
-    const catLines = wrapLines('', cCat.w-20); // Category empty for person loan
-    const noteLines = wrapLines(noteText, cNote.w-20);
-    const fromLines = wrapLines(ch.from||'', cFrom.w-20);
-    const toLines = wrapLines(ch.to||'', cTo.w-20);
-    const maxLines = Math.max(personLines.length, noteLines.length, fromLines.length, toLines.length, 1);
-    const h = Math.max(90, maxLines*42+50);
+    const dateLines=wrapLines(dateStr, cDate.w-20);
+    const personLines=wrapLines(personText, cPerson.w-20);
+    const catLines=wrapLines('', cCat.w-20);
+    const noteLines=wrapLines(noteText, cNote.w-20);
+    const fromLines=wrapLines(ch.from||'', cFrom.w-20);
+    const toLines=wrapLines(ch.to||'', cTo.w-20);
+    const maxLines=Math.max(dateLines.length, catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length, 1);
+    const lineH=28;
+    const pad=22;
+    let h = maxLines*lineH + pad;
+    if(h<45) h=45;
+    if(h>400) h=400;
     ensure(h+20);
     drawCellRect(cDate.x,cDate.w,h,'#FFFFFF');
     if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF');
@@ -1809,16 +1819,16 @@ function renderPersonLoanPages(o){
     drawCellRect(cAmount.x,cAmount.w,h,'#FFFFFF');
     const baseY=y;
     ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-    ctx.fillText(fit(dateStr, cDate.w-20), cDate.x+10, baseY+32);
-    if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
-    if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
+    ctx.fillText(fit(dateStr, cDate.w-20), cDate.x+10, baseY+22);
+    if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+22+i*lineH); });
+    if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+22+i*lineH); });
     ctx.fillStyle='#5D4E37';
-    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
+    noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+22+i*lineH); });
     ctx.fillStyle='#2D2A26';
-    fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); });
-    toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); });
+    fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+22+i*lineH); });
+    toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+22+i*lineH); });
     ctx.fillStyle=isPay?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
-    ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+32);
+    ctx.fillText(fit(fmtMoney(item.amount), cAmount.w-20), cAmount.x+cAmount.w-10, baseY+22);
     ctx.textAlign='left';
     y+=h;
   }
@@ -1835,7 +1845,7 @@ function renderPersonLoanPages(o){
     ctx.strokeStyle='#000000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
     if(!person.loans.length){
       ensure(140);
-      const mergedH = 75;
+      const mergedH = 45;
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
@@ -1845,7 +1855,7 @@ function renderPersonLoanPages(o){
       ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
     } else {
       ensure(140);
-      const mergedH = 75;
+      const mergedH = 45;
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
@@ -1855,7 +1865,7 @@ function renderPersonLoanPages(o){
       y+=mergedH+8;
       drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
-      ensure(90); const thL=80; const first4W = cAmount.x - cDate.x;
+      ensure(90); const thL=45; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50);
       ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thL;
@@ -1867,7 +1877,7 @@ function renderPersonLoanPages(o){
       ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
     } else {
       ensure(140);
-      const mergedH = 75;
+      const mergedH = 45;
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
@@ -1888,7 +1898,7 @@ function renderPersonLoanPages(o){
       ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
     } else {
       ensure(140);
-      const mergedH = 75;
+      const mergedH = 45;
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(52,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
@@ -1898,7 +1908,7 @@ function renderPersonLoanPages(o){
       y+=mergedH+8;
       drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
-      ensure(90); const thL=80; const first4W = cAmount.x - cDate.x;
+      ensure(90); const thL=45; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+50);
       ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(totalLoaned), cAmount.w-20), cAmount.x+cAmount.w-10, y+50); ctx.textAlign='left'; y+=thL+20;
@@ -1908,7 +1918,7 @@ function renderPersonLoanPages(o){
       ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50;
     } else {
       ensure(140);
-      const mergedH = 75;
+      const mergedH = 45;
       const fullW = (cAmount.x + cAmount.w) - cDate.x;
       drawCellRect(cDate.x, fullW, mergedH, '#FFFFFF');
       font(38,true); ctx.fillStyle='#000000'; ctx.textAlign='left';
@@ -2041,7 +2051,7 @@ function renderAllLoansPages(o){
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW || maxW<=0) return [str||'']; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { if(part) lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); if(lines.length>5){ const first4=lines.slice(0,4); const rest=lines.slice(4).join(' '); first4.push(rest); return first4.slice(0,5); } return lines; }
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
@@ -2146,29 +2156,34 @@ function renderAllLoansPages(o){
     all.forEach(item=>{
       const ch = getFromTo(item);
       font(24,false);
-      const personLines=wrapLines(item.personName||item.person||'', cPerson.w-20);
+      const dateLines=wrapLines(formatDateForPdf(item.date), cDate.w-20);
       const catLines=wrapLines(item.category||'', cCat.w-20);
       const noteLines=wrapLines(item.note||'', cNote.w-20);
+      const personLines=wrapLines(item.personName||item.person||'', cPerson.w-20);
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
-      const maxLines=Math.max(personLines.length, catLines.length, noteLines.length, fromLines.length, toLines.length,1);
-      const h=Math.max(90, maxLines*42+50);
-      ensure(h+20);
+      const maxLines=Math.max(dateLines.length, catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length, 1);
+      const lineH=28;
+      const pad=22;
+      let h = maxLines*lineH + pad;
+      if(h<45) h=45;
+      if(h>400) h=400;
+      ensure(h+10);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
-      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+22);
+      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+22+i*lineH); });
+      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+22+i*lineH); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+22+i*lineH); });
       ctx.fillStyle='#2D2A26';
-      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+36+i*42); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); }); }
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+22+i*lineH); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+22+i*lineH); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+22+i*lineH); }); }
       ctx.fillStyle=item.type==='payment'?'#2E7D32':'#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
+      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+22);
       ctx.textAlign='left'; y+=h; grand+=item.amount;
     });
-    y+=10; ensure(80); const th=55; 
+    y+=10; ensure(80); const th=45; 
     drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+(singleChannel?cChannel.w:(cFrom.w+cTo.w)), th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+all.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(grand), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
@@ -2250,7 +2265,7 @@ function renderHistoryPages(o){
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
   function font(sz,bold){ ctx.font=(bold?'700 ':'400 ')+sz+'px '+PDF_FONT; }
   function fit(str,maxW){ str=String(str==null?'':str); if(!maxW||ctx.measureText(str).width<=maxW) return str; while(str.length>1&&ctx.measureText(str+'…').width>maxW) str=str.slice(0,-1); return str+'…'; }
-  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW) return [str]; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); return lines; }
+  function wrapLines(str,maxW){ str=String(str==null?'':str); if(!maxW || maxW<=0) return [str||'']; const words=str.split(/\s+/); const lines=[]; let cur=''; for(let i=0;i<words.length;i++){ const test=cur?cur+' '+words[i]:words[i]; if(ctx.measureText(test).width<=maxW){ cur=test; } else { if(cur) lines.push(cur); let w=words[i]; if(ctx.measureText(w).width>maxW){ let part=''; for(let ch of w){ if(ctx.measureText(part+ch).width<=maxW) part+=ch; else { if(part) lines.push(part); part=ch; } } cur=part; } else { cur=w; } } } if(cur) lines.push(cur); if(lines.length===0) lines.push(''); if(lines.length>5){ const first4=lines.slice(0,4); const rest=lines.slice(4).join(' '); first4.push(rest); return first4.slice(0,5); } return lines; }
   function drawCellRect(x,w,h, fill){ if(fill){ ctx.fillStyle=fill; ctx.fillRect(x,y,w,h); } ctx.strokeStyle='#8B7355'; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h); }
   function drawTopHeader(){
     const leftX = M; let ly = y;
@@ -2366,30 +2381,34 @@ function renderHistoryPages(o){
       const personText = isPersonTx ? (item.personName || item.person || '')+'' : '';
       const noteText = (item.note || '')+'';
       font(24,false);
+      const dateLines=wrapLines(formatDateForPdf(item.date), cDate.w-20);
       const catLines=wrapLines(catText, cCat.w-20);
       const noteLines=wrapLines(noteText, cNote.w-20);
       const personLines=wrapLines(typeof personText!=='undefined' ? personText : (item.personName||item.person||''), cPerson.w-20);
       const fromLines=wrapLines(ch.from||'', cFrom.w-20);
       const toLines=wrapLines(ch.to||'', cTo.w-20);
-      const maxLines=Math.max(catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length,1);
-      let h=Math.max(55, maxLines*26+20);
-      if(filter==='income' || filter==='expense'){ h=55; }
-      ensure(h+20);
+      const maxLines=Math.max(dateLines.length, catLines.length, noteLines.length, personLines.length, fromLines.length, toLines.length, 1);
+      const lineH=28;
+      const pad=22;
+      let h = maxLines*lineH + pad;
+      if(h<45) h=45;
+      if(h>400) h=400;
+      ensure(h+10);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
       ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
-      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+32);
-      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+36+i*42); });
-      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+36+i*42); });
+      ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+22);
+      if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+22+i*lineH); });
+      if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+22+i*lineH); });
       ctx.fillStyle='#5D4E37';
-      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+36+i*42); });
+      noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+22+i*lineH); });
       ctx.fillStyle='#2D2A26';
-      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+36+i*42); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+36+i*42); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+36+i*42); }); }
+      if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+22+i*lineH); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+22+i*lineH); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+22+i*lineH); }); }
       ctx.fillStyle='#2D2A26'; ctx.textAlign='right';
-      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+32);
+      ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+22);
       ctx.textAlign='left'; y+=h; total+=item.amount;
     });
-    y+=10; ensure(80); const th=55; 
+    y+=10; ensure(80); const th=45; 
     drawCellRect(cDate.x, cDate.w+cPerson.w+cCat.w+cNote.w+(singleChannel?cChannel.w:(cFrom.w+cTo.w)), th, '#FFF8E1'); drawCellRect(cAmt.x, cAmt.w, th, '#FFF8E1');
     font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total ('+list.length+' records)', cDate.x+15, y+50);
     ctx.textAlign='right'; ctx.fillText(fit(fmtMoney(total), cAmt.w-20), cAmt.x+cAmt.w-10, y+50); ctx.textAlign='left'; y+=th;
@@ -2578,6 +2597,8 @@ function App(){
   const [historyFilter, setHistoryFilter] = useState(loadLS('lifestyle_last_historyFilter', 'all'));
   const [openPersonKind, setOpenPersonKind] = useState(loadLS('lifestyle_last_openPersonKind', null));
   const [openPersonId, setOpenPersonId] = useState(loadLS('lifestyle_last_openPersonId', null));
+  const [openCategoryKind, setOpenCategoryKind] = useState(loadLS('lifestyle_last_openCategoryKind', null));
+  const [openCategoryName, setOpenCategoryName] = useState(loadLS('lifestyle_last_openCategoryName', null));
   const [addType, setAddType] = useState(loadLS('lifestyle_last_addType', null));
 
   const [transactions, setTransactions] = useState(initial.transactions);
@@ -2597,6 +2618,8 @@ function App(){
   useEffect(()=>{ try{ saveLS('lifestyle_last_historyFilter', historyFilter); }catch(e){} }, [historyFilter]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonKind', openPersonKind); }catch(e){} }, [openPersonKind]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonId', openPersonId); }catch(e){} }, [openPersonId]);
+  useEffect(()=>{ try{ saveLS('lifestyle_last_openCategoryKind', openCategoryKind); }catch(e){} }, [openCategoryKind]);
+  useEffect(()=>{ try{ saveLS('lifestyle_last_openCategoryName', openCategoryName); }catch(e){} }, [openCategoryName]);
   useEffect(()=>{ try{ saveLS('lifestyle_people_trash', peopleTrash); }catch(e){} }, [peopleTrash]);
   const photoInputRef = useRef(null);
   function handlePhotoChange(e){
@@ -3068,6 +3091,9 @@ setTimeout(()=>{
   function openPerson(kind, person){
     setOpenPersonKind(kind); setOpenPersonId(person.id); setPage('personDetail');
   }
+  function openCategory(kind, categoryName){
+    setOpenCategoryKind(kind); setOpenCategoryName(categoryName); setPage('categoryDetail');
+  }
 
   const currentPerson = openPersonId
     ? (openPersonKind==='given' ? peopleGiven : peopleTaken).find(p=>p.id===openPersonId)
@@ -3380,7 +3406,7 @@ setTimeout(()=>{
       ) : h('div', {className:'space-y-2.5'},
         filteredHistory.map(x => h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
           h('div', {className:'flex-1 min-w-0'},
-            h('p', {className:'font-bold text-[14px] truncate text-[#2D2A26] cursor-pointer ' + (['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? 'text-[#2D2A26]' : ''), onClick:()=>{ const isLT=['loan_given','loan_taken','return_received','repayment'].includes(x.type); if(isLT && x.personId){ const list = (x.personKind==='taken' || x.type==='loan_taken' || x.type==='repayment') ? peopleTaken : peopleGiven; const pers = list.find(p=>p.id===x.personId); if(pers){ openPerson(list===peopleTaken?'taken':'given', pers); } } }}, (['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? (x.personName||'Unknown Person') : (lang==='en'?x.category:x.categoryBn))),
+            h('p', {className:'font-bold text-[14px] truncate text-[#2D2A26] cursor-pointer ' + (['loan_given','loan_taken','return_received','repayment','income','expense'].includes(x.type) ? 'text-[#2D2A26] hover:underline' : ''), onClick:()=>{ const isLT=['loan_given','loan_taken','return_received','repayment'].includes(x.type); if(isLT && x.personId){ const list = (x.personKind==='taken' || x.type==='loan_taken' || x.type==='repayment') ? peopleTaken : peopleGiven; const pers = list.find(p=>p.id===x.personId); if(pers){ openPerson(list===peopleTaken?'taken':'given', pers); } } else if((x.type==='income' || x.type==='expense') && x.category){ openCategory(x.type, x.category); } }}, (['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? (x.personName||'Unknown Person') : (lang==='en'?x.category:x.categoryBn))),
             h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' • '+x.note:'') + (x.fromChannel && !['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? ' • '+x.fromChannel : '') + (x.fromChannel && ['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? ' • '+x.fromChannel + (x.toChannel && x.toChannel!==x.fromChannel ? ' → '+x.toChannel : '') : ''))
           ),
 
@@ -3415,6 +3441,66 @@ setTimeout(()=>{
       onUpdatePerson: (p)=>updatePerson(openPersonKind, p),
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
+  } else if(page === 'categoryDetail' && openCategoryName){
+    const catTransactions = transactions.filter(function(tx){ return tx.type===openCategoryKind && (tx.category===openCategoryName || tx.categoryBn===openCategoryName); }).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    const catTotal = catTransactions.reduce(function(s,x){ return s+x.amount; },0);
+    const catCount = catTransactions.length;
+    function handleCategoryPdf(mode){
+      try{
+        mode = mode || 'download';
+        var genAt = new Date();
+        var resolved = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
+        var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
+        var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
+        var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
+        var catLabel = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=EXPENSE_CATEGORIES.flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
+        var list = catTransactions.map(function(t){ return {id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, fromChannel:t.fromChannel||t.fromMedium||t.channel||t.medium||'Cash', toChannel:t.toChannel||t.toMedium||'', kind:'tx'}; });
+        var o={t:t, lang:lang, filter:openCategoryKind+'-'+openCategoryName, list:list, userName:resolved, userDesignation:lsD, userAddress:lsA, userMobile:lsM, generatedAt:genAt, appName:t.appName, categoryName:catLabel, categoryKind:openCategoryKind, total:catTotal};
+        var fname='Lifestyle-'+openCategoryKind+'-'+openCategoryName.replace(/\s+/g,'-')+'-'+today()+'.pdf';
+        var title=catLabel+' - '+openCategoryKind;
+        if(mode==='view'){
+          try{ var pages=renderHistoryPages(o); showPdfPreviewFromCanvases(pages); }catch(e){ try{ var blob=buildHistoryPdfBlob(o); viewPdfBlob(blob); }catch(e2){} }
+        } else if(mode==='download'){
+          try{ var blob=buildHistoryPdfBlob(o); downloadPdfBlob(blob,fname); if(typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }catch(e){ console.error(e); }
+        } else {
+          try{ var blob=buildHistoryPdfBlob(o); shareOrDownloadPdf(blob,fname,title).then(function(res){ if(res==='downloaded' && typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }); }catch(e){ console.error(e); }
+        }
+      }catch(e){ console.error(e); }
+    }
+    var catDisplay = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=EXPENSE_CATEGORIES.flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
+    pageContent = h('div', {className:'pt-5 pb-6 space-y-4'},
+      h('div', {className:'flex items-center gap-2'},
+        h(IconBtn, {onClick:function(){ setPage('history'); }}, '\u2190'),
+        h('h2', {className:'text-[18px] font-bold flex-1 truncate'}, catDisplay),
+        h('span', {className:'px-2.5 py-1 rounded-full text-[10px] font-bold ' + (openCategoryKind==='income'?'bg-[#E8F5E9] text-[#2E7D32] border border-[#C8E6C9]':'bg-[#FFEBEE] text-[#B71C1C] border border-[#FFCDD2]')}, openCategoryKind==='income'?t.income:t.expense)
+      ),
+      h('div', {className:'bg-[#2D2A26] rounded-[20px] p-4 text-white'},
+        h('p', {className:'text-[12px] text-white/70'}, catDisplay + ' - ' + (openCategoryKind==='income'?t.income:t.expense)),
+        h('p', {className:'text-[24px] font-bold mt-1'}, fmtMoney(catTotal)),
+        h('p', {className:'text-[11px] text-white/60 mt-2'}, catCount + ' ' + (lang==='en'?'records':'টি লেনদেন')),
+        h('div', {className:'mt-3 grid grid-cols-3 gap-2'},
+          h('button', {onClick:function(){ handleCategoryPdf('download'); }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
+          h('button', {onClick:function(){ handleCategoryPdf('view'); }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
+          h('button', {onClick:function(){ handleCategoryPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[11px] font-bold'}, '📤 Share')
+        )
+      ),
+      catTransactions.length===0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'}, h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)) :
+      h('div', {className:'space-y-2.5'},
+        catTransactions.map(function(x){ return h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
+          h('div', {className:'flex-1 min-w-0'},
+            h('p', {className:'font-bold text-[14px] truncate text-[#2D2A26]'}, lang==='en'?x.category:x.categoryBn),
+            h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' • '+x.note:'') + (x.fromChannel ? ' • '+x.fromChannel : ''))
+          ),
+          h('div', {className:'text-right'},
+            h('p', {className:'font-bold text-[14px] ' + (x.type==='income'?'text-[#2E7D32]':'text-[#B71C1C]')}, (x.type==='income'?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
+            h('div', {className:'flex gap-2 justify-end mt-1'},
+              h('button', {onClick:function(){ handleHistoryEdit(x); }, className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
+              h('button', {onClick:function(){ setConfirmDelTx(x); }, className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
+            )
+          )
+        ); })
+      )
+    );
   } else if(page === 'reports'){
     // Ensure loan totals are available for UI
     const reportGivenLoans = peopleGiven.reduce((a,p)=>a + p.loans.reduce((s,l)=>s+l.amount,0),0);
