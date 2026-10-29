@@ -3481,7 +3481,8 @@ setTimeout(()=>{
               h('input', {
                 value: historyIncomeCategoryOpen ? historyIncomeCategorySearch : (historyIncomeCategory ? (INCOME_CATEGORIES.find(it=>it.en===historyIncomeCategory||it.bn===historyIncomeCategory)?.[lang==='en'?'en':'bn'] || historyIncomeCategory) : ''),
                 onChange: e=>{ setHistoryIncomeCategorySearch(e.target.value); setHistoryIncomeCategoryOpen(true); },
-                onFocus: ()=>{ setHistoryIncomeCategoryOpen(true); setHistoryIncomeCategorySearch(''); },
+                onClick: ()=>{ setHistoryIncomeCategoryOpen(o=>!o); if(!historyIncomeCategoryOpen) setHistoryIncomeCategorySearch(''); },
+                onFocus: ()=>{ if(!historyIncomeCategoryOpen) { setHistoryIncomeCategoryOpen(true); setHistoryIncomeCategorySearch(''); } },
                 placeholder: lang==='en' ? 'Search category (English/Bangla)...' : 'খাত খুঁজুন (বাংলা/English)...',
                 className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] outline-none focus:border-[#C9A86A]'
               }),
@@ -3520,6 +3521,7 @@ setTimeout(()=>{
               h('input', {
                 value: historyExpenseCategoryOpen ? historyExpenseCategorySearch : (historyExpenseCategory ? (EXPENSE_CATEGORIES.flatMap(g=>g.items).find(it=>it.en===historyExpenseCategory||it.bn===historyExpenseCategory)?.[lang==='en'?'en':'bn'] || historyExpenseCategory) : ''),
                 onChange: e=>{ setHistoryExpenseCategorySearch(e.target.value); setHistoryExpenseCategoryOpen(true); },
+                onClick: ()=>{ setHistoryExpenseCategoryOpen(o=>!o); if(!historyExpenseCategoryOpen) setHistoryExpenseCategorySearch(''); },
                 onFocus: ()=>{ setHistoryExpenseCategoryOpen(true); setHistoryExpenseCategorySearch(''); },
                 placeholder: lang==='en' ? 'Search category (English/Bangla)...' : 'খাত খুঁজুন (বাংলা/English)...',
                 className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] outline-none focus:border-[#C9A86A]'
