@@ -2594,6 +2594,62 @@ function App(){
   const initial = loadInitialState();
   const [lang, setLang] = useState(loadLS('lifestyle_lang', 'bn'));
   const [page, setPage] = useState(loadLS('lifestyle_last_page', 'home')); // home, history, given, taken, personDetail, reports, profile
+
+  const pageRef = React.useRef(page);
+  React.useEffect(()=>{ pageRef.current = page; try{ saveLS('lifestyle_last_page', page); }catch(e){} }, [page]);
+  const lastBackPress = React.useRef(0);
+
+  function customSetPage(newPage){
+    try{
+      if(newPage!==pageRef.current){
+        window.history.pushState({page:newPage}, '', '#'+newPage);
+      }
+    }catch(e){}
+    setPage(newPage);
+  }
+
+  React.useEffect(()=>{
+    try{
+      if(!window.history.state || !window.history.state.page){
+        window.history.replaceState({page:pageRef.current}, '', '#'+pageRef.current);
+      }
+    }catch(e){}
+    function onPopState(e){
+      const st = e.state;
+      if(st && st.page){
+        setPage(st.page);
+        return;
+      }
+      const cur = pageRef.current;
+      if(cur==='personDetail'){
+        setPage('given');
+        try{ window.history.pushState({page:'given'}, '', '#given'); }catch(e){}
+      } else if(cur==='categoryDetail'){
+        setPage('given');
+        try{ window.history.pushState({page:'given'}, '', '#given'); }catch(e){}
+      } else if(cur==='history' || cur==='reports' || cur==='peopleGiven' || cur==='peopleTaken' || cur==='bankLoans' || cur==='given' || cur==='taken' || cur==='profile'){
+        setPage('home');
+        try{ window.history.pushState({page:'home'}, '', '#home'); }catch(e){}
+      } else if(cur==='home'){
+        const now = Date.now();
+        if(now - lastBackPress.current < 2000){
+          try{ window.history.go(-1); }catch(e){}
+          setTimeout(()=>{ try{ window.close(); }catch(e){} }, 100);
+          return;
+        } else {
+          lastBackPress.current = now;
+          try{ window.history.pushState({page:'home'}, '', '#home'); }catch(e){}
+          if(typeof setToast==='function') setToast(lang==='en'?'Press back again to exit':'আবার Back চাপলে বের হবে');
+        }
+      } else {
+        setPage('home');
+        try{ window.history.pushState({page:'home'}, '', '#home'); }catch(e){}
+      }
+    }
+    window.addEventListener('popstate', onPopState);
+    return ()=>window.removeEventListener('popstate', onPopState);
+  },[]);
+
   const [historyFilter, setHistoryFilter] = useState(loadLS('lifestyle_last_historyFilter', 'all'));
   const [openPersonKind, setOpenPersonKind] = useState(loadLS('lifestyle_last_openPersonKind', null));
   const [openPersonId, setOpenPersonId] = useState(loadLS('lifestyle_last_openPersonId', null));
@@ -2961,7 +3017,7 @@ setTimeout(()=>{
     }
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
     setPeople(list => list.filter(p=>p.id!==id));
-    setPage(kind);
+    customSetPage(kind);
     setOpenPersonId(null);
   }
   function restorePerson(trashId){
@@ -3089,10 +3145,10 @@ setTimeout(()=>{
   }
 
   function openPerson(kind, person){
-    setOpenPersonKind(kind); setOpenPersonId(person.id); setPage('personDetail');
+    setOpenPersonKind(kind); setOpenPersonId(person.id); customSetPage('personDetail');
   }
   function openCategory(kind, categoryName){
-    setOpenCategoryKind(kind); setOpenCategoryName(categoryName); setPage('categoryDetail');
+    setOpenCategoryKind(kind); setOpenCategoryName(categoryName); customSetPage('categoryDetail');
   }
 
   const currentPerson = openPersonId
@@ -3102,7 +3158,7 @@ setTimeout(()=>{
   const displayName = userName || (lang==='en' ? 'Welcome' : 'স্বাগতম');
   const initials = (userName||'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || 'MS';
 
-  function goHistoryFiltered(filter){ setHistoryFilter(filter); setPage('history'); }
+  function goHistoryFiltered(filter){ setHistoryFilter(filter); customSetPage('history'); }
 
   // FIXED: History includes income, expense, loans given/taken, payments, bank loans
   const filteredHistory = useMemo(()=>{
@@ -3199,7 +3255,7 @@ setTimeout(()=>{
           ),
           h('div', {className:'w-12 h-12 rounded-full bg-[#FFEBEE] flex items-center justify-center text-[20px]'}, '\u2B07\uFE0F')
         ),
-        h('div', {onClick:()=>setPage('reports'), className:'bg-[#F9F5EB] rounded-[20px] p-4 border border-[#F3E8D3] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform'},
+        h('div', {onClick:()=>customSetPage('reports'), className:'bg-[#F9F5EB] rounded-[20px] p-4 border border-[#F3E8D3] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform'},
           h('div', null,
             h('p', {className:'text-[13px] text-[#8B7355] font-medium'}, t.monthlyBalance),
             h('p', {className:'text-[22px] font-bold mt-1'}, fmtMoney(monthIncome-monthExpense))
@@ -3210,7 +3266,7 @@ setTimeout(()=>{
       h('div', null,
         h('h2', {className:'text-[18px] font-bold mb-3'}, t.loansReceivables),
         h('div', {className:'grid grid-cols-2 gap-3'},
-          h('div', {onClick:()=>setPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
+          h('div', {onClick:()=>customSetPage('given'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[13px] font-extrabold text-[#8B7355] mb-1 tracking-wide'}, t.totalGiven),
             h('div', {className:'space-y-1 mt-1'},
               h('p', {className:'text-[14px] font-black text-[#2D2A26] leading-tight'}, (lang==='en'?'Given: ':'দিয়েছি: ') + fmtMoney(totalGivenAmt)),
@@ -3218,7 +3274,7 @@ setTimeout(()=>{
               h('p', {className:'text-[13px] font-extrabold text-[#1A4D8F] bg-[#E3F2FD] rounded-full px-2.5 py-1 inline-block'}, (lang==='en'?'To Get: ':'পাব: ') + fmtMoney(totalGivenAmt - totalReturnedAmt))
             )
           ),
-          h('div', {onClick:()=>setPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
+          h('div', {onClick:()=>customSetPage('taken'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[13px] font-extrabold text-[#8B7355] mb-1 tracking-wide'}, t.totalTaken),
             h('div', {className:'space-y-1 mt-1'},
               h('p', {className:'text-[14px] font-black text-[#2D2A26] leading-tight'}, (lang==='en'?'Taken: ':'নিয়েছি: ') + fmtMoney(totalTakenAmt)),
@@ -3292,10 +3348,10 @@ setTimeout(()=>{
           historyFilter==='income' ? h('button', {onClick:()=>setAddType('income'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addIncome) : null,
           historyFilter==='expense' ? h('button', {onClick:()=>setAddType('expense'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addExpense) : null,
           historyFilter==='all' ? h('button', {onClick:()=>setAddSheetOpen(true), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.addNew) : null,
-          historyFilter==='loan_given' ? h('button', {onClick:()=>setPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
-          historyFilter==='loan_taken' ? h('button', {onClick:()=>setPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
-          historyFilter==='return_received' ? h('button', {onClick:()=>setPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Return':'ফেরত যোগ') : null,
-          historyFilter==='repayment' ? h('button', {onClick:()=>setPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Repayment':'পরিশোধ যোগ') : null,
+          historyFilter==='loan_given' ? h('button', {onClick:()=>customSetPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
+          historyFilter==='loan_taken' ? h('button', {onClick:()=>customSetPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Person':'ব্যক্তি যোগ') : null,
+          historyFilter==='return_received' ? h('button', {onClick:()=>customSetPage('given'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Return':'ফেরত যোগ') : null,
+          historyFilter==='repayment' ? h('button', {onClick:()=>customSetPage('taken'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, lang==='en'?'Add Repayment':'পরিশোধ যোগ') : null,
           historyFilter==='bank_loan' ? h('button', {onClick:()=>setAddType('bankLoan'), className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white font-bold text-[11px]'}, t.bankLoan) : null,
           h('div', {className:'flex-1'}),
           h('div', {className:'flex gap-1.5'},
@@ -3437,7 +3493,7 @@ setTimeout(()=>{
   } else if(page === 'personDetail' && currentPerson){
     pageContent = h(PersonDetail, {
       t, lang, kind: openPersonKind, person: currentPerson, userName: userName || (googleUser && (googleUser.name||googleUser.email)) || '',
-      onBack: ()=>setPage(openPersonKind),
+      onBack: ()=>customSetPage(openPersonKind),
       onUpdatePerson: (p)=>updatePerson(openPersonKind, p),
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
@@ -3470,7 +3526,7 @@ setTimeout(()=>{
     var catDisplay = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=EXPENSE_CATEGORIES.flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
     pageContent = h('div', {className:'pt-5 pb-6 space-y-4'},
       h('div', {className:'flex items-center gap-2'},
-        h(IconBtn, {onClick:function(){ setPage('history'); }}, '\u2190'),
+        h(IconBtn, {onClick:function(){ customSetPage('history'); }}, '\u2190'),
         h('h2', {className:'text-[18px] font-bold flex-1 truncate'}, catDisplay),
         h('span', {className:'px-2.5 py-1 rounded-full text-[10px] font-bold ' + (openCategoryKind==='income'?'bg-[#E8F5E9] text-[#2E7D32] border border-[#C8E6C9]':'bg-[#FFEBEE] text-[#B71C1C] border border-[#FFCDD2]')}, openCategoryKind==='income'?t.income:t.expense)
       ),
@@ -3822,22 +3878,22 @@ setTimeout(()=>{
       h('div', {className:'fixed bottom-0 left-0 right-0 w-full z-50'},
         h('div', {className:'bg-white border-t border-[#F3E8D3] px-2 sm:px-2 md:px-4 pt-2 pb-[calc(8px+env(safe-area-inset-bottom,0px))] w-full'},
           h('div', {className:'flex items-center justify-around relative w-full max-w-full mx-auto'},
-            h('button', {onClick:()=>setPage('home'), className:'flex flex-col items-center justify-center flex-1 py-2'},
+            h('button', {onClick:()=>customSetPage('home'), className:'flex flex-col items-center justify-center flex-1 py-2'},
               h('span', {className:'text-[20px]'}, '\uD83C\uDFE0'),
               h('span', {className:'text-[10px] font-bold mt-1 ' + (page==='home'?'text-[#2D2A26]':'text-[#8B7355]')}, t.home)
             ),
-            h('button', {onClick:()=>setPage('history'), className:'flex flex-col items-center justify-center flex-1 py-2'},
+            h('button', {onClick:()=>customSetPage('history'), className:'flex flex-col items-center justify-center flex-1 py-2'},
               h('span', {className:'text-[20px]'}, '\uD83D\uDD52'),
               h('span', {className:'text-[10px] font-bold mt-1 ' + (page==='history'?'text-[#2D2A26]':'text-[#8B7355]')}, t.history)
             ),
             h('div', {className:'relative w-[72px] flex justify-center'},
               h('button', {onClick:()=>setAddSheetOpen(true), className:'w-[64px] h-[64px] rounded-full bg-[#C9A86A] flex items-center justify-center -mt-6 border-[6px] border-[#FFFBF7] text-white text-[26px] font-bold'}, '+')
             ),
-            h('button', {onClick:()=>setPage('reports'), className:'flex flex-col items-center justify-center flex-1 py-2'},
+            h('button', {onClick:()=>customSetPage('reports'), className:'flex flex-col items-center justify-center flex-1 py-2'},
               h('span', {className:'text-[20px]'}, '\uD83D\uDCCA'),
               h('span', {className:'text-[10px] font-bold mt-1 ' + (page==='reports'?'text-[#2D2A26]':'text-[#8B7355]')}, t.reports)
             ),
-            h('button', {onClick:()=>setPage('profile'), className:'flex flex-col items-center justify-center flex-1 py-2'},
+            h('button', {onClick:()=>customSetPage('profile'), className:'flex flex-col items-center justify-center flex-1 py-2'},
               h('span', {className:'text-[20px]'}, '\uD83D\uDC64'),
               h('span', {className:'text-[10px] font-bold mt-1 ' + (page==='profile'?'text-[#2D2A26]':'text-[#8B7355]')}, t.profile)
             )
@@ -3853,10 +3909,10 @@ setTimeout(()=>{
           h('button', {onClick:()=>{setAddType('expense'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#FFEBEE] border border-[#FFCDD2] rounded-[20px] p-4 text-left'},
             h('span', {className:'text-[20px]'}, '\uD83D\uDCB8'), h('span', {className:'font-bold text-[15px] text-[#B71C1C]'}, t.addExpense)
           ),
-          h('button', {onClick:()=>{setPage('given'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#FFF8E1] border border-[#FFE082] rounded-[20px] p-4 text-left'},
+          h('button', {onClick:()=>{customSetPage('given'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#FFF8E1] border border-[#FFE082] rounded-[20px] p-4 text-left'},
             h('span', {className:'text-[20px]'}, '\uD83E\uDD1D'), h('span', {className:'font-bold text-[15px] text-[#8B7355]'}, t.giveLoan)
           ),
-          h('button', {onClick:()=>{setPage('taken'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#E3F2FD] border border-[#BBDEFB] rounded-[20px] p-4 text-left'},
+          h('button', {onClick:()=>{customSetPage('taken'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#E3F2FD] border border-[#BBDEFB] rounded-[20px] p-4 text-left'},
             h('span', {className:'text-[20px]'}, '\uD83D\uDCE5'), h('span', {className:'font-bold text-[15px] text-[#1A4D8F]'}, t.takeLoan)
           ),
           h('button', {onClick:()=>{setAddType('bankLoan'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#2D2A26] rounded-[20px] p-4 text-left'},
