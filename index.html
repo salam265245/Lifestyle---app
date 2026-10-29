@@ -2449,7 +2449,7 @@ function renderHistoryPages(o){
     ensure(140); y+=10; font(38, true); ctx.fillStyle='#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(filter==='all'?t.history+' - All':t.history+' - '+filter, W-M*2), M, y); y+=50;
     font(22,false); ctx.fillStyle='#8B7355'; ctx.fillText('Total Records: '+list.length, M, y); y+=10;
     ctx.strokeStyle='#C9A86A'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=30;
-    if(tableHeaderActive){ const _isIncH = filter==='income'; const _isExpH = filter==='expense'; const _isPLoanH = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment'; drawTableHeader({hidePerson: _isIncH||_isExpH, hideCategory: _isPLoanH, singleChannel: _isIncH||_isExpH}); }
+    if(tableHeaderActive){ const _isIncH = filter==='income'; const _isExpH = filter==='expense'; const _isPLoanH = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment'; const _isBankH = (filter||'').toString().toLowerCase().includes('bank'); drawTableHeader({hidePerson: _isIncH||_isExpH||_isBankH, hideCategory: _isPLoanH, singleChannel: _isIncH||_isExpH}); }
   }
   function mediumLabel(id){
     if(!id) return '';
@@ -2470,7 +2470,8 @@ function renderHistoryPages(o){
     const isInc = filter==='income';
     const isExp = filter==='expense';
     const isPLoan = filter==='loan_given' || filter==='loan_taken' || filter==='return_received' || filter==='repayment' || filter==='given' || filter==='taken' || filter==='return' || filter==='repayment';
-    drawTableHeader({hidePerson: isInc||isExp, hideCategory: isPLoan, singleChannel: isInc||isExp});
+    const isBank = (filter||'').toString().toLowerCase().includes('bank');
+    drawTableHeader({hidePerson: isInc||isExp||isBank, hideCategory: isPLoan, singleChannel: isInc||isExp});
     tableHeaderActive=true;
     let total=0;
     list.forEach(item=>{
