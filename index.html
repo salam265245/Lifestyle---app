@@ -616,10 +616,13 @@ function IconBtn(props){
 
 /* ---------- Modal shells ---------- */
 function BottomSheet(props){
+  // If bazar confirm popup is open, hide this BottomSheet's header "Today Bazar" completely
+  const isBazarSheet = (props.title||'').toLowerCase().includes('bazar') || (props.title||'').includes('বাজার');
+  const shouldHideHeader = isBazarSheet && (typeof document!=='undefined' && document.body.classList.contains('bazar-confirm-open'));
   return h('div', {className:'fixed inset-0 z-[70] flex items-end justify-center'},
     h('div', {className:'absolute inset-0 bg-black/50 backdrop-blur-sm', onClick: props.onClose}),
     h('div', {className:'relative w-full max-w-[460px] bg-[#FFFBF7] rounded-t-[32px] max-h-[88vh] overflow-y-auto border border-[#F3E8D3] shadow-[0_-12px_40px_rgba(0,0,0,0.2)]'},
-      h('div', {className:'sticky top-0 bg-[#FFFBF7] px-5 pt-2 pb-2 border-b border-[#F3E8D3] flex items-center justify-between z-10'},
+      shouldHideHeader ? null : h('div', {className:'sticky top-0 bg-[#FFFBF7] px-5 pt-2 pb-2 border-b border-[#F3E8D3] flex items-center justify-between z-10'},
         h('h3', {className:'font-bold text-[18px] leading-tight'}, props.title),
         h(IconBtn, {onClick: props.onClose}, '\u2715')
       ),
@@ -2895,6 +2898,79 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
     setTransactions(list => list.filter(tt => tt.bazarItemId !== id));
   }
 
+  // Hide parent BottomSheet header "Today Bazar" when confirm popup is open
+  useEffect(()=>{
+    if(popupItem){
+      // Hide all sticky headers containing Today Bazar / আজকের বাজার
+      try{
+        document.querySelectorAll('h3').forEach(h=>{
+          const txt = (h.textContent||'').toLowerCase();
+          if(txt.includes('today bazar') || txt.includes('আজকের বাজার')){
+            const sticky = h.closest('div.sticky');
+            if(sticky) sticky.style.display='none';
+            // Also hide the whole BottomSheet header container
+            h.style.display='none';
+          }
+        });
+        // Also add class to body to prevent background scroll
+        document.body.classList.add('bazar-confirm-open');
+      }catch(e){}
+    } else {
+      try{
+        document.querySelectorAll('div.sticky').forEach(d=>{ d.style.display=''; });
+        document.querySelectorAll('h3').forEach(h=>{ h.style.display=''; });
+        document.body.classList.remove('bazar-confirm-open');
+      }catch(e){}
+    }
+  }, [popupItem]);
+
+  // If confirm popup is open, show ONLY the popup in full size, hide Bazar list and Today Bazar header behind
+  if(popupItem){
+    return h('div', {className:'fixed inset-0 z-[9999] bg-[#FFFBF7] flex flex-col'},
+      h('div', {className:'flex-1 overflow-y-auto w-full max-w-[480px] mx-auto bg-[#FFFBF7] p-4 space-y-4'},
+        h('div', {className:'flex items-center justify-between border-b border-[#F3E8D3] pb-3'},
+          h('h3', {className:'text-[18px] font-bold text-[#2D2A26]'}, popupItem.name + ' কিনেছেন?'),
+          h('button', {onClick:()=>setPopupItem(null), className:'w-9 h-9 rounded-full bg-white border border-[#F3E8D3] flex items-center justify-center text-[16px]'}, '✕')
+        ),
+        h('p', {className:'text-[13px] text-[#8B7355] bg-[#FFF8E1] border border-[#FFE082] rounded-[12px] p-2.5'}, 'দাম ও খাত দিতে হবে, নইলে সেভ হবে না'),
+        h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-4 space-y-4'},
+          h('div', {className:'grid grid-cols-2 gap-3'},
+            h('div', null,
+              h('label', {className:'text-[13px] font-bold text-[#8B7355] mb-1.5 block'}, 'দাম *'),
+              h('input', {type:'number', value:popupAmount, onChange:e=>setPopupAmount(e.target.value), placeholder:'যেমন: 50', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-4 py-3 text-[14px] outline-none focus:border-[#C9A86A]'})
+            ),
+            h('div', null,
+              h('label', {className:'text-[13px] font-bold text-[#8B7355] mb-1.5 block'}, 'তারিখ *'),
+              h('input', {type:'date', value:popupDate, onChange:e=>setPopupDate(e.target.value), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-4 py-3 text-[14px] outline-none'})
+            )
+          ),
+          h('div', {className:'relative'},
+            h('label', {className:'text-[13px] font-bold text-[#8B7355] mb-1.5 block'}, 'ব্যয়ের খাত *'),
+            h('button', {type:'button', onClick:()=>setPopupCatOpen(o=>!o), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-4 py-3 text-[14px] text-left flex items-center justify-between'},
+              h('span', null, popupCat ? (popupCat.bn + ' - ' + popupCat.en) : 'খাত নির্বাচন করুন *'),
+              h('span', null, '▼')
+            ),
+            popupCatOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[240px] overflow-hidden flex flex-col'},
+              h('div', {className:'p-2 border-b border-[#F3E8D3]'},
+                h('input', {type:'text', value:popupCatSearch, onChange:e=>setPopupCatSearch(e.target.value), placeholder:'খাত খুঁজুন...', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[10px] px-3 py-2.5 text-[13px] outline-none'})
+              ),
+              h('div', {className:'overflow-y-auto flex-1'},
+                filteredPopupCats.map(it=> h('button', {key: it.en, type:'button', onClick:()=>{ setPopupCat({en: it.en, bn: it.bn}); setPopupCatOpen(false); setPopupCatSearch(''); }, className:'w-full text-left px-4 py-3 hover:bg-[#F9F5EB] flex items-center gap-2 text-[13px] border-b border-[#F9F5EB]'},
+                  h('span', null, it.icon||''),
+                  h('span', {className:'flex-1'}, it.bn + ' - ' + it.en)
+                ))
+              )
+            ) : null
+          )
+        ),
+        h('div', {className:'grid grid-cols-2 gap-3 pt-2 pb-6'},
+          h('button', {onClick:()=>setPopupItem(null), className:'py-4 rounded-[14px] bg-white border border-[#F3E8D3] text-[#2D2A26] font-bold text-[14px]'}, 'বাতিল'),
+          h('button', {onClick:confirmYes, disabled: !popupAmount || !popupCat, className:'py-4 rounded-[14px] bg-[#2E7D32] text-white font-bold text-[14px] disabled:opacity-40 shadow-lg'}, 'Yes - ব্যয়ে যোগ করুন')
+        )
+      )
+    );
+  }
+
   return h('div', {className:'space-y-4'},
     h('div', {className:'grid grid-cols-3 gap-2 bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3'},
       h('div', {className:'text-center'},
@@ -2976,49 +3052,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
           )
         );
       })
-    ),
-    // Popup for Yes - asking amount + category
-    popupItem ? h('div', {className:'fixed inset-0 z-[9999] bg-black/50 flex items-end justify-center p-0', onClick:()=>setPopupItem(null)},
-      h('div', {className:'bg-[#FFFBF7] w-full max-w-[420px] rounded-t-[20px] p-4 space-y-3 max-h-[85vh] overflow-y-auto', onClick:e=>e.stopPropagation()},
-        h('div', {className:'flex items-center justify-between'},
-          h('h3', {className:'text-[15px] font-bold'}, popupItem.name + ' কিনেছেন?'),
-          h('button', {onClick:()=>setPopupItem(null), className:'w-8 h-8 rounded-full bg-white border border-[#F3E8D3] flex items-center justify-center'}, '✕')
-        ),
-        h('p', {className:'text-[12px] text-[#8B7355]'}, 'দাম ও খাত দিতে হবে, নইলে সেভ হবে না'),
-        h('div', {className:'grid grid-cols-2 gap-2'},
-          h('div', null,
-            h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'দাম *'),
-            h('input', {type:'number', value:popupAmount, onChange:e=>setPopupAmount(e.target.value), placeholder:'যেমন: 50', className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none focus:border-[#C9A86A]'})
-          ),
-          h('div', null,
-            h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'তারিখ *'),
-            h('input', {type:'date', value:popupDate, onChange:e=>setPopupDate(e.target.value), className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none'})
-          )
-        ),
-        h('div', {className:'relative'},
-          h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'ব্যয়ের খাত *'),
-          h('button', {type:'button', onClick:()=>setPopupCatOpen(o=>!o), className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] text-left flex items-center justify-between'},
-            h('span', null, popupCat ? (popupCat.bn + ' - ' + popupCat.en) : 'খাত নির্বাচন করুন *'),
-            h('span', null, '▼')
-          ),
-          popupCatOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[200px] overflow-hidden flex flex-col'},
-            h('div', {className:'p-2 border-b border-[#F3E8D3]'},
-              h('input', {type:'text', value:popupCatSearch, onChange:e=>setPopupCatSearch(e.target.value), placeholder:'খাত খুঁজুন...', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[10px] px-3 py-2 text-[12px] outline-none'})
-            ),
-            h('div', {className:'overflow-y-auto flex-1'},
-              filteredPopupCats.map(it=> h('button', {key: it.en, type:'button', onClick:()=>{ setPopupCat({en: it.en, bn: it.bn}); setPopupCatOpen(false); setPopupCatSearch(''); }, className:'w-full text-left px-3 py-2 hover:bg-[#F9F5EB] flex items-center gap-2 text-[12px]'},
-                h('span', null, it.icon||''),
-                h('span', {className:'flex-1'}, it.bn + ' - ' + it.en)
-              ))
-            )
-          ) : null
-        ),
-        h('div', {className:'grid grid-cols-2 gap-2 pt-2'},
-          h('button', {onClick:()=>setPopupItem(null), className:'py-3 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] font-bold text-[13px]'}, 'বাতিল'),
-          h('button', {onClick:confirmYes, disabled: !popupAmount || !popupCat, className:'py-3 rounded-[12px] bg-[#2E7D32] text-white font-bold text-[13px] disabled:opacity-40'}, 'Yes - ব্যয়ে যোগ করুন')
-        )
-      )
-    ) : null
+    )
   );
 }
 
