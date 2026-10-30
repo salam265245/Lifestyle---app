@@ -2787,6 +2787,30 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
   const boughtTotal = useMemo(()=> bazarList.filter(x=>x.bought).reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
   const baki = total - boughtTotal;
 
+  // AUTO-HEAL: If bazar marked bought but expense missing, recreate it (fixes old bug)
+  useEffect(()=>{
+    try{
+      if(!bazarList || !bazarList.length) return;
+      if(!transactions) return;
+      const missing = bazarList.filter(b => b.bought && b.amount>0 && !transactions.some(tt => tt.bazarItemId === b.id));
+      if(missing.length===0) return;
+      const toAdd = missing.map(b => ({
+        id: uid(),
+        bazarItemId: b.id,
+        type: 'expense',
+        amount: parseFloat(b.amount)||0,
+        category: b.category || 'Groceries',
+        categoryBn: b.categoryBn || b.category || 'মুদি বাজার',
+        date: b.date || today(),
+        note: b.name + ' (৳'+(parseFloat(b.amount)||0)+' - ' + (typeof t!=='undefined' && t.todayBazar ? t.todayBazar : 'আজকের বাজার') + ')',
+        medium: 'Cash', channel: 'Cash', fromChannel: 'Cash', toChannel: 'Cash', fromMedium: 'Cash', toMedium: 'Cash'
+      }));
+      if(toAdd.length>0){
+        setTransactions(list => [...toAdd, ...list]);
+      }
+    }catch(e){ console.error('bazar auto-heal', e); }
+  }, []);
+
   const allCats = useMemo(()=>{
     try{
       const flat = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn})));
@@ -2841,46 +2865,48 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       if(typeof setToast==='function') setToast('দাম ও খাত দিন');
       return;
     }
-    // Prevent duplicate expense for same bazar item
-    const exists = transactions.some(tt => tt.bazarItemId === popupItem.id);
-    if(exists){
-      if(typeof setToast==='function') setToast('আগেই ব্যয়ে যোগ আছে');
-      setPopupItem(null);
-      return;
-    }
     const itemId = popupItem.id;
     const itemName = popupItem.name;
     const amt = parseFloat(popupAmount)||0;
+    const txDate = popupDate || today();
     const updated = {
       ...popupItem,
       amount: amt,
       category: popupCat.en,
       categoryBn: popupCat.bn,
-      date: popupDate || today(),
+      date: txDate,
       bought: true
     };
-    // CLOSE POPUP FIRST - so user sees green immediately
-    setPopupItem(null);
-    // Then update Bazar List to GREEN
+    // FIX: Update bazar list and expense BEFORE closing popup to avoid race
     setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
-    // Then add to Expense
-    const tx = {
-      id: uid(),
-      bazarItemId: itemId,
-      type: 'expense',
-      amount: amt,
-      category: popupCat.en,
-      categoryBn: popupCat.bn,
-      date: popupDate || today(),
-      note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')',
-      medium: 'Cash',
-      channel: 'Cash',
-      fromChannel: 'Cash',
-      toChannel: 'Cash',
-      fromMedium: 'Cash',
-      toMedium: 'Cash'
-    };
-    setTransactions(list => [tx, ...list]);
+    // Upsert expense: if exists, update amount/category/date, else add
+    setTransactions(list => {
+      const idx = list.findIndex(tt => tt.bazarItemId === itemId);
+      if(idx >= 0){
+        const copy = list.slice();
+        copy[idx] = {...copy[idx], amount: amt, category: popupCat.en, categoryBn: popupCat.bn, date: txDate, note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')'};
+        return copy;
+      } else {
+        const tx = {
+          id: uid(),
+          bazarItemId: itemId,
+          type: 'expense',
+          amount: amt,
+          category: popupCat.en,
+          categoryBn: popupCat.bn,
+          date: txDate,
+          note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')',
+          medium: 'Cash',
+          channel: 'Cash',
+          fromChannel: 'Cash',
+          toChannel: 'Cash',
+          fromMedium: 'Cash',
+          toMedium: 'Cash'
+        };
+        return [tx, ...list];
+      }
+    });
+    setPopupItem(null);
     if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে');
   }
 
