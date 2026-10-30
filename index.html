@@ -3700,15 +3700,15 @@ setTimeout(()=>{
       h('div', null,
         h('h2', {className:'text-[18px] font-bold mb-3'}, t.today),
         h('div', {className:'grid grid-cols-3 gap-3'},
-          h('div', {className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9]'},
+          h('div', {onClick:()=>{ setHistoryFilter('income'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, t.todayIncome),
             h('p', {className:'text-[16px] font-bold mt-1 text-[#1B5E20]'}, fmtMoney(todayIncome))
           ),
-          h('div', {className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2]'},
+          h('div', {onClick:()=>{ setHistoryFilter('expense'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, t.todayExpense),
             h('p', {className:'text-[16px] font-bold mt-1 text-[#B71C1C]'}, fmtMoney(todayExpense))
           ),
-          h('div', {className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3]'},
+          h('div', {onClick:()=>{ setHistoryFilter('all'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#8B7355]'}, t.todayBalance),
             h('p', {className:'text-[16px] font-bold mt-1'}, fmtMoney(todayIncome-todayExpense))
           )
