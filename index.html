@@ -472,7 +472,7 @@ const T = {
     reportHeading:'Report', period:'Period', generated:'Generated', unpaid:'Unpaid', pdfTitle:'PDF Report',
     dateFrom:'From', dateTo:'To', sharePdf:'Share PDF (WhatsApp)', downloadPdf:'Download PDF', preparing:'Preparing...',
     pdfDownloaded:'PDF downloaded', badRange:'Please select a valid date range',
-    pickContact:'Pick from contacts', contactUnsupported:'Contact access is not available here. Please type the number.' },
+    pickContact:'Pick from contacts', contactUnsupported:'Contact access is not available here. Please type the number.', todayBazar:'Today Bazar', bazar:'Bazar' },
   bn: { appName:'লাইফস্টাইল', today:'আজ', thisMonth:'এই মাস', todayIncome:'আজকের আয়',
     todayExpense:'আজকের ব্যয়', todayBalance:'আজকের ব্যালেন্স', monthlyIncome:'মাসিক আয়',
     monthlyExpense:'মাসিক ব্যয়', monthlyBalance:'মাসিক ব্যালেন্স', loansReceivables:'ঋণ ও পাওনা',
@@ -499,7 +499,7 @@ const T = {
     reportHeading:'রিপোর্ট', period:'সময়কাল', generated:'তৈরির তারিখ', unpaid:'অপরিশোধিত', pdfTitle:'PDF রিপোর্ট',
     dateFrom:'শুরুর তারিখ', dateTo:'শেষ তারিখ', sharePdf:'PDF শেয়ার (WhatsApp)', downloadPdf:'PDF ডাউনলোড', preparing:'তৈরি হচ্ছে...',
     pdfDownloaded:'PDF ডাউনলোড হয়েছে', badRange:'সঠিক তারিখ নির্বাচন করুন',
-    pickContact:'কন্টাক্ট থেকে বাছুন', contactUnsupported:'এখানে কন্টাক্ট ব্যবহার করা যাচ্ছে না। নম্বর হাতে লিখুন।' }
+    pickContact:'কন্টাক্ট থেকে বাছুন', contactUnsupported:'এখানে কন্টাক্ট ব্যবহার করা যাচ্ছে না। নম্বর হাতে লিখুন।', todayBazar:'আজকের বাজার', bazar:'বাজার' }
 };
 
 /* ---------- migration from old data format ---------- */
@@ -1542,7 +1542,7 @@ function renderReportPages(o){
     cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d'); ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H); pages.push(cv); y=M;
     drawTopHeader();
     if(tableHeaderActive){
-      ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + formatDateForPdf(from) + ' → ' + formatDateForPdf(to), M, y); y+=60;
+      ensure(60); font(32,true); ctx.fillStyle='#8B7355'; var _pl = (lang==='en' ? 'Statement Period: ' : 'স্টেটমেন্ট সময়কাল: '); ctx.fillText(_pl + formatDateForPdf(from) + ' → ' + formatDateForPdf(to), M, y); y+=60;
       drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false});
     }
   }
@@ -1563,7 +1563,7 @@ function renderReportPages(o){
     return {from:f, to:t2};
   }
   newPage();
-  ensure(60); font(32,true); ctx.fillStyle='#8B7355'; ctx.fillText(t.period + ': ' + formatDateForPdf(from) + ' → ' + formatDateForPdf(to), M, y); y+=60;
+  ensure(60); font(32,true); ctx.fillStyle='#8B7355'; var _pl = (lang==='en' ? 'Statement Period: ' : 'স্টেটমেন্ট সময়কাল: '); ctx.fillText(_pl + formatDateForPdf(from) + ' → ' + formatDateForPdf(to), M, y); y+=60;
   const all = [];
   (o.transactions||[]).forEach(tx=>{
     if(inRange(tx.date)) all.push({date:tx.date, person:'', category:tx.category, cat:tx.category, personName:'', note:tx.note||'', fromChannel:tx.fromChannel||tx.fromMedium||tx.channel||tx.medium||tx.method||tx.media||'Cash', toChannel:tx.toChannel||tx.toMedium||'', medium:tx.medium||tx.method||tx.media||'Cash', amount:tx.amount, type:tx.type});
@@ -2221,7 +2221,7 @@ function renderAllLoansPages(o){
     return {from:f, to:t2};
   }
   newPage();
-  if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; const fDisp=from?formatDateForPdf(from):'...'; const tDisp=to?formatDateForPdf(to):'...'; ctx.fillText(t.period + ': ' + fDisp + ' → ' + tDisp, M, y); y+=60; }
+  if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; const fDisp=from?formatDateForPdf(from):'...'; const tDisp=to?formatDateForPdf(to):'...'; var _pl2 = (lang==='en' ? 'Statement Period: ' : 'স্টেটমেন্ট সময়কাল: '); ctx.fillText(_pl2 + fDisp + ' → ' + tDisp, M, y); y+=60; }
   let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, category:'', cat:'', personName:p.name, type:'loan', amount:l.amount, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||l.method||l.media||'', toChannel:l.toChannel||l.toMedium||'', medium:l.medium||l.method||l.media||'', method:l.medium||l.method||l.media||'', media:l.medium||l.method||l.media||'', note:l.note||''})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, category:'', cat:'', personName:p.name, type:'payment', amount:pay.amount, fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||pay.medium||pay.media||'', toChannel:pay.toChannel||pay.toMedium||'', medium:pay.method||pay.medium||pay.media||'', method:pay.method||pay.medium||pay.media||'', media:pay.method||pay.medium||pay.media||'', note:pay.note||''})); }); all.sort((a,b)=>a.date.localeCompare(b.date));
   if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
     heading((lang==='en'?'All '+(kind==='given'?'Given':'Taken')+' History - '+all.length+' records':'সব '+(kind==='given'?'প্রদান':'গ্রহণ')+' - '+all.length+' রেকর্ড'), '#2D2A26');
@@ -2465,7 +2465,27 @@ function renderHistoryPages(o){
     const t2 = mediumLabel(toC);
     return {from:f, to:t2};
   }
+  // SORT ASCENDING: oldest on top, newest at bottom (Excel style)
+  try{ list = (list||[]).slice().sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); }); }catch(e){}
+  var _fromDate = '', _toDate = '';
+  try{
+    if(list.length){
+      var dates = list.map(function(x){ return x.date||''; }).filter(Boolean).sort();
+      if(dates.length){ _fromDate = dates[0]; _toDate = dates[dates.length-1]; }
+    }
+    if(o.from) _fromDate = o.from;
+    if(o.to) _toDate = o.to;
+  }catch(e){}
   newPage();
+  if(_fromDate || _toDate){
+    try{
+      ensure(60); font(32,true); ctx.fillStyle='#8B7355';
+      var _periodLabel = (lang==='en' ? 'Statement Period: ' : 'স্টেটমেন্ট সময়কাল: ');
+      var _fromDisp = _fromDate ? formatDateForPdf(_fromDate) : '';
+      var _toDisp = _toDate ? formatDateForPdf(_toDate) : '';
+      ctx.fillText(_periodLabel + _fromDisp + ' → ' + _toDisp, M, y); y+=60;
+    }catch(e){}
+  }
   if(!list.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
     const isInc = (filter||'').toString().toLowerCase().includes('income');
     const isExp = (filter||'').toString().toLowerCase().includes('expense');
@@ -2691,6 +2711,320 @@ function EmailAuthForm({t, onAuth}){
 }
 
 /* ---------- Main App ---------- */
+
+function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast }){
+  const [bName, setBName] = useState('');
+  const [bAmount, setBAmount] = useState('');
+  const [bDate, setBDate] = useState(today());
+  const [bCat, setBCat] = useState(null);
+  const [catOpen, setCatOpen] = useState(false);
+  const [catSearch, setCatSearch] = useState('');
+
+  // Popup for Yes confirmation
+  const [popupItem, setPopupItem] = useState(null); // item to confirm buying
+  const [popupAmount, setPopupAmount] = useState('');
+  const [popupDate, setPopupDate] = useState(today());
+  const [popupCat, setPopupCat] = useState(null);
+  const [popupCatOpen, setPopupCatOpen] = useState(false);
+  const [popupCatSearch, setPopupCatSearch] = useState('');
+  const [bulkText, setBulkText] = useState('');
+
+  function handleBulkAdd(){
+    try{
+      let text = (bulkText||'').trim();
+      if(!text) return;
+      let parts = [];
+      // Step 1: split by comma and newline
+      let byCommaNl = text.split(',').join('\n').split('\n');
+      byCommaNl.forEach(function(p){
+        p = p.trim();
+        if(!p) return;
+        // If piece has spaces, split by space into separate items (handles "আলু পেঁয়াজ রসুন")
+        if(p.indexOf(' ') !== -1){
+          let sub = p.split(' ').filter(function(x){ return x.trim(); });
+          if(sub.length>1){
+            sub.forEach(function(s){ if(s.trim()) parts.push(s.trim()); });
+          } else {
+            parts.push(p);
+          }
+        } else {
+          parts.push(p);
+        }
+      });
+      if(parts.length===0){
+        parts = text.split(' ').filter(function(x){ return x.trim(); });
+      }
+      // FIXED: Allow duplicate names - e.g. তেল 2 times with different price
+      let unique = [];
+      parts.forEach(function(name){
+        let n = name.trim();
+        if(!n) return;
+        unique.push(n);
+      });
+      if(unique.length===0) return;
+      let newItems = unique.map(function(nm){
+        return {
+          id: uid(),
+          name: nm,
+          amount: 0,
+          category: '',
+          categoryBn: '',
+          date: today(),
+          bought: false
+        };
+      });
+      setBazarList(function(list){ return newItems.concat(list); });
+      setBulkText('');
+      if(typeof setToast==='function') setToast(unique.length + ' টি পণ্য লিস্টে যোগ হয়েছে');
+    }catch(e){ console.error(e); }
+  }
+
+
+  const total = useMemo(()=> bazarList.reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
+  const boughtTotal = useMemo(()=> bazarList.filter(x=>x.bought).reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
+  const baki = total - boughtTotal;
+
+  const allCats = useMemo(()=>{
+    try{
+      const flat = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn})));
+      return flat;
+    }catch(e){ return []; }
+  }, []);
+
+  const filteredCats = useMemo(()=>{
+    const q = (catSearch||'').toLowerCase().trim();
+    if(!q) return allCats;
+    return allCats.filter(it => (it.en||'').toLowerCase().includes(q) || (it.bn||'').includes(catSearch) || (it.group||'').toLowerCase().includes(q) || (it.groupBn||'').includes(catSearch));
+  }, [allCats, catSearch]);
+
+  const filteredPopupCats = useMemo(()=>{
+    const q = (popupCatSearch||'').toLowerCase().trim();
+    if(!q) return allCats;
+    return allCats.filter(it => (it.en||'').toLowerCase().includes(q) || (it.bn||'').includes(popupCatSearch) || (it.group||'').toLowerCase().includes(q) || (it.groupBn||'').includes(popupCatSearch));
+  }, [allCats, popupCatSearch]);
+
+  function handleAdd(){
+    if(!bName.trim()) return;
+    const item = {
+      id: uid(),
+      name: bName.trim(),
+      amount: bAmount ? parseFloat(bAmount)||0 : 0,
+      category: bCat ? bCat.en : '',
+      categoryBn: bCat ? bCat.bn : '',
+      date: bDate || today(),
+      bought: false
+    };
+    setBazarList(list => [item, ...list]);
+    setBName('');
+    setBAmount('');
+    setBDate(today());
+    setBCat(null);
+    setCatSearch('');
+    setCatOpen(false);
+  }
+
+  function openYesPopup(item){
+    setPopupItem(item);
+    setPopupAmount(item.amount && item.amount>0 ? String(item.amount) : '');
+    setPopupDate(item.date || today());
+    setPopupCat(item.category ? {en: item.category, bn: item.categoryBn||item.category} : null);
+    setPopupCatOpen(false);
+    setPopupCatSearch('');
+  }
+
+  function confirmYes(){
+    if(!popupItem) return;
+    if(!popupAmount || !popupCat){
+      if(typeof setToast==='function') setToast('দাম ও খাত দিন');
+      return;
+    }
+    // Prevent duplicate expense for same bazar item
+    const exists = transactions.some(tt => tt.bazarItemId === popupItem.id);
+    if(exists){
+      if(typeof setToast==='function') setToast('আগেই ব্যয়ে যোগ আছে');
+      setPopupItem(null);
+      return;
+    }
+    const itemId = popupItem.id;
+    const itemName = popupItem.name;
+    const amt = parseFloat(popupAmount)||0;
+    const updated = {
+      ...popupItem,
+      amount: amt,
+      category: popupCat.en,
+      categoryBn: popupCat.bn,
+      date: popupDate || today(),
+      bought: true
+    };
+    // CLOSE POPUP FIRST - so user sees green immediately
+    setPopupItem(null);
+    // Then update Bazar List to GREEN
+    setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
+    // Then add to Expense
+    const tx = {
+      id: uid(),
+      bazarItemId: itemId,
+      type: 'expense',
+      amount: amt,
+      category: popupCat.en,
+      categoryBn: popupCat.bn,
+      date: popupDate || today(),
+      note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')',
+      medium: 'Cash',
+      channel: 'Cash',
+      fromChannel: 'Cash',
+      toChannel: 'Cash',
+      fromMedium: 'Cash',
+      toMedium: 'Cash'
+    };
+    setTransactions(list => [tx, ...list]);
+    if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে');
+  }
+
+  function markNo(item){
+    // Yes -> No : set bought=false AND delete linked expense
+    if(item.bought){
+      setBazarList(list => list.map(x=> x.id===item.id ? {...x, bought:false} : x));
+      setTransactions(list => list.filter(tt => tt.bazarItemId !== item.id));
+      if(typeof setToast==='function') setToast('বাজার + ব্যয় থেকে বাদ দেওয়া হয়েছে');
+    }
+  }
+
+  function deleteItem(id){
+    setBazarList(list => list.filter(x=> x.id!==id));
+    setTransactions(list => list.filter(tt => tt.bazarItemId !== id));
+  }
+
+  return h('div', {className:'space-y-4'},
+    h('div', {className:'grid grid-cols-3 gap-2 bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3'},
+      h('div', {className:'text-center'},
+        h('p', {className:'text-[11px] text-[#8B7355] font-medium'}, 'মোট'),
+        h('p', {className:'text-[14px] font-bold text-[#2D2A26]'}, '৳' + total)
+      ),
+      h('div', {className:'text-center border-l border-[#F3E8D3]'},
+        h('p', {className:'text-[11px] text-[#8B7355] font-medium'}, 'কেনা'),
+        h('p', {className:'text-[14px] font-bold text-[#2E7D32]'}, '৳' + boughtTotal)
+      ),
+      h('div', {className:'text-center border-l border-[#F3E8D3]'},
+        h('p', {className:'text-[11px] text-[#8B7355] font-medium'}, 'বাকি'),
+        h('p', {className:'text-[14px] font-bold text-[#B71C1C]'}, '৳' + baki)
+      )
+    ),
+    h('div', {className:'bg-[#FFF8E1] border border-[#FFE082] rounded-[16px] p-3 space-y-2'},
+      h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, '📋 মেসেজ Paste করুন (স্ত্রীর মেসেজ)'),
+      h('textarea', {value: bulkText, onChange:function(e){ setBulkText(e.target.value); }, placeholder:'যেমন: আলু, পেঁয়াজ, রসুন বা আলু পেঁয়াজ রসুন বা প্রতি লাইনে একটা', className:'w-full bg-white border border-[#FFE082] rounded-[12px] px-3 py-2.5 text-[13px] outline-none focus:border-[#C9A86A] min-h-[90px]', rows:4}),
+      h('div', {className:'flex gap-2'},
+        h('button', {onClick: handleBulkAdd, disabled: !bulkText.trim(), className:'flex-1 py-2.5 rounded-[12px] bg-[#2D2A26] text-white font-bold text-[12px] disabled:opacity-40'}, '✨ লিস্ট তৈরি করুন'),
+        h('button', {onClick:function(){ setBulkText(''); }, className:'px-3 py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#8B7355] font-bold text-[11px]'}, 'Clear')
+      ),
+      h('p', {className:'text-[10px] text-[#8B7355]'}, 'কমা, স্পেস বা নতুন লাইনে আলাদা করলে অটো লিস্ট হবে')
+    ),
+    h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 space-y-3'},
+      h('div', null,
+        h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'পণ্যের নাম *'),
+        h('input', {type:'text', value:bName, onChange:e=>setBName(e.target.value), placeholder:'যেমন: আলু', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none focus:border-[#C9A86A]'})
+      ),
+      h('div', {className:'grid grid-cols-2 gap-2'},
+        h('div', null,
+          h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'দাম (ঐচ্ছিক)'),
+          h('input', {type:'number', value:bAmount, onChange:e=>setBAmount(e.target.value), placeholder:'0 - পরে দিতে পারবেন', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none focus:border-[#C9A86A]'})
+        ),
+        h('div', null,
+          h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'তারিখ'),
+          h('input', {type:'date', value:bDate, onChange:e=>setBDate(e.target.value), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none'})
+        )
+      ),
+      h('div', {className:'relative'},
+        h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'ব্যয়ের খাত (ঐচ্ছিক)'),
+        h('button', {type:'button', onClick:()=>setCatOpen(o=>!o), className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] text-left flex items-center justify-between'},
+          h('span', null, bCat ? (bCat.bn + ' - ' + bCat.en) : 'খাত নির্বাচন করুন (ঐচ্ছিক)'),
+          h('span', null, '▼')
+        ),
+        catOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[240px] overflow-hidden flex flex-col'},
+          h('div', {className:'p-2 border-b border-[#F3E8D3]'},
+            h('input', {type:'text', value:catSearch, onChange:e=>setCatSearch(e.target.value), placeholder:'খাত খুঁজুন...', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[10px] px-3 py-2 text-[12px] outline-none', autoFocus:true})
+          ),
+          h('div', {className:'overflow-y-auto flex-1'},
+            filteredCats.map(it=> h('button', {key: it.en, type:'button', onClick:()=>{ setBCat({en: it.en, bn: it.bn}); setCatOpen(false); setCatSearch(''); }, className:'w-full text-left px-3 py-2 hover:bg-[#F9F5EB] flex items-center gap-2 text-[12px]'},
+              h('span', null, it.icon||''),
+              h('span', {className:'flex-1'}, it.bn + ' - ' + it.en),
+              it.groupBn ? h('span', {className:'text-[10px] text-[#8B7355]'}, it.groupBn) : null
+            ))
+          )
+        ) : null
+      ),
+      h('button', {onClick:handleAdd, disabled: !bName.trim(), className:'w-full py-3 rounded-[12px] bg-[#2D2A26] text-white font-bold text-[13px] disabled:opacity-40'}, 'লিস্টে যোগ করুন')
+    ),
+    h('div', {className:'space-y-2'},
+      bazarList.length===0 ? h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-5 text-center'},
+        h('p', {className:'text-[13px] text-[#8B7355]'}, 'এখনো কোন পণ্য নেই')
+      ) : bazarList.map(item=>{
+        const isBought = !!item.bought;
+        const rowBg = isBought ? 'bg-[#E8F5E9] border-[#A5D6A7]' : 'bg-[#FFEBEE] border-[#FFCDD2]';
+        return h('div', {key:item.id, className:'flex items-center gap-2 rounded-[14px] border p-3 ' + rowBg},
+          h('div', {className:'flex-1 min-w-0'},
+            h('p', {className:'text-[13px] font-bold text-[#2D2A26] truncate'}, item.name + ' ', h('span', {className:'text-[11px] font-normal text-[#8B7355]'}, item.categoryBn ? '(' + item.categoryBn + ')' : '')),
+            h('p', {className:'text-[11px] text-[#8B7355]'}, (item.amount ? '৳' + item.amount : '৳0 (দাম বাকি)') + ' • ' + item.date)
+          ),
+          h('div', {className:'flex items-center gap-1.5'},
+            // No button
+            h('button', {onClick:()=>markNo(item), className:'px-3 py-1.5 rounded-full text-[11px] font-bold border ' + (!isBought ? 'bg-[#B71C1C] text-white border-[#B71C1C]' : 'bg-white text-[#8B7355] border-[#F3E8D3]')}, 'No'),
+            // Yes button
+            h('button', {onClick:()=>openYesPopup(item), className:'px-3 py-1.5 rounded-full text-[11px] font-bold border ' + (isBought ? 'bg-[#2E7D32] text-white border-[#2E7D32]' : 'bg-white text-[#2E7D32] border-[#A5D6A7]')}, 'Yes'),
+            // Delete button - left of delete is Yes/No as requested
+            h('button', {onClick:()=>deleteItem(item.id), className:'w-8 h-8 rounded-full bg-white border border-[#F3E8D3] flex items-center justify-center text-[14px] flex-shrink-0 ml-1'}, '🗑')
+          )
+        );
+      })
+    ),
+    // Popup for Yes - asking amount + category
+    popupItem ? h('div', {className:'fixed inset-0 z-[9999] bg-black/50 flex items-end justify-center p-0', onClick:()=>setPopupItem(null)},
+      h('div', {className:'bg-[#FFFBF7] w-full max-w-[420px] rounded-t-[20px] p-4 space-y-3 max-h-[85vh] overflow-y-auto', onClick:e=>e.stopPropagation()},
+        h('div', {className:'flex items-center justify-between'},
+          h('h3', {className:'text-[15px] font-bold'}, popupItem.name + ' কিনেছেন?'),
+          h('button', {onClick:()=>setPopupItem(null), className:'w-8 h-8 rounded-full bg-white border border-[#F3E8D3] flex items-center justify-center'}, '✕')
+        ),
+        h('p', {className:'text-[12px] text-[#8B7355]'}, 'দাম ও খাত দিতে হবে, নইলে সেভ হবে না'),
+        h('div', {className:'grid grid-cols-2 gap-2'},
+          h('div', null,
+            h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'দাম *'),
+            h('input', {type:'number', value:popupAmount, onChange:e=>setPopupAmount(e.target.value), placeholder:'যেমন: 50', className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none focus:border-[#C9A86A]'})
+          ),
+          h('div', null,
+            h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'তারিখ *'),
+            h('input', {type:'date', value:popupDate, onChange:e=>setPopupDate(e.target.value), className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none'})
+          )
+        ),
+        h('div', {className:'relative'},
+          h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'ব্যয়ের খাত *'),
+          h('button', {type:'button', onClick:()=>setPopupCatOpen(o=>!o), className:'w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] text-left flex items-center justify-between'},
+            h('span', null, popupCat ? (popupCat.bn + ' - ' + popupCat.en) : 'খাত নির্বাচন করুন *'),
+            h('span', null, '▼')
+          ),
+          popupCatOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[200px] overflow-hidden flex flex-col'},
+            h('div', {className:'p-2 border-b border-[#F3E8D3]'},
+              h('input', {type:'text', value:popupCatSearch, onChange:e=>setPopupCatSearch(e.target.value), placeholder:'খাত খুঁজুন...', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[10px] px-3 py-2 text-[12px] outline-none'})
+            ),
+            h('div', {className:'overflow-y-auto flex-1'},
+              filteredPopupCats.map(it=> h('button', {key: it.en, type:'button', onClick:()=>{ setPopupCat({en: it.en, bn: it.bn}); setPopupCatOpen(false); setPopupCatSearch(''); }, className:'w-full text-left px-3 py-2 hover:bg-[#F9F5EB] flex items-center gap-2 text-[12px]'},
+                h('span', null, it.icon||''),
+                h('span', {className:'flex-1'}, it.bn + ' - ' + it.en)
+              ))
+            )
+          ) : null
+        ),
+        h('div', {className:'grid grid-cols-2 gap-2 pt-2'},
+          h('button', {onClick:()=>setPopupItem(null), className:'py-3 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] font-bold text-[13px]'}, 'বাতিল'),
+          h('button', {onClick:confirmYes, disabled: !popupAmount || !popupCat, className:'py-3 rounded-[12px] bg-[#2E7D32] text-white font-bold text-[13px] disabled:opacity-40'}, 'Yes - ব্যয়ে যোগ করুন')
+        )
+      )
+    ) : null
+  );
+}
+
+
+
+
 function App(){
   const initial = loadInitialState();
   const [lang, setLang] = useState(loadLS('lifestyle_lang', 'bn'));
@@ -2759,6 +3093,7 @@ function App(){
   const [addType, setAddType] = useState(loadLS('lifestyle_last_addType', null));
 
   const [transactions, setTransactions] = useState(initial.transactions);
+  const [bazarList, setBazarList] = useState(loadLS('lifestyle_bazar_list', []));
   const [peopleGiven, setPeopleGiven] = useState(initial.peopleGiven);
   const [peopleTaken, setPeopleTaken] = useState(initial.peopleTaken);
   const [peopleTrash, setPeopleTrash] = useState(loadLS('lifestyle_people_trash', []));
@@ -3018,6 +3353,7 @@ function App(){
 
   useEffect(()=>{ saveLS('lifestyle_lang', lang); }, [lang]);
   useEffect(()=>{ saveLS('lifestyle_transactions', transactions); }, [transactions]);
+  useEffect(()=>{ saveLS('lifestyle_bazar_list', bazarList); }, [bazarList]);
   useEffect(()=>{ saveLS('lifestyle_people_given', peopleGiven); }, [peopleGiven]);
   useEffect(()=>{ saveLS('lifestyle_people_taken', peopleTaken); }, [peopleTaken]);
   useEffect(()=>{ saveLS('lifestyle_bank_loans', bankLoans); }, [bankLoans]);
@@ -3344,29 +3680,45 @@ setTimeout(()=>{
           )
         )
       ),
-      h('div', {className:'grid grid-cols-1 gap-3'},
-        h('div', {onClick:()=>goHistoryFiltered('income'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform'},
-          h('div', null,
-            h('p', {className:'text-[13px] text-[#8B7355] font-medium'}, t.monthlyIncome),
-            h('p', {className:'text-[22px] font-bold mt-1'}, fmtMoney(monthIncome))
+      h('div', null,
+        h('h2', {className:'text-[18px] font-bold mb-3'}, t.thisMonth || 'Monthly'),
+        h('div', {className:'grid grid-cols-3 gap-3'},
+          h('div', {onClick:()=>goHistoryFiltered('income'), className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, t.monthlyIncome),
+            h('p', {className:'text-[14px] font-bold mt-1 text-[#1B5E20]'}, fmtMoney(monthIncome))
           ),
-          h('div', {className:'w-12 h-12 rounded-full bg-[#E8F5E9] flex items-center justify-center text-[20px]'}, '\u2B06\uFE0F')
-        ),
-        h('div', {onClick:()=>goHistoryFiltered('expense'), className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform'},
-          h('div', null,
-            h('p', {className:'text-[13px] text-[#8B7355] font-medium'}, t.monthlyExpense),
-            h('p', {className:'text-[22px] font-bold mt-1'}, fmtMoney(monthExpense))
+          h('div', {onClick:()=>goHistoryFiltered('expense'), className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, t.monthlyExpense),
+            h('p', {className:'text-[14px] font-bold mt-1 text-[#B71C1C]'}, fmtMoney(monthExpense))
           ),
-          h('div', {className:'w-12 h-12 rounded-full bg-[#FFEBEE] flex items-center justify-center text-[20px]'}, '\u2B07\uFE0F')
-        ),
-        h('div', {onClick:()=>customSetPage('reports'), className:'bg-[#F9F5EB] rounded-[20px] p-4 border border-[#F3E8D3] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform'},
-          h('div', null,
-            h('p', {className:'text-[13px] text-[#8B7355] font-medium'}, t.monthlyBalance),
-            h('p', {className:'text-[22px] font-bold mt-1'}, fmtMoney(monthIncome-monthExpense))
-          ),
-          h('div', {className:'w-12 h-12 rounded-full bg-white flex items-center justify-center text-[20px]'}, '\uD83D\uDCB0')
+          h('div', {onClick:()=>customSetPage('reports'), className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[11px] font-semibold text-[#8B7355]'}, t.monthlyBalance),
+            h('p', {className:'text-[14px] font-bold mt-1'}, fmtMoney(monthIncome-monthExpense))
+          )
         )
       ),
+
+            h('div', null,
+        h('h2', {className:'text-[18px] font-bold mb-3'}, t.bazar||'বাজার'),
+        h('div', {className:'grid grid-cols-3 gap-3'},
+          h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[11px] font-semibold text-[#8B7355]'}, lang==='en' ? 'Bazar List' : 'বাজার লিস্ট'),
+            h('p', {className:'text-[14px] font-bold mt-1'}, (bazarList.length + (lang==='en' ? ' items' : ' টি'))),
+            h('p', {className:'text-[14px] font-bold text-[#2D2A26] mt-1'}, '৳' + bazarList.reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
+          ),
+          h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, lang==='en' ? 'Bought' : 'কেনা হয়েছে'),
+            h('p', {className:'text-[14px] font-bold mt-1 text-[#1B5E20]'}, (bazarList.filter(x=>x.bought).length + (lang==='en' ? ' items' : ' টি'))),
+            h('p', {className:'text-[14px] font-bold text-[#1B5E20] mt-1'}, '৳' + bazarList.filter(x=>x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
+          ),
+          h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, lang==='en' ? 'Not Bought' : 'কেনা হয় নি'),
+            h('p', {className:'text-[14px] font-bold mt-1 text-[#B71C1C]'}, (bazarList.filter(x=>!x.bought).length + (lang==='en' ? ' items' : ' টি'))),
+            h('p', {className:'text-[14px] font-bold text-[#B71C1C] mt-1'}, '৳' + bazarList.filter(x=>!x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
+          )
+        )
+      ),
+
       h('div', null,
         h('h2', {className:'text-[18px] font-bold mb-3'}, t.loansReceivables),
         h('div', {className:'grid grid-cols-2 gap-3'},
@@ -4032,6 +4384,9 @@ setTimeout(()=>{
           h('button', {onClick:()=>{customSetPage('taken'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#E3F2FD] border border-[#BBDEFB] rounded-[20px] p-4 text-left'},
             h('span', {className:'text-[20px]'}, '\uD83D\uDCE5'), h('span', {className:'font-bold text-[15px] text-[#1A4D8F]'}, t.takeLoan)
           ),
+          h('button', {onClick:()=>{setAddType('bazar'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#FFF8E1] border border-[#FFE082] rounded-[20px] p-4 text-left'},
+            h('span', {className:'text-[20px]'}, '🛒'), h('span', {className:'font-bold text-[15px] text-[#8B7355]'}, t.todayBazar||'আজকের বাজার')
+          ),
           h('button', {onClick:()=>{setAddType('bankLoan'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#2D2A26] rounded-[20px] p-4 text-left'},
             h('span', {className:'text-[20px]'}, '\uD83C\uDFE6'), h('span', {className:'font-bold text-[15px] text-white'}, t.bankLoan)
           )
@@ -4053,6 +4408,8 @@ setTimeout(()=>{
       },
         h(BankLoanForm, {t, lang, initial: editingBankLoan, onSave: saveBankLoan})
       ) : null,
+      
+      (addType === 'bazar') ? h(BottomSheet, {title: t.todayBazar||'আজকের বাজার', onClose: ()=>setAddType(null)}, h(BazarManager, {bazarList, setBazarList, transactions, setTransactions, setToast})) : null,
       editingHistoryLoan ? h(BottomSheet, {
         title: (editingHistoryLoan.kind==='given' ? (lang==='en'?'Edit Given - ':'প্রদান সম্পাদনা - ') : (lang==='en'?'Edit Taken - ':'গ্রহণ সম্পাদনা - ')) + editingHistoryLoan.personName,
         onClose: ()=>setEditingHistoryLoan(null)
