@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V16 Bazar-Expense Auto Sync - Income Expense Manager</title>
+<title>Lifestyle V17 Income+Bazar Auto Sync - Income Expense Manager</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -164,7 +164,7 @@ try { firebase.initializeApp(firebaseConfig); try{ firebase.firestore().enablePe
 
     if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v16-bazar-expense-sync';
+        const CACHE='lifestyle-v17-income-bazar-fix';
         self.addEventListener('install', e=>{
           self.skipWaiting();
           e.waitUntil(
@@ -3380,7 +3380,7 @@ function App(){
           const sameTx = JSON.stringify(lastCloudDataRef.current.transactions||[]) === JSON.stringify(d.transactions||[]);
           if(sameBazar && sameTx){ cloudLoadedRef.current=true; return; }
         }
-        if(isFirstLoad || cloudTime > localLastSync){
+        if(true){ // V17 fix: always merge for income sync
           isSyncingFromCloudRef.current = true;
           try{
             const tToday = today();
