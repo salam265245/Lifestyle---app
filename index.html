@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V13 Delete Fix - Income Expense Manager</title>
+<title>Lifestyle V16 Bazar-Expense Auto Sync - Income Expense Manager</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -164,7 +164,7 @@ try { firebase.initializeApp(firebaseConfig); try{ firebase.firestore().enablePe
 
     if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v13-delete-fix';
+        const CACHE='lifestyle-v16-bazar-expense-sync';
         self.addEventListener('install', e=>{
           self.skipWaiting();
           e.waitUntil(
@@ -2715,7 +2715,7 @@ function EmailAuthForm({t, onAuth}){
 
 /* ---------- Main App ---------- */
 
-function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast }){
+function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds }){
   const [bName, setBName] = useState('');
   const [bAmount, setBAmount] = useState('');
   const [bDate, setBDate] = useState(today());
@@ -2883,21 +2883,29 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
         return [tx, ...list];
       }
     });
-    if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে');
+    if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয় খাতে যোগ হয়েছে');
   }
 
   function markNo(item){
     if(item.bought){
       setBazarList(list => list.map(x=> x.id===item.id ? {...x, bought:false} : x));
       setTransactions(list => list.filter(tt => tt.bazarItemId !== item.id));
-      if(typeof setToast==='function') setToast('বাজার + ব্যয় থেকে বাদ দেওয়া হয়েছে');
+      if(typeof setToast==='function') setToast('No করা হয়েছে - ব্যয় থেকে বাদ গেছে');
     }
   }
   function deleteItem(id){
+    if(!confirm('এই আইটেমটি মুছে ফেলবেন?')) return;
     setBazarList(list => list.filter(x=> x.id!==id));
     setTransactions(list => list.filter(tt => tt.bazarItemId !== id));
-    try{ setBazarDeletedIds(list => { const s=new Set([...(list||[]), id]); return Array.from(s); }); }catch(e){}
-    if(typeof setToast==='function') setToast('আইটেম মুছেছে');
+    try{
+      if(typeof setBazarDeletedIds === 'function'){
+        setBazarDeletedIds(prev => {
+          const s = new Set([...(prev||[]), id]);
+          return Array.from(s);
+        });
+      }
+    }catch(e){}
+    if(typeof setToast==='function') setToast('আইটেম মুছেছে - ব্যয় থেকেও বাদ গেছে');
   }
 
   // Hide parent BottomSheet header "Today Bazar" when confirm popup is open
@@ -3259,7 +3267,12 @@ function App(){
     deletedIds = deletedIds || [];
     if(!cloudArr) cloudArr = [];
     if(!localArr) localArr = [];
+    // HARDLY LOCKED FIX: if both empty return empty
     if(!localArr.length && !cloudArr.length) return [];
+    // HARDLY LOCKED FIX: if cloud empty but we have deletedIds, filter local by deletedIds
+    if(cloudArr.length===0 && deletedIds.length>0){
+      return localArr.filter(it=> it && it.id && !deletedIds.includes(it.id));
+    }
     const map = new Map();
     const all = [...cloudArr, ...localArr];
     // First add all, but skip deleted
@@ -3334,7 +3347,7 @@ function App(){
         }
       }catch(e){ console.log('merge before sync error', e); }
       // HARDLY LOCKED: Always include bazarList for auto sync
-      const data = {transactions: mergedTx, peopleGiven: mergedGiven, peopleTaken: mergedTaken, bankLoans: mergedLoans, bazarList: mergedBazar, bazarDeletedIds: bazarDeletedIds, bazarDeletedIds: bazarDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
+      const data = {transactions: mergedTx, peopleGiven: mergedGiven, peopleTaken: mergedTaken, bankLoans: mergedLoans, bazarList: mergedBazar, bazarDeletedIds: bazarDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', new Date(now).getTime());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -3372,13 +3385,16 @@ function App(){
           try{
             const tToday = today();
             const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-            if(d.transactions && d.transactions.length) setTransactions(prev=> mergeById(prev, fixDates(d.transactions)));
+            if(d.transactions && d.transactions.length){ const combinedDel = Array.from(new Set([...(bazarDeletedIds||[]), ...(d.bazarDeletedIds||[])])); const filteredCloudTx = (d.transactions||[]).filter(tt=> !tt.bazarItemId || !combinedDel.includes(tt.bazarItemId)); setTransactions(prev=> { const merged = mergeById(prev, fixDates(filteredCloudTx)); return merged.filter(tt=> !tt.bazarItemId || !combinedDel.includes(tt.bazarItemId)); }); }
             if(d.peopleGiven && d.peopleGiven.length) setPeopleGiven(prev=> mergePeople(prev, d.peopleGiven));
             if(d.peopleTaken && d.peopleTaken.length) setPeopleTaken(prev=> mergePeople(prev, d.peopleTaken));
             if(d.bankLoans && d.bankLoans.length) setBankLoans(prev=> mergeById(prev, d.bankLoans));
                         if(d.bazarDeletedIds) setBazarDeletedIds(prev=>{ const m=new Map(); [...(prev||[]), ...(d.bazarDeletedIds||[])].forEach(id=>m.set(id,id)); return Array.from(m.keys()); });
-            if(d.bazarList) setBazarList(prev=> mergeBazarList(prev, d.bazarList, d.bazarDeletedIds || bazarDeletedIds));
-            if(d.bazarList && d.bazarList.length===0 && (!d.bazarDeletedIds || d.bazarDeletedIds.length===0)) setBazarList([]);
+            if(typeof d.bazarList !== 'undefined'){
+              const combinedDeleted = Array.from(new Set([...(bazarDeletedIds||[]), ...(d.bazarDeletedIds||[])]));
+              setBazarList(prev=> mergeBazarList(prev, d.bazarList, combinedDeleted));
+              if(d.bazarList.length===0) setBazarList(prev=> mergeBazarList(prev, [], combinedDeleted));
+            }
             if(d.userName) setUserName(d.userName);
             if(d.userDesignation) setUserDesignation(d.userDesignation);
             if(d.userAddress) setUserAddress(d.userAddress);
@@ -3421,11 +3437,14 @@ function App(){
     else { if(unsubscribeRef.current){ unsubscribeRef.current(); unsubscribeRef.current=null; } cloudLoadedRef.current=false; }
     return ()=>{ if(unsubscribeRef.current) unsubscribeRef.current(); }
   }, [googleUser]);
-  // HARDLY LOCKED: Immediate auto sync for Bazar List changes - FIXED: allow empty delete sync
+  // HARDLY LOCKED: Immediate auto sync for Bazar List changes - FIXED: allow empty delete sync (merged to avoid double write)
   useEffect(()=>{
     if(!googleUser || !googleUser.uid) return;
     if(!cloudLoadedRef.current) return;
-    const t = setTimeout(()=>{ syncToCloud(googleUser, true); }, 300);
+    // Debounce already handled in main sync effect, this ensures delete of all items also syncs
+    const t = setTimeout(()=>{ 
+      if(bazarList.length===0) syncToCloud(googleUser, true); 
+    }, 400);
     return ()=>clearTimeout(t);
   }, [bazarList, bazarDeletedIds]);
 
@@ -4527,7 +4546,7 @@ setTimeout(()=>{
         h(BankLoanForm, {t, lang, initial: editingBankLoan, onSave: saveBankLoan})
       ) : null,
       
-      (addType === 'bazar') ? h(BottomSheet, {title: t.todayBazar||'আজকের বাজার', onClose: ()=>setAddType(null)}, h(BazarManager, {bazarList, setBazarList, transactions, setTransactions, setToast})) : null,
+      (addType === 'bazar') ? h(BottomSheet, {title: t.todayBazar||'আজকের বাজার', onClose: ()=>setAddType(null)}, h(BazarManager, {bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds})) : null,
       editingHistoryLoan ? h(BottomSheet, {
         title: (editingHistoryLoan.kind==='given' ? (lang==='en'?'Edit Given - ':'প্রদান সম্পাদনা - ') : (lang==='en'?'Edit Taken - ':'গ্রহণ সম্পাদনা - ')) + editingHistoryLoan.personName,
         onClose: ()=>setEditingHistoryLoan(null)
