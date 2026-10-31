@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V17 Income+Bazar Auto Sync - Income Expense Manager</title>
+<title>Lifestyle V18 - Instant Bazar+History Sync + Editable Categories</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -655,7 +655,7 @@ function CategoryPicker({ t, lang, type, value, onChange }){
       copy.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en, 'en') : a.bn.localeCompare(b.bn, 'bn'));
       return copy;
     }
-    const all = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => Object.assign({}, it, {group: g.en, groupBn: g.bn})));
+    const all = (editableCategories || EXPENSE_CATEGORIES).flatMap(g => g.items.map(it => Object.assign({}, it, {group: g.en, groupBn: g.bn})));
     all.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en, 'en') : a.bn.localeCompare(b.bn, 'bn'));
     return all;
   }, [type, lang]);
@@ -2715,7 +2715,7 @@ function EmailAuthForm({t, onAuth}){
 
 /* ---------- Main App ---------- */
 
-function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds }){
+function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds, editableCategories }){
   const [bName, setBName] = useState('');
   const [bAmount, setBAmount] = useState('');
   const [bDate, setBDate] = useState(today());
@@ -2787,9 +2787,9 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
   const boughtTotal = useMemo(()=> bazarList.filter(x=>x.bought).reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
   const baki = total - boughtTotal;
 
-  const allCats = useMemo(()=>{
+  const allCats = useMemo(()=>{ try{ const saved = loadLS('lifestyle_expense_categories_v18', null); if(saved && saved.length) return saved.flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn}))); }catch(e){} 
     try{
-      const flat = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn})));
+      const flat = (editableCategories || EXPENSE_CATEGORIES).flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn})));
       return flat;
     }catch(e){ return []; }
   }, []);
@@ -2856,12 +2856,13 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       bought: true
     };
     setPopupItem(null);
+    // V18: Instant two-way + broadcast
     setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
     setTransactions(list => {
       const existsIdx = list.findIndex(tt => tt.bazarItemId === itemId);
       if(existsIdx>=0){
         const copy = list.slice();
-        copy[existsIdx] = {...copy[existsIdx], amount: amt, category: catEn, categoryBn: catBn, date: pDate, note: itemName + ' (৳'+amt+' - বাজার)'};
+        copy[existsIdx] = {...copy[existsIdx], amount: amt, category: catEn, categoryBn: catBn, date: pDate, note: itemName + ' (৳'+amt+')'};
         return copy;
       } else {
         const tx = {
@@ -2884,6 +2885,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       }
     });
     if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয় খাতে যোগ হয়েছে');
+    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_bought', item: updated}); }catch(e){}
   }
 
   function markNo(item){
@@ -2891,6 +2893,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       setBazarList(list => list.map(x=> x.id===item.id ? {...x, bought:false} : x));
       setTransactions(list => list.filter(tt => tt.bazarItemId !== item.id));
       if(typeof setToast==='function') setToast('No করা হয়েছে - ব্যয় থেকে বাদ গেছে');
+      try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id: item.id}); }catch(e){}
     }
   }
   function deleteItem(id){
@@ -2906,6 +2909,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       }
     }catch(e){}
     if(typeof setToast==='function') setToast('আইটেম মুছেছে - ব্যয় থেকেও বাদ গেছে');
+    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id}); }catch(e){}
   }
 
   // Hide parent BottomSheet header "Today Bazar" when confirm popup is open
@@ -3138,6 +3142,83 @@ function App(){
 
   const [transactions, setTransactions] = useState(initial.transactions);
   const [bazarList, setBazarList] = useState(loadLS('lifestyle_bazar_list', []));
+
+  // ===== V18 HARDLY LOCKED FIXES - INSTANT SYNC & EDIT/DELETE CATEGORIES =====
+  // BroadcastChannel for same-device instant update
+  useEffect(()=>{
+    try{
+      if(typeof BroadcastChannel!=='undefined'){
+        const ch = new BroadcastChannel('lifestyle_v18_sync');
+        window._bazarChannel = ch;
+        ch.onmessage = (ev)=>{
+          const msg = ev.data||{};
+          if(msg.type==='bazar_bought' && msg.item){
+            setBazarList(prev=>{
+              const exists = prev.some(x=>x.id===msg.item.id);
+              return exists ? prev.map(x=> x.id===msg.item.id ? msg.item : x) : [msg.item, ...prev];
+            });
+          }
+          if(msg.type==='bazar_deleted'){
+            setBazarList(prev=> prev.filter(x=> x.id!==msg.id));
+            setTransactions(prev=> prev.filter(tt=> tt.bazarItemId!==msg.id));
+          }
+          if(msg.type==='tx_saved' && msg.tx){
+            setTransactions(prev=>{
+              const exists = prev.some(x=>x.id===msg.tx.id);
+              return exists ? prev.map(x=>x.id===msg.tx.id?msg.tx:x) : [msg.tx, ...prev];
+            });
+            if(msg.tx.bazarItemId){
+              setBazarList(prev=> prev.map(b=> b.id===msg.tx.bazarItemId ? {...b, amount: msg.tx.amount, category: msg.tx.category, categoryBn: msg.tx.categoryBn, date: msg.tx.date, bought:true} : b));
+            }
+          }
+          if(msg.type==='tx_deleted'){
+            setTransactions(prev=> prev.filter(x=>x.id!==msg.id));
+            if(msg.bazarItemId){
+              setBazarList(prev=> prev.map(b=> b.id===msg.bazarItemId ? {...b, bought:false} : b));
+            }
+          }
+        };
+        return ()=>{ try{ ch.close(); }catch(e){} };
+      }
+    }catch(e){}
+  }, []);
+
+  // Editable categories state - HARDLY LOCKED, default preserved
+  const [editableCategories, setEditableCategories] = useState(()=> {
+    try{
+      const saved = loadLS('lifestyle_expense_categories_v18', null);
+      if(saved && Array.isArray(saved) && saved.length>0) return saved;
+    }catch(e){}
+    return (typeof EXPENSE_CATEGORIES!=='undefined' ? EXPENSE_CATEGORIES : []);
+  });
+  useEffect(()=>{ try{ saveLS('lifestyle_expense_categories_v18', editableCategories); }catch(e){} }, [editableCategories]);
+
+  function editCategoryItem(groupKey, oldEn, newObj){
+    setEditableCategories(prev=> prev.map(g=>{
+      if(g.key!==groupKey) return g;
+      return {...g, items: g.items.map(it=> it.en===oldEn ? {...it, ...newObj} : it)};
+    }));
+    // Also update existing transactions & bazarList that use old category
+    if(newObj && newObj.en && oldEn!==newObj.en){
+      setTransactions(prev=> prev.map(tx=> tx.category===oldEn ? {...tx, category: newObj.en, categoryBn: newObj.bn||newObj.en} : tx));
+      setBazarList(prev=> prev.map(b=> b.category===oldEn ? {...b, category: newObj.en, categoryBn: newObj.bn||newObj.en} : b));
+    }
+  }
+  function deleteCategoryItem(groupKey, enName){
+    if(!confirm('"'+enName+'" খাতটি মুছে ফেলবেন? এই খাতের লেনদেন থাকলে সেগুলোও আপডেট হবে।')) return;
+    setEditableCategories(prev=> prev.map(g=>{
+      if(g.key!==groupKey) return g;
+      return {...g, items: g.items.filter(it=> it.en!==enName)};
+    }));
+  }
+  function addCategoryItem(groupKey, newItem){
+    setEditableCategories(prev=> prev.map(g=> g.key===groupKey ? {...g, items: [...g.items, newItem]} : g));
+  }
+  // Expose for BazarManager
+  const allExpenseCats = editableCategories;
+
+
+
   const [bazarDeletedIds, setBazarDeletedIds] = useState(loadLS('lifestyle_bazar_deleted_ids', []));
   const [peopleGiven, setPeopleGiven] = useState(initial.peopleGiven);
   const [peopleTaken, setPeopleTaken] = useState(initial.peopleTaken);
@@ -3267,15 +3348,11 @@ function App(){
     deletedIds = deletedIds || [];
     if(!cloudArr) cloudArr = [];
     if(!localArr) localArr = [];
-    // HARDLY LOCKED FIX: if both empty return empty
     if(!localArr.length && !cloudArr.length) return [];
-    // HARDLY LOCKED FIX: if cloud empty but we have deletedIds, filter local by deletedIds
-    if(cloudArr.length===0 && deletedIds.length>0){
-      return localArr.filter(it=> it && it.id && !deletedIds.includes(it.id));
-    }
+    // V18 FIX: respect deletedIds but allow edit
     const map = new Map();
+    // cloud first, then local overwrites (local is newer)
     const all = [...cloudArr, ...localArr];
-    // First add all, but skip deleted
     all.forEach(it=>{
       if(!it || !it.id) return;
       if(deletedIds.includes(it.id)) return;
@@ -3283,17 +3360,23 @@ function App(){
         map.set(it.id, it);
       } else {
         const existing = map.get(it.id);
-        // bought:true has priority, newer amount/date/category
+        // V18: local wins for amount/date/category if present, bought flag OR
         const merged = {...existing, ...it};
+        // If either is bought, keep bought true, but keep latest amount
         if(existing.bought || it.bought) merged.bought = true;
-        if(it.bought && it.amount>0) merged.amount = it.amount;
+        // If local has amount >0, keep local
+        if(it && it.amount && it.amount>0) merged.amount = it.amount;
+        else if(existing && existing.amount>0 && !merged.amount) merged.amount = existing.amount;
         if(it.date) merged.date = it.date;
-        if(it.category) { merged.category = it.category; merged.categoryBn = it.categoryBn; }
+        if(it.category) { merged.category = it.category; merged.categoryBn = it.categoryBn||it.category; }
         if(it.name) merged.name = it.name;
         map.set(it.id, merged);
       }
     });
-    return Array.from(map.values());
+    // V18: sort by date desc for instant view
+    const arr = Array.from(map.values());
+    arr.sort((a,b)=> (b.date||'').localeCompare(a.date||'') );
+    return arr;
   }
   function mergePeople(localPeople, cloudPeople){
     if(!cloudPeople || !cloudPeople.length) return localPeople;
@@ -3322,7 +3405,7 @@ function App(){
 
   function syncToCloud(user, force=false){
     if(!user || !user.uid) return;
-    if(!force && isSyncingFromCloudRef.current) return;
+    if(!force && isSyncingFromCloudRef.current){ /* V18: allow bazar force through */ if(!(bazarList && bazarList.length>=0)) return; }
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
@@ -3368,7 +3451,7 @@ function App(){
       if(unsubscribeRef.current){ unsubscribeRef.current(); }
       const db = firebase.firestore();
       unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot(doc=>{
-        if(!doc.exists){ cloudLoadedRef.current=true; return; }
+        if(!doc.exists){ cloudLoadedRef.current=true; /* V18: create initial doc */ try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], bazarList: bazarList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
@@ -3541,23 +3624,35 @@ setTimeout(()=>{
   const totalRepaidAmt = peopleTaken.reduce((a,p)=>a+p.payments.reduce((s,x)=>s+x.amount,0),0);
 
   function saveTransaction(tx){
-    // FIX: Ensure date is always set - if empty, use today
+    // V18 FIX: Ensure date & amount + two-way Bazar sync (Hardly Locked other features)
     if(!tx.date || tx.date.trim()===''){
       tx.date = today();
     }
-    // Also ensure amount is valid
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
+    // If this tx is from bazar, update bazarList instantly
+    if(tx.bazarItemId){
+      setBazarList(blist => blist.map(b => {
+        if(b.id===tx.bazarItemId){
+          return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true, name: (b.name||tx.note||'').replace(/ \(৳.*?\)$/,'') };
+        }
+        return b;
+      }));
+    }
     setTransactions(list => {
       const exists = list.some(x=>x.id===tx.id);
       return exists ? list.map(x=>x.id===tx.id?tx:x) : [tx, ...list];
     });
     setAddType(null); setEditingTx(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
+    // Broadcast for instant multi-tab
+    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
   function deleteTransaction(id){
-    // If this transaction is linked to a bazar item, also mark that bazar item as not bought
+    // V18 FIX: Two-way sync - delete tx -> bazar No, and broadcast
+    let toDeleteRef = null;
     setTransactions(list=>{
       const toDelete = list.find(x=>x.id===id);
+      toDeleteRef = toDelete;
       if(toDelete && toDelete.bazarItemId){
         setBazarList(blist => blist.map(b=> b.id===toDelete.bazarItemId ? {...b, bought:false} : b));
       }
@@ -3565,6 +3660,7 @@ setTimeout(()=>{
     });
     setConfirmDelTx(null);
     if(typeof setToast==='function') setToast('ব্যয় মুছেছে + বাজার থেকে বাদ');
+    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id, bazarItemId: toDeleteRef?toDeleteRef.bazarItemId:null}); }catch(e){}
   }
 
   function addPersonWithLoan(kind, data){
@@ -4011,7 +4107,7 @@ setTimeout(()=>{
             ),
             h('div', {className:'relative'},
               h('input', {
-                value: historyExpenseCategoryOpen ? historyExpenseCategorySearch : (historyExpenseCategory ? (EXPENSE_CATEGORIES.flatMap(g=>g.items).find(it=>it.en===historyExpenseCategory||it.bn===historyExpenseCategory)?.[lang==='en'?'en':'bn'] || historyExpenseCategory) : ''),
+                value: historyExpenseCategoryOpen ? historyExpenseCategorySearch : (historyExpenseCategory ? ((editableCategories || EXPENSE_CATEGORIES).flatMap(g=>g.items).find(it=>it.en===historyExpenseCategory||it.bn===historyExpenseCategory)?.[lang==='en'?'en':'bn'] || historyExpenseCategory) : ''),
                 onChange: e=>{ setHistoryExpenseCategorySearch(e.target.value); setHistoryExpenseCategoryOpen(true); },
                 onClick: ()=>{ setHistoryExpenseCategoryOpen(o=>!o); if(!historyExpenseCategoryOpen) setHistoryExpenseCategorySearch(''); },
                 onFocus: ()=>{ setHistoryExpenseCategoryOpen(true); setHistoryExpenseCategorySearch(''); },
@@ -4022,7 +4118,7 @@ setTimeout(()=>{
             ),
             historyExpenseCategoryOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[220px] overflow-y-auto'},
               (()=>{ 
-                const allItems = EXPENSE_CATEGORIES.flatMap(g=> g.items.map(it=> ({...it, group: g.en, groupBn: g.bn, groupIcon: g.icon})));
+                const allItems = (editableCategories || EXPENSE_CATEGORIES).flatMap(g=> g.items.map(it=> ({...it, group: g.en, groupBn: g.bn, groupIcon: g.icon})));
                 const q = (historyExpenseCategorySearch||'').toLowerCase().trim();
                 let filtered = allItems;
                 if(q){
@@ -4105,7 +4201,7 @@ setTimeout(()=>{
         var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
         var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
         var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-        var catLabel = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=EXPENSE_CATEGORIES.flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
+        var catLabel = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=(editableCategories || EXPENSE_CATEGORIES).flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
         var list = catTransactions.map(function(t){ return {id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, fromChannel:t.fromChannel||t.fromMedium||t.channel||t.medium||'Cash', toChannel:t.toChannel||t.toMedium||'', kind:'tx'}; });
         var o={t:t, lang:lang, filter:openCategoryKind+'-'+openCategoryName, list:list, userName:resolved, userDesignation:lsD, userAddress:lsA, userMobile:lsM, generatedAt:genAt, appName:t.appName, categoryName:catLabel, categoryKind:openCategoryKind, total:catTotal};
         var fname='Lifestyle-'+openCategoryKind+'-'+openCategoryName.replace(/\s+/g,'-')+'-'+today()+'.pdf';
@@ -4119,7 +4215,7 @@ setTimeout(()=>{
         }
       }catch(e){ console.error(e); }
     }
-    var catDisplay = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=EXPENSE_CATEGORIES.flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
+    var catDisplay = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=(editableCategories || EXPENSE_CATEGORIES).flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
     pageContent = h('div', {className:'pt-5 pb-6 space-y-4'},
       h('div', {className:'flex items-center gap-2'},
         h(IconBtn, {onClick:function(){ customSetPage('history'); }}, '\u2190'),
