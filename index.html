@@ -3283,18 +3283,41 @@ function App(){
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
+      // HARDLY LOCKED: Merge with cloud data to prevent overwriting smaller list - fixes same Gmail multi-device sync
+      let mergedBazar = bazarList;
+      let mergedTx = transactions;
+      let mergedGiven = peopleGiven;
+      let mergedTaken = peopleTaken;
+      let mergedLoans = bankLoans;
+      try{
+        const last = lastCloudDataRef.current;
+        if(last){
+          if(last.bazarList && last.bazarList.length){
+            const map = new Map();
+            (last.bazarList||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
+            (bazarList||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
+            mergedBazar = Array.from(map.values());
+          }
+          if(last.transactions && last.transactions.length){
+            const map = new Map();
+            (last.transactions||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
+            (transactions||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
+            mergedTx = Array.from(map.values());
+          }
+        }
+      }catch(e){ console.log('merge before sync error', e); }
       // HARDLY LOCKED: Always include bazarList for auto sync
-      const data = {transactions, peopleGiven, peopleTaken, bankLoans, bazarList, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
+      const data = {transactions: mergedTx, peopleGiven: mergedGiven, peopleTaken: mergedTaken, bankLoans: mergedLoans, bazarList: mergedBazar, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', new Date(now).getTime());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
         setLastSyncTime(timeStr);
-        setSyncStatus('✓ Synced ' + new Date(now).toLocaleTimeString('bn-BD'));
+        setSyncStatus('✓ Synced ' + new Date(now).toLocaleTimeString('bn-BD') + ' ('+mergedBazar.length+' bazar)');
         lastCloudDataRef.current = data;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
-        console.log('syncToCloud success with bazarList', bazarList.length);
+        console.log('syncToCloud success with bazarList', mergedBazar.length, 'tx', mergedTx.length);
       }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e)); });
     }catch(e){ console.log('syncToCloud',e); }
   }
@@ -3321,7 +3344,7 @@ function App(){
             if(d.peopleGiven && d.peopleGiven.length) setPeopleGiven(prev=> mergePeople(prev, d.peopleGiven));
             if(d.peopleTaken && d.peopleTaken.length) setPeopleTaken(prev=> mergePeople(prev, d.peopleTaken));
             if(d.bankLoans && d.bankLoans.length) setBankLoans(prev=> mergeById(prev, d.bankLoans));
-            if(d.bazarList && d.bazarList.length) setBazarList(prev=> mergeById(prev, d.bazarList));
+            if(d.bazarList) setBazarList(prev=> mergeById(prev, d.bazarList));
             if(d.userName) setUserName(d.userName);
             if(d.userDesignation) setUserDesignation(d.userDesignation);
             if(d.userAddress) setUserAddress(d.userAddress);
