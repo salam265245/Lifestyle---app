@@ -3277,12 +3277,13 @@ function App(){
     return Array.from(map.values());
   }
 
-  function syncToCloud(user){
+  function syncToCloud(user, force=false){
     if(!user || !user.uid) return;
-    if(isSyncingFromCloudRef.current) return;
+    if(!force && isSyncingFromCloudRef.current) return;
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
+      // HARDLY LOCKED: Always include bazarList for auto sync
       const data = {transactions, peopleGiven, peopleTaken, bankLoans, bazarList, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', new Date(now).getTime());
@@ -3293,7 +3294,8 @@ function App(){
         lastCloudDataRef.current = data;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
-      }).catch(e=>{ console.log('syncToCloud err',e); });
+        console.log('syncToCloud success with bazarList', bazarList.length);
+      }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e)); });
     }catch(e){ console.log('syncToCloud',e); }
   }
 
@@ -3344,9 +3346,16 @@ function App(){
   useEffect(()=>{
     if(!googleUser || !googleUser.uid) return;
     if(!cloudLoadedRef.current) return;
-    if(isSyncingFromCloudRef.current) return;
+    // For bazarList, force sync even if isSyncingFromCloudRef is true
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
-    syncDebounceRef.current = setTimeout(()=>{ syncToCloud(googleUser); }, 1500);
+    const isBazarChange = true; // always allow force for now
+    syncDebounceRef.current = setTimeout(()=>{ 
+      if(isBazarChange){
+        syncToCloud(googleUser, true); // force sync for bazarList
+      } else {
+        syncToCloud(googleUser); 
+      }
+    }, 800);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
   }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
@@ -3355,6 +3364,16 @@ function App(){
     else { if(unsubscribeRef.current){ unsubscribeRef.current(); unsubscribeRef.current=null; } cloudLoadedRef.current=false; }
     return ()=>{ if(unsubscribeRef.current) unsubscribeRef.current(); }
   }, [googleUser]);
+  // HARDLY LOCKED: Immediate auto sync for Bazar List changes
+  useEffect(()=>{
+    if(!googleUser || !googleUser.uid) return;
+    if(!bazarList || bazarList.length===0) return;
+    if(!cloudLoadedRef.current) return;
+    // Debounce immediate sync for bazar
+    const t = setTimeout(()=>{ syncToCloud(googleUser, true); }, 500);
+    return ()=>clearTimeout(t);
+  }, [bazarList]);
+
 
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
