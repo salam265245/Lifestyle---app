@@ -2787,31 +2787,6 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
   const boughtTotal = useMemo(()=> bazarList.filter(x=>x.bought).reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
   const baki = total - boughtTotal;
 
-  // AUTO-HEAL: If bazar marked bought but expense missing, recreate it (fixes old bug) - safe version
-  useEffect(()=>{
-    try{
-      const bl = (typeof bazarList!=='undefined' && bazarList) ? bazarList : [];
-      const tr = (typeof transactions!=='undefined' && transactions) ? transactions : [];
-      if(!bl.length) return;
-      const missing = bl.filter(b => b && b.bought && (parseFloat(b.amount)||0)>0 && !tr.some(tt => tt && tt.bazarItemId === b.id));
-      if(missing.length===0) return;
-      const toAdd = missing.map(b => ({
-        id: (typeof uid==='function'?uid():'bazar-'+Date.now()+'-'+Math.random()),
-        bazarItemId: b.id,
-        type: 'expense',
-        amount: parseFloat(b.amount)||0,
-        category: b.category || 'Groceries',
-        categoryBn: b.categoryBn || b.category || 'মুদি বাজার',
-        date: b.date || (typeof today==='function'?today():new Date().toISOString().slice(0,10)),
-        note: (b.name||'বাজার') + ' (৳'+(parseFloat(b.amount)||0)+' - আজকের বাজার)',
-        medium: 'Cash', channel: 'Cash', fromChannel: 'Cash', toChannel: 'Cash', fromMedium: 'Cash', toMedium: 'Cash'
-      }));
-      if(toAdd.length>0){
-        setTransactions(list => [...toAdd, ...list]);
-      }
-    }catch(e){ console.error('bazar auto-heal', e); }
-  }, []);
-
   const allCats = useMemo(()=>{
     try{
       const flat = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn})));
@@ -2861,62 +2836,52 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
   }
 
   function confirmYes(){
-    try{
-      if(!popupItem) return;
-      if(!popupAmount || !popupCat){
-        if(typeof setToast==='function') setToast('দাম ও খাত দিন');
-        return;
-      }
-      const itemId = popupItem.id;
-      const itemName = popupItem.name || 'বাজার';
-      const amt = parseFloat(popupAmount)||0;
-      const txDate = (typeof popupDate!=='undefined' && popupDate) ? popupDate : (typeof today==='function'?today():new Date().toISOString().slice(0,10));
-      const updated = {
-        ...popupItem,
-        amount: amt,
-        category: popupCat.en,
-        categoryBn: popupCat.bn,
-        date: txDate,
-        bought: true
-      };
-      // Update bazar list and expense BEFORE closing popup
-      try{ setBazarList(list => (list||[]).map(x=> x.id===itemId ? updated : x)); }catch(e){ console.error(e); }
-      try{
-        setTransactions(list => {
-          const l = list||[];
-          const idx = l.findIndex(tt => tt && tt.bazarItemId === itemId);
-          if(idx >= 0){
-            const copy = l.slice();
-            copy[idx] = {...copy[idx], amount: amt, category: popupCat.en, categoryBn: popupCat.bn, date: txDate, note: itemName + ' (৳'+amt+' - আজকের বাজার)'};
-            return copy;
-          } else {
-            const tx = {
-              id: (typeof uid==='function'?uid():'tx-'+Date.now()+'-'+Math.random()),
-              bazarItemId: itemId,
-              type: 'expense',
-              amount: amt,
-              category: popupCat.en,
-              categoryBn: popupCat.bn,
-              date: txDate,
-              note: itemName + ' (৳'+amt+' - আজকের বাজার)',
-              medium: 'Cash',
-              channel: 'Cash',
-              fromChannel: 'Cash',
-              toChannel: 'Cash',
-              fromMedium: 'Cash',
-              toMedium: 'Cash'
-            };
-            return [tx, ...l];
-          }
-        });
-      }catch(e){ console.error('setTransactions fail', e); }
-      setPopupItem(null);
-      if(typeof setToast==='function') try{ setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে'); }catch(e){}
-    }catch(e){
-      console.error('confirmYes crash', e);
-      try{ setPopupItem(null); }catch(e2){}
-      try{ if(typeof setToast==='function') setToast('সমস্যা হয়েছে, আবার চেষ্টা করুন'); }catch(e3){}
+    if(!popupItem) return;
+    if(!popupAmount || !popupCat){
+      if(typeof setToast==='function') setToast('দাম ও খাত দিন');
+      return;
     }
+    // Prevent duplicate expense for same bazar item
+    const exists = transactions.some(tt => tt.bazarItemId === popupItem.id);
+    if(exists){
+      if(typeof setToast==='function') setToast('আগেই ব্যয়ে যোগ আছে');
+      setPopupItem(null);
+      return;
+    }
+    const itemId = popupItem.id;
+    const itemName = popupItem.name;
+    const amt = parseFloat(popupAmount)||0;
+    const updated = {
+      ...popupItem,
+      amount: amt,
+      category: popupCat.en,
+      categoryBn: popupCat.bn,
+      date: popupDate || today(),
+      bought: true
+    };
+    // CLOSE POPUP FIRST - so user sees green immediately
+    setPopupItem(null);
+    // Then update Bazar List to GREEN
+    setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
+    // Then add to Expense
+    const tx = {
+      id: uid(),
+      bazarItemId: itemId,
+      type: 'expense',
+      amount: amt,
+      category: popupCat.en,
+      categoryBn: popupCat.bn,
+      date: popupDate || today(),
+      note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')',
+      medium: 'Cash',
+      channel: 'Cash',
+      fromChannel: 'Cash',
+      toChannel: 'Cash',
+      fromMedium: 'Cash',
+      toMedium: 'Cash'
+    };
+    setTransactions(list => [tx, ...list]);
+    if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে');
   }
 
   function markNo(item){
@@ -3318,7 +3283,7 @@ function App(){
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
-      const data = {transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
+      const data = {transactions, peopleGiven, peopleTaken, bankLoans, bazarList, userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', new Date(now).getTime());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -3354,6 +3319,7 @@ function App(){
             if(d.peopleGiven && d.peopleGiven.length) setPeopleGiven(prev=> mergePeople(prev, d.peopleGiven));
             if(d.peopleTaken && d.peopleTaken.length) setPeopleTaken(prev=> mergePeople(prev, d.peopleTaken));
             if(d.bankLoans && d.bankLoans.length) setBankLoans(prev=> mergeById(prev, d.bankLoans));
+            if(d.bazarList && d.bazarList.length) setBazarList(prev=> mergeById(prev, d.bazarList));
             if(d.userName) setUserName(d.userName);
             if(d.userDesignation) setUserDesignation(d.userDesignation);
             if(d.userAddress) setUserAddress(d.userAddress);
@@ -3382,7 +3348,7 @@ function App(){
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     syncDebounceRef.current = setTimeout(()=>{ syncToCloud(googleUser); }, 1500);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
-  }, [transactions, peopleGiven, peopleTaken, bankLoans, userName, userDesignation, userAddress, userMobile, profilePhoto]);
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
   useEffect(()=>{
     if(googleUser){ syncFromCloud(googleUser); }
@@ -3495,8 +3461,16 @@ setTimeout(()=>{
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
   }
   function deleteTransaction(id){
-    setTransactions(list=>list.filter(x=>x.id!==id));
+    // If this transaction is linked to a bazar item, also mark that bazar item as not bought
+    setTransactions(list=>{
+      const toDelete = list.find(x=>x.id===id);
+      if(toDelete && toDelete.bazarItemId){
+        setBazarList(blist => blist.map(b=> b.id===toDelete.bazarItemId ? {...b, bought:false} : b));
+      }
+      return list.filter(x=>x.id!==id);
+    });
     setConfirmDelTx(null);
+    if(typeof setToast==='function') setToast('ব্যয় মুছেছে + বাজার থেকে বাদ');
   }
 
   function addPersonWithLoan(kind, data){
