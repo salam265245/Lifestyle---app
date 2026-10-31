@@ -3399,9 +3399,16 @@ function App(){
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
         const localLastSync = parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
         const isFirstLoad = !cloudLoadedRef.current;
-        // V18.3 FIX: Removed same-check block - always allow cloudTime check
-        // FIXED V18.2: Replace, Not Merge - Cloud is Truth for Delete/Edit propagation
-        if(isFirstLoad || cloudTime > localLastSync || !localLastSync){
+        // V18.6 ULTIMATE FIX: Cloud is Truth + Device Check - prevent echo loop
+        const localDeviceId = localStorage.getItem('lifestyle_device_id') || '';
+        const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId;
+        // Skip if this is our own write that we just uploaded (avoid echo)
+        if(isOwnWrite && !isFirstLoad){
+          lastCloudDataRef.current = d;
+          saveLS('lifestyle_last_sync', cloudTime || Date.now());
+          cloudLoadedRef.current = true;
+          // Don't re-apply, but update time
+        } else if(isFirstLoad || cloudTime > localLastSync || !localLastSync || !isOwnWrite){
           isSyncingFromCloudRef.current = true;
           try{
             const tToday = today();
@@ -3436,7 +3443,8 @@ function App(){
 
   useEffect(()=>{
     if(!googleUser || !googleUser.uid) return;
-    if(!cloudLoadedRef.current) return;
+    // V18.6: Allow sync even if cloud not yet loaded, but only if we have data (fixes first input not syncing)
+    if(!cloudLoadedRef.current && (transactions||[]).length===0 && (bazarList||[]).length===0) return;
     // For bazarList, force sync even if isSyncingFromCloudRef is true
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     const isBazarChange = true; // always allow force for now
