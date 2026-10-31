@@ -2841,16 +2841,10 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       if(typeof setToast==='function') setToast('দাম ও খাত দিন');
       return;
     }
-    // Prevent duplicate expense for same bazar item
-    const exists = transactions.some(tt => tt.bazarItemId === popupItem.id);
-    if(exists){
-      if(typeof setToast==='function') setToast('আগেই ব্যয়ে যোগ আছে');
-      setPopupItem(null);
-      return;
-    }
     const itemId = popupItem.id;
     const itemName = popupItem.name;
     const amt = parseFloat(popupAmount)||0;
+    const exists = transactions.some(tt => tt.bazarItemId === popupItem.id);
     const updated = {
       ...popupItem,
       amount: amt,
@@ -2859,29 +2853,35 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       date: popupDate || today(),
       bought: true
     };
-    // CLOSE POPUP FIRST - so user sees green immediately
+    // CLOSE POPUP FIRST
     setPopupItem(null);
-    // Then update Bazar List to GREEN
+    // Update Bazar List to GREEN with new amount/date/category
     setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
-    // Then add to Expense
-    const tx = {
-      id: uid(),
-      bazarItemId: itemId,
-      type: 'expense',
-      amount: amt,
-      category: popupCat.en,
-      categoryBn: popupCat.bn,
-      date: popupDate || today(),
-      note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')',
-      medium: 'Cash',
-      channel: 'Cash',
-      fromChannel: 'Cash',
-      toChannel: 'Cash',
-      fromMedium: 'Cash',
-      toMedium: 'Cash'
-    };
-    setTransactions(list => [tx, ...list]);
-    if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে');
+    if(exists){
+      // HARDLY LOCKED: Edit existing expense if already bought - update amount/date/category
+      setTransactions(list => list.map(tt=> tt.bazarItemId===itemId ? {...tt, amount: amt, category: popupCat.en, categoryBn: popupCat.bn, date: popupDate || today(), note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')'} : tt));
+      if(typeof setToast==='function') setToast('✓ '+itemName+' আপডেট - ৳'+amt);
+    } else {
+      // Add new expense
+      const tx = {
+        id: uid(),
+        bazarItemId: itemId,
+        type: 'expense',
+        amount: amt,
+        category: popupCat.en,
+        categoryBn: popupCat.bn,
+        date: popupDate || today(),
+        note: itemName + ' (৳'+amt+' - ' + (t.todayBazar||'আজকের বাজার') + ')',
+        medium: 'Cash',
+        channel: 'Cash',
+        fromChannel: 'Cash',
+        toChannel: 'Cash',
+        fromMedium: 'Cash',
+        toMedium: 'Cash'
+      };
+      setTransactions(list => [tx, ...list]);
+      if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে');
+    }
   }
 
   function markNo(item){
