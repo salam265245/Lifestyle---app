@@ -3399,12 +3399,7 @@ function App(){
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
         const localLastSync = parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
         const isFirstLoad = !cloudLoadedRef.current;
-        // FIXED: don't skip only by updatedAt, check content length - allow fast sync
-        if(lastCloudDataRef.current && lastCloudDataRef.current.updatedAt === d.updatedAt){
-          const sameBazar = JSON.stringify(lastCloudDataRef.current.bazarList||[]) === JSON.stringify(d.bazarList||[]);
-          const sameTx = JSON.stringify(lastCloudDataRef.current.transactions||[]) === JSON.stringify(d.transactions||[]);
-          if(sameBazar && sameTx){ cloudLoadedRef.current=true; return; }
-        }
+        // V18.3 FIX: Removed same-check block - always allow cloudTime check
         // FIXED V18.2: Replace, Not Merge - Cloud is Truth for Delete/Edit propagation
         if(isFirstLoad || cloudTime > localLastSync || !localLastSync){
           isSyncingFromCloudRef.current = true;
