@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V18 - Instant Bazar+History Sync + Editable Categories</title>
+<title>Lifestyle V18.1 Fixed - Income Edit + Plus Button</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -655,7 +655,12 @@ function CategoryPicker({ t, lang, type, value, onChange }){
       copy.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en, 'en') : a.bn.localeCompare(b.bn, 'bn'));
       return copy;
     }
-    const all = (editableCategories || EXPENSE_CATEGORIES).flatMap(g => g.items.map(it => Object.assign({}, it, {group: g.en, groupBn: g.bn})));
+    let cats = EXPENSE_CATEGORIES;
+    try{
+      const saved = loadLS('lifestyle_expense_categories_v18', null);
+      if(saved && Array.isArray(saved) && saved.length>0) cats = saved;
+    }catch(e){}
+    const all = cats.flatMap(g => g.items.map(it => Object.assign({}, it, {group: g.en, groupBn: g.bn})));
     all.sort((a,b)=> lang==='en' ? a.en.localeCompare(b.en, 'en') : a.bn.localeCompare(b.bn, 'bn'));
     return all;
   }, [type, lang]);
@@ -2715,7 +2720,7 @@ function EmailAuthForm({t, onAuth}){
 
 /* ---------- Main App ---------- */
 
-function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds, editableCategories }){
+function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds }){
   const [bName, setBName] = useState('');
   const [bAmount, setBAmount] = useState('');
   const [bDate, setBDate] = useState(today());
@@ -2787,9 +2792,9 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
   const boughtTotal = useMemo(()=> bazarList.filter(x=>x.bought).reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
   const baki = total - boughtTotal;
 
-  const allCats = useMemo(()=>{ try{ const saved = loadLS('lifestyle_expense_categories_v18', null); if(saved && saved.length) return saved.flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn}))); }catch(e){} 
+  const allCats = useMemo(()=>{
     try{
-      const flat = (editableCategories || EXPENSE_CATEGORIES).flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn})));
+      const flat = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({...it, group: g.en, groupBn: g.bn})));
       return flat;
     }catch(e){ return []; }
   }, []);
@@ -2856,7 +2861,6 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       bought: true
     };
     setPopupItem(null);
-    // V18: Instant two-way + broadcast
     setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
     setTransactions(list => {
       const existsIdx = list.findIndex(tt => tt.bazarItemId === itemId);
@@ -3143,8 +3147,7 @@ function App(){
   const [transactions, setTransactions] = useState(initial.transactions);
   const [bazarList, setBazarList] = useState(loadLS('lifestyle_bazar_list', []));
 
-  // ===== V18 HARDLY LOCKED FIXES - INSTANT SYNC & EDIT/DELETE CATEGORIES =====
-  // BroadcastChannel for same-device instant update
+  // V18.1 BroadcastChannel for instant same-device sync
   useEffect(()=>{
     try{
       if(typeof BroadcastChannel!=='undefined'){
@@ -3182,40 +3185,6 @@ function App(){
       }
     }catch(e){}
   }, []);
-
-  // Editable categories state - HARDLY LOCKED, default preserved
-  const [editableCategories, setEditableCategories] = useState(()=> {
-    try{
-      const saved = loadLS('lifestyle_expense_categories_v18', null);
-      if(saved && Array.isArray(saved) && saved.length>0) return saved;
-    }catch(e){}
-    return (typeof EXPENSE_CATEGORIES!=='undefined' ? EXPENSE_CATEGORIES : []);
-  });
-  useEffect(()=>{ try{ saveLS('lifestyle_expense_categories_v18', editableCategories); }catch(e){} }, [editableCategories]);
-
-  function editCategoryItem(groupKey, oldEn, newObj){
-    setEditableCategories(prev=> prev.map(g=>{
-      if(g.key!==groupKey) return g;
-      return {...g, items: g.items.map(it=> it.en===oldEn ? {...it, ...newObj} : it)};
-    }));
-    // Also update existing transactions & bazarList that use old category
-    if(newObj && newObj.en && oldEn!==newObj.en){
-      setTransactions(prev=> prev.map(tx=> tx.category===oldEn ? {...tx, category: newObj.en, categoryBn: newObj.bn||newObj.en} : tx));
-      setBazarList(prev=> prev.map(b=> b.category===oldEn ? {...b, category: newObj.en, categoryBn: newObj.bn||newObj.en} : b));
-    }
-  }
-  function deleteCategoryItem(groupKey, enName){
-    if(!confirm('"'+enName+'" খাতটি মুছে ফেলবেন? এই খাতের লেনদেন থাকলে সেগুলোও আপডেট হবে।')) return;
-    setEditableCategories(prev=> prev.map(g=>{
-      if(g.key!==groupKey) return g;
-      return {...g, items: g.items.filter(it=> it.en!==enName)};
-    }));
-  }
-  function addCategoryItem(groupKey, newItem){
-    setEditableCategories(prev=> prev.map(g=> g.key===groupKey ? {...g, items: [...g.items, newItem]} : g));
-  }
-  // Expose for BazarManager
-  const allExpenseCats = editableCategories;
 
 
 
@@ -3349,9 +3318,7 @@ function App(){
     if(!cloudArr) cloudArr = [];
     if(!localArr) localArr = [];
     if(!localArr.length && !cloudArr.length) return [];
-    // V18 FIX: respect deletedIds but allow edit
     const map = new Map();
-    // cloud first, then local overwrites (local is newer)
     const all = [...cloudArr, ...localArr];
     all.forEach(it=>{
       if(!it || !it.id) return;
@@ -3360,22 +3327,17 @@ function App(){
         map.set(it.id, it);
       } else {
         const existing = map.get(it.id);
-        // V18: local wins for amount/date/category if present, bought flag OR
         const merged = {...existing, ...it};
-        // If either is bought, keep bought true, but keep latest amount
         if(existing.bought || it.bought) merged.bought = true;
-        // If local has amount >0, keep local
         if(it && it.amount && it.amount>0) merged.amount = it.amount;
-        else if(existing && existing.amount>0 && !merged.amount) merged.amount = existing.amount;
         if(it.date) merged.date = it.date;
         if(it.category) { merged.category = it.category; merged.categoryBn = it.categoryBn||it.category; }
         if(it.name) merged.name = it.name;
         map.set(it.id, merged);
       }
     });
-    // V18: sort by date desc for instant view
     const arr = Array.from(map.values());
-    arr.sort((a,b)=> (b.date||'').localeCompare(a.date||'') );
+    arr.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
     return arr;
   }
   function mergePeople(localPeople, cloudPeople){
@@ -3405,7 +3367,7 @@ function App(){
 
   function syncToCloud(user, force=false){
     if(!user || !user.uid) return;
-    if(!force && isSyncingFromCloudRef.current){ /* V18: allow bazar force through */ if(!(bazarList && bazarList.length>=0)) return; }
+    if(!force && isSyncingFromCloudRef.current){ return; } // V18 allow force
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
@@ -3451,7 +3413,7 @@ function App(){
       if(unsubscribeRef.current){ unsubscribeRef.current(); }
       const db = firebase.firestore();
       unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot(doc=>{
-        if(!doc.exists){ cloudLoadedRef.current=true; /* V18: create initial doc */ try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], bazarList: bazarList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
+        if(!doc.exists){ cloudLoadedRef.current=true; try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], bazarList: bazarList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
@@ -3624,16 +3586,14 @@ setTimeout(()=>{
   const totalRepaidAmt = peopleTaken.reduce((a,p)=>a+p.payments.reduce((s,x)=>s+x.amount,0),0);
 
   function saveTransaction(tx){
-    // V18 FIX: Ensure date & amount + two-way Bazar sync (Hardly Locked other features)
     if(!tx.date || tx.date.trim()===''){
       tx.date = today();
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
-    // If this tx is from bazar, update bazarList instantly
     if(tx.bazarItemId){
       setBazarList(blist => blist.map(b => {
         if(b.id===tx.bazarItemId){
-          return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true, name: (b.name||tx.note||'').replace(/ \(৳.*?\)$/,'') };
+          return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
         }
         return b;
       }));
@@ -3644,11 +3604,9 @@ setTimeout(()=>{
     });
     setAddType(null); setEditingTx(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
-    // Broadcast for instant multi-tab
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
   function deleteTransaction(id){
-    // V18 FIX: Two-way sync - delete tx -> bazar No, and broadcast
     let toDeleteRef = null;
     setTransactions(list=>{
       const toDelete = list.find(x=>x.id===id);
@@ -3659,7 +3617,7 @@ setTimeout(()=>{
       return list.filter(x=>x.id!==id);
     });
     setConfirmDelTx(null);
-    if(typeof setToast==='function') setToast('ব্যয় মুছেছে + বাজার থেকে বাদ');
+    if(typeof setToast==='function') setToast('মুছে ফেলা হয়েছে');
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id, bazarItemId: toDeleteRef?toDeleteRef.bazarItemId:null}); }catch(e){}
   }
 
@@ -4107,7 +4065,7 @@ setTimeout(()=>{
             ),
             h('div', {className:'relative'},
               h('input', {
-                value: historyExpenseCategoryOpen ? historyExpenseCategorySearch : (historyExpenseCategory ? ((editableCategories || EXPENSE_CATEGORIES).flatMap(g=>g.items).find(it=>it.en===historyExpenseCategory||it.bn===historyExpenseCategory)?.[lang==='en'?'en':'bn'] || historyExpenseCategory) : ''),
+                value: historyExpenseCategoryOpen ? historyExpenseCategorySearch : (historyExpenseCategory ? (EXPENSE_CATEGORIES.flatMap(g=>g.items).find(it=>it.en===historyExpenseCategory||it.bn===historyExpenseCategory)?.[lang==='en'?'en':'bn'] || historyExpenseCategory) : ''),
                 onChange: e=>{ setHistoryExpenseCategorySearch(e.target.value); setHistoryExpenseCategoryOpen(true); },
                 onClick: ()=>{ setHistoryExpenseCategoryOpen(o=>!o); if(!historyExpenseCategoryOpen) setHistoryExpenseCategorySearch(''); },
                 onFocus: ()=>{ setHistoryExpenseCategoryOpen(true); setHistoryExpenseCategorySearch(''); },
@@ -4118,7 +4076,7 @@ setTimeout(()=>{
             ),
             historyExpenseCategoryOpen ? h('div', {className:'absolute z-50 mt-1 w-full bg-white border border-[#F3E8D3] rounded-[12px] shadow-lg max-h-[220px] overflow-y-auto'},
               (()=>{ 
-                const allItems = (editableCategories || EXPENSE_CATEGORIES).flatMap(g=> g.items.map(it=> ({...it, group: g.en, groupBn: g.bn, groupIcon: g.icon})));
+                const allItems = EXPENSE_CATEGORIES.flatMap(g=> g.items.map(it=> ({...it, group: g.en, groupBn: g.bn, groupIcon: g.icon})));
                 const q = (historyExpenseCategorySearch||'').toLowerCase().trim();
                 let filtered = allItems;
                 if(q){
@@ -4201,7 +4159,7 @@ setTimeout(()=>{
         var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
         var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
         var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
-        var catLabel = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=(editableCategories || EXPENSE_CATEGORIES).flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
+        var catLabel = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=EXPENSE_CATEGORIES.flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
         var list = catTransactions.map(function(t){ return {id:t.id, date:t.date, type:t.type, amount:t.amount, category:t.category, categoryBn:t.categoryBn, note:t.note, medium:t.medium, fromChannel:t.fromChannel||t.fromMedium||t.channel||t.medium||'Cash', toChannel:t.toChannel||t.toMedium||'', kind:'tx'}; });
         var o={t:t, lang:lang, filter:openCategoryKind+'-'+openCategoryName, list:list, userName:resolved, userDesignation:lsD, userAddress:lsA, userMobile:lsM, generatedAt:genAt, appName:t.appName, categoryName:catLabel, categoryKind:openCategoryKind, total:catTotal};
         var fname='Lifestyle-'+openCategoryKind+'-'+openCategoryName.replace(/\s+/g,'-')+'-'+today()+'.pdf';
@@ -4215,7 +4173,7 @@ setTimeout(()=>{
         }
       }catch(e){ console.error(e); }
     }
-    var catDisplay = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=(editableCategories || EXPENSE_CATEGORIES).flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
+    var catDisplay = (function(){ try{ if(openCategoryKind==='income'){ var f=INCOME_CATEGORIES.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } else { var all=EXPENSE_CATEGORIES.flatMap(function(g){ return g.items; }); var f=all.find(function(it){ return it.en===openCategoryName||it.bn===openCategoryName; }); return f ? (lang==='en'?f.en:(f.bn+' - '+f.en)) : openCategoryName; } }catch(e){ return openCategoryName; } })() || openCategoryName;
     pageContent = h('div', {className:'pt-5 pb-6 space-y-4'},
       h('div', {className:'flex items-center gap-2'},
         h(IconBtn, {onClick:function(){ customSetPage('history'); }}, '\u2190'),
