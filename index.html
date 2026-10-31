@@ -3700,7 +3700,16 @@ setTimeout(()=>{
   }
   function deleteHistoryEntry(x){
     if(x.type==='income' || x.type==='expense'){
-      setTransactions(list=>list.filter(t=>t.id!==x.id));
+      let toDeleteRef = null;
+      setTransactions(list=>{
+        const toDel = list.find(t=>t.id===x.id);
+        toDeleteRef = toDel;
+        if(toDel && toDel.bazarItemId){
+          setBazarList(blist => blist.map(b=> b.id===toDel.bazarItemId ? {...b, bought:false} : b));
+        }
+        return list.filter(t=>t.id!==x.id);
+      });
+      try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id: x.id, bazarItemId: toDeleteRef?toDeleteRef.bazarItemId:null}); }catch(e){}
     } else if(x.type==='bank_loan'){
       setBankLoans(list=>list.filter(b=>b.id!==x.id));
     } else if(x.type==='loan_given' || x.type==='loan_taken'){
