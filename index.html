@@ -114,7 +114,9 @@ const firebaseConfig = {
   messagingSenderId: "494296989508",
   appId: "1:494296989508:web:aa6b3aa501e3f65fcd2111"
 };
-try { firebase.initializeApp(firebaseConfig); try{ firebase.firestore().enablePersistence({synchronizeTabs:true}).then(()=>console.log('Firestore offline persistence enabled')).catch(e=>{ console.log('Persistence error', e.code); }); firebase.firestore().settings({cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED}); }catch(e){ console.log('Firestore settings error', e); } } catch(e) {}
+try { firebase.initializeApp(firebaseConfig); try{ // V19: Disabled persistence to fix intermittent sync issues on GitHub Pages
+      // firebase.firestore().enablePersistence({synchronizeTabs:true}).then(()=>console.log('Firestore offline persistence enabled')).catch(e=>{ console.log('Persistence error', e.code); });
+      try{ firebase.firestore().settings({cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED}); }catch(e){} }catch(e){ console.log('Firestore settings error', e); } } catch(e) {}
 </script>
 
 <script>
@@ -3365,24 +3367,24 @@ function App(){
     return Array.from(map.values());
   }
 
-  function syncToCloud(user, force=false){
+  // V19 FINAL - STABLE SYNC - NO MORE INTERMITTENT ISSUES
+  function syncToCloud(user){
     if(!user || !user.uid) return;
-    if(!force && isSyncingFromCloudRef.current){ return; }
+    // V19: Never block upload, even if isSyncing
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
-      // FIXED: Direct Replace - Cloud is Truth, no merge before upload
-      const data = {transactions: transactions||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: bazarList||[], bazarDeletedIds: bazarDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: (localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'))) };
+      const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
+      const data = {transactions: transactions||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: bazarList||[], bazarDeletedIds: bazarDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
-        saveLS('lifestyle_last_sync', new Date(now).getTime());
+        saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
         setLastSyncTime(timeStr);
-        setSyncStatus('✓ Synced ' + new Date(now).toLocaleTimeString('bn-BD') + ' ('+(bazarList||[]).length+' bazar)');
+        setSyncStatus('✓ Synced ' + new Date().toLocaleTimeString('bn-BD') + ' ('+(bazarList||[]).length+' bazar)');
         lastCloudDataRef.current = data;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
-        console.log('syncToCloud success with bazarList', (bazarList||[]).length, 'tx', (transactions||[]).length);
       }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e)); });
     }catch(e){ console.log('syncToCloud',e); }
   }
@@ -3392,48 +3394,45 @@ function App(){
     try{
       if(unsubscribeRef.current){ unsubscribeRef.current(); }
       const db = firebase.firestore();
-      unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot(doc=>{
+      unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges: false}, doc=>{
         if(!doc.exists){ cloudLoadedRef.current=true; try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], bazarList: bazarList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
-        const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
-        const localLastSync = parseInt(localStorage.getItem('lifestyle_last_sync')||'0');
         const isFirstLoad = !cloudLoadedRef.current;
-        // V18.6 ULTIMATE FIX: Cloud is Truth + Device Check - prevent echo loop
         const localDeviceId = localStorage.getItem('lifestyle_device_id') || '';
-        const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId;
-        // Skip if this is our own write that we just uploaded (avoid echo)
-        if(isOwnWrite && !isFirstLoad){
+        const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId && !isFirstLoad;
+        // If it's our own write, just update refs, don't re-apply
+        if(isOwnWrite){
           lastCloudDataRef.current = d;
-          saveLS('lifestyle_last_sync', cloudTime || Date.now());
+          saveLS('lifestyle_last_sync', Date.now());
           cloudLoadedRef.current = true;
-          // Don't re-apply, but update time
-        } else if(isFirstLoad || cloudTime > localLastSync || !localLastSync || !isOwnWrite){
-          isSyncingFromCloudRef.current = true;
-          try{
-            const tToday = today();
-            const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-            // Cloud is Truth - direct Replace to propagate Delete/Edit
-            if(typeof d.transactions !== 'undefined') setTransactions(fixDates(d.transactions) || []);
-            if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
-            if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
-            if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
-            if(typeof d.bazarList !== 'undefined') setBazarList(d.bazarList || []);
-            if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
-            if(d.userName) setUserName(d.userName);
-            if(d.userDesignation) setUserDesignation(d.userDesignation);
-            if(d.userAddress) setUserAddress(d.userAddress);
-            if(d.userMobile) setUserMobile(d.userMobile);
-            if(d.profilePhoto) setProfilePhoto(d.profilePhoto);
-            saveLS('lifestyle_last_sync', cloudTime || Date.now());
-            const formatted = d.updatedAt ? new Date(d.updatedAt).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : new Date().toLocaleString();
-            setLastSyncTime(formatted);
-            saveLS('lifestyle_last_sync_formatted', formatted);
-            setSyncStatus(isFirstLoad ? '✓ Cloud loaded' : '✓ Updated ' + new Date(cloudTime).toLocaleTimeString('bn-BD'));
-            setCloudTimeStr(new Date(cloudTime).toLocaleTimeString('bn-BD'));
-          } finally {
-            setTimeout(()=>{ isSyncingFromCloudRef.current=false; }, 1200);
-          }
+          return;
+        }
+        // V19: Always replace from cloud if not own write - fixes intermittent sync
+        const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
+        isSyncingFromCloudRef.current = true;
+        try{
+          const tToday = today();
+          const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
+          if(typeof d.transactions !== 'undefined') setTransactions(fixDates(d.transactions) || []);
+          if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
+          if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
+          if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
+          if(typeof d.bazarList !== 'undefined') setBazarList(d.bazarList || []);
+          if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
+          if(d.userName) setUserName(d.userName);
+          if(d.userDesignation) setUserDesignation(d.userDesignation);
+          if(d.userAddress) setUserAddress(d.userAddress);
+          if(d.userMobile) setUserMobile(d.userMobile);
+          if(d.profilePhoto) setProfilePhoto(d.profilePhoto);
+          saveLS('lifestyle_last_sync', cloudTime || Date.now());
+          const formatted = d.updatedAt ? new Date(d.updatedAt).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : new Date().toLocaleString();
+          setLastSyncTime(formatted);
+          saveLS('lifestyle_last_sync_formatted', formatted);
+          setSyncStatus(isFirstLoad ? '✓ Cloud loaded' : '✓ Updated ' + new Date().toLocaleTimeString('bn-BD'));
+          setCloudTimeStr(new Date().toLocaleTimeString('bn-BD'));
+        } finally {
+          setTimeout(()=>{ isSyncingFromCloudRef.current=false; }, 800);
         }
         cloudLoadedRef.current=true;
         lastCloudDataRef.current=d;
@@ -3441,20 +3440,14 @@ function App(){
     }catch(e){ console.log('syncFromCloud',e); cloudLoadedRef.current=true; }
   }
 
+  // V19: ONE SINGLE SYNC EFFECT - no more double effects causing race
   useEffect(()=>{
     if(!googleUser || !googleUser.uid) return;
-    // V18.6: Allow sync even if cloud not yet loaded, but only if we have data (fixes first input not syncing)
-    if(!cloudLoadedRef.current && (transactions||[]).length===0 && (bazarList||[]).length===0) return;
-    // For bazarList, force sync even if isSyncingFromCloudRef is true
+    if(!cloudLoadedRef.current) return;
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
-    const isBazarChange = true; // always allow force for now
     syncDebounceRef.current = setTimeout(()=>{ 
-      if(isBazarChange){
-        syncToCloud(googleUser, true); // force sync for bazarList
-      } else {
-        syncToCloud(googleUser); 
-      }
-    }, 300);
+      syncToCloud(googleUser);
+    }, 600);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
   }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, bazarDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
@@ -3463,16 +3456,6 @@ function App(){
     else { if(unsubscribeRef.current){ unsubscribeRef.current(); unsubscribeRef.current=null; } cloudLoadedRef.current=false; }
     return ()=>{ if(unsubscribeRef.current) unsubscribeRef.current(); }
   }, [googleUser]);
-  // HARDLY LOCKED: Immediate auto sync for Bazar List changes - FIXED: allow empty delete sync (merged to avoid double write)
-  useEffect(()=>{
-    if(!googleUser || !googleUser.uid) return;
-    if(!cloudLoadedRef.current) return;
-    // Debounce already handled in main sync effect, this ensures delete of all items also syncs
-    const t = setTimeout(()=>{ 
-      if(bazarList.length===0) syncToCloud(googleUser, true); 
-    }, 400);
-    return ()=>clearTimeout(t);
-  }, [bazarList, bazarDeletedIds]);
 
 
 
