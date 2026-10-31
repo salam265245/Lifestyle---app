@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle - Income Expense Manager</title>
+<title>Lifestyle v12 - Bazar Instant Sync -  - Income Expense Manager</title>
 <link rel="manifest" href="manifest.json">
 
 <!-- Single File PWA - Lifestyle Logo Embedded -->
@@ -164,7 +164,7 @@ try { firebase.initializeApp(firebaseConfig); try{ firebase.firestore().enablePe
 
     if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v11-phase3-offline-sync';
+        const CACHE='lifestyle-v12-bazar-instant-sync';
         self.addEventListener('install', e=>{
           self.skipWaiting();
           e.waitUntil(
@@ -2861,7 +2861,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       const existsIdx = list.findIndex(tt => tt.bazarItemId === itemId);
       if(existsIdx>=0){
         const copy = list.slice();
-        copy[existsIdx] = {...copy[existsIdx], amount: amt, category: catEn, categoryBn: catBn, date: pDate, note: itemName + ' (৳'+amt+' - বাজার)'};
+        copy[existsIdx] = {...copy[existsIdx], amount: amt, category: catEn, categoryBn: catBn, date: pDate, note: itemName + ' (৳'+amt+')'};
         return copy;
       } else {
         const tx = {
@@ -2884,14 +2884,6 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       }
     });
     if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয়ে যোগ হয়েছে');
-  }
-
-  function markNo(item){
-    if(item.bought){
-      setBazarList(list => list.map(x=> x.id===item.id ? {...x, bought:false} : x));
-      setTransactions(list => list.filter(tt => tt.bazarItemId !== item.id));
-      if(typeof setToast==='function') setToast('বাজার + ব্যয় থেকে বাদ দেওয়া হয়েছে');
-    }
   }
   function deleteItem(id){
     setBazarList(list => list.filter(x=> x.id!==id));
@@ -3483,7 +3475,7 @@ setTimeout(()=>{
   const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
   const [profileSaved, setProfileSaved] = useState(false);
   const [offlineQueue, setOfflineQueue] = useState(loadLS('lifestyle_offline_pending','false')==='true');
-  useEffect(()=>{ function goOnline(){ setIsOnline(true); setToast(lang==='en'?'Back online - syncing...':'অনলাইনে - সিঙ্ক হচ্ছে...'); try{ const user = googleUser; if(user && user.uid){ setTimeout(()=>{ try{ syncToCloud(user); }catch(e){} try{ syncFromCloud(user); }catch(e){} saveLS('lifestyle_offline_pending','false'); setOfflineQueue(false); }, 800); } }catch(e){} } function goOffline(){ setIsOnline(false); setToast(lang==='en'?'Offline - data saved locally':'অফলাইনে - ডাটা লোকালি সেভ হচ্ছে'); saveLS('lifestyle_offline_pending','true'); setOfflineQueue(true); } window.addEventListener('online', goOnline); window.addEventListener('offline', goOffline); return ()=>{ window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); }; }, [googleUser, lang, transactions, peopleGiven, peopleTaken, bankLoans]);
+  useEffect(()=>{ function goOnline(){ setIsOnline(true); setToast(lang==='en'?'Back online - syncing...':'অনলাইনে - সিঙ্ক হচ্ছে...'); try{ const user = googleUser; if(user && user.uid){ setTimeout(()=>{ try{ syncToCloud(user); }catch(e){} try{ syncFromCloud(user); }catch(e){} saveLS('lifestyle_offline_pending','false'); setOfflineQueue(false); }, 350); } }catch(e){} } function goOffline(){ setIsOnline(false); setToast(lang==='en'?'Offline - data saved locally':'অফলাইনে - ডাটা লোকালি সেভ হচ্ছে'); saveLS('lifestyle_offline_pending','true'); setOfflineQueue(true); } window.addEventListener('online', goOnline); window.addEventListener('offline', goOffline); return ()=>{ window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); }; }, [googleUser, lang, transactions, peopleGiven, peopleTaken, bankLoans]);
   useEffect(()=>{ if(!isOnline){ saveLS('lifestyle_offline_pending','true'); setOfflineQueue(true); } }, [transactions, peopleGiven, peopleTaken, bankLoans, isOnline]);
 
   const t = T[lang];
