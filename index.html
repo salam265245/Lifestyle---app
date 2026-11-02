@@ -712,6 +712,7 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_tx_'+type+'_channel', channel); }catch(e){} } }, [channel, type, initial]);
   function submit(){
     if(!amount || !cat) return;
+    if(parseFloat(amount) < 0){ if(typeof setToast==='function') setToast('Negative amount not allowed'); return; }
     if(!initial){
       try{
         saveLS('lifestyle_draft_tx_'+type+'_amount', '');
@@ -1316,6 +1317,7 @@ function PeopleList({ t, lang, kind, people, onOpenPerson, onAddPerson, userName
       return (userName && String(userName).trim()) || lsName || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || '' || 'User';
     }catch(e){ return (userName||'') || 'User'; }
   }
+  function handleCombinedPdf_check(){ if(reportFrom && reportTo && new Date(reportFrom) > new Date(reportTo)){ if(typeof setToast==='function') setToast('From date To date থেকে বড় হতে পারে না'); return; } }
   function handleCombinedPdf(mode){
     try{
       mode = mode || 'download';
@@ -4589,8 +4591,9 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       date: pDate,
       bought: true
     };
+    if(!amt || amt<=0){ if(typeof setToast==='function') setToast('দাম 0 - Yes করা যাবে না, দাম দিন'); return; }
+    try{ const existingTxs = JSON.parse(localStorage.getItem('lifestyle_transactions')||'[]'); const dup = existingTxs.find(tt=> tt.bazarItemId===itemId && tt.amount===amt && (Date.now() - new Date(tt.date).getTime() < 3000)); if(dup){ if(typeof setToast==='function') setToast('আগেই যোগ হয়েছে'); return; } }catch(e){}
     setPopupItem(null);
-    // FIX 4: Single Atomic Update + Immediate LS Save - 100% Guarantee No Auto No
     setBazarList(prev => {
       const updatedList = prev.map(x=> x.id===itemId ? updated : x);
       try{ localStorage.setItem('lifestyle_bazar_list', JSON.stringify(updatedList)); }catch(e){}
@@ -4632,7 +4635,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
   function markNo(item){
     if(item.bought){
       setBazarList(prev => {
-        const updatedList = prev.map(x=> x.id===item.id ? {...x, bought:false} : x);
+        const updatedList = prev.map(x=> x.id===item.id ? {...x, bought:false, amount:0} : x);
         try{ localStorage.setItem('lifestyle_bazar_list', JSON.stringify(updatedList)); }catch(e){}
         return updatedList;
       });
@@ -4641,7 +4644,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
         try{ localStorage.setItem('lifestyle_transactions', JSON.stringify(updatedList)); }catch(e){}
         return updatedList;
       });
-      if(typeof setToast==='function') setToast('No করা হয়েছে - ব্যয় থেকে বাদ গেছে');
+      if(typeof setToast==='function') setToast('No করা হয়েছে - ব্যয় থেকে বাদ গেছে (৳0)');
       try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id: item.id}); }catch(e){}
     }
   }
@@ -4930,7 +4933,7 @@ function App(){
           if(msg.type==='tx_deleted'){
             setTransactions(prev=> prev.filter(x=>x.id!==msg.id));
             if(msg.bazarItemId){
-              setBazarList(prev=> prev.map(b=> b.id===msg.bazarItemId ? {...b, bought:false} : b));
+              setBazarList(prev=> prev.map(b=> b.id===msg.bazarItemId ? {...b, bought:false, amount:0} : b));
             }
           }
         };
