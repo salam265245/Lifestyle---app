@@ -1406,7 +1406,7 @@ function renderReportPages(o){
     const totalW = 2480 - 240;
     let dateW=220;
     let personW=hidePersonCol?0:300;
-    let catW=hideCategoryCol?0:850;
+    let catW=0; // FIXED: always hide category in person PDF to remove blank column, Note gets width
     let fromW=220, toW=singleChannel?0:220, channelW=singleChannel?300:440;
     let amtW=320;
     let usedWithoutNote = dateW + personW + catW + (singleChannel?channelW:(fromW+toW)) + amtW;
@@ -1923,7 +1923,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
@@ -1945,7 +1945,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.paymentHistory||'Payment', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
       person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
       ensure(70); const thP=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
@@ -1966,7 +1966,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
@@ -2722,6 +2722,1557 @@ function EmailAuthForm({t, onAuth}){
 
 /* ---------- Main App ---------- */
 
+
+
+function DailyRoutineManager({t, lang, setToast}){
+  const SUBJECT_OPTIONS = [
+    {id:'emi', en:'EMI', bn:'EMI', icon:'💳'},
+    {id:'doc_loan', en:'Document for loan process', bn:'লোন প্রসেসের ডকুমেন্ট', icon:'📄'},
+    {id:'others_close', en:'Others loan closing', bn:'অন্য লোন ক্লোজ', icon:'🔒'},
+    {id:'doc_rectify', en:'Document Rectify', bn:'ডকুমেন্ট সংশোধন', icon:'✏️'},
+    {id:'cheque_req', en:'Cheque book requisition', bn:'চেক বই রিকুইজিশন', icon:'📒'},
+    {id:'tax_doc', en:'Tax Document', bn:'ট্যাক্স ডকুমেন্ট', icon:'🧾'},
+    {id:'vat_doc', en:'VAT document', bn:'ভ্যাট ডকুমেন্ট', icon:'📊'},
+    {id:'overdue', en:'Loan Overdue', bn:'লোন ওভারডিউ', icon:'⏰'},
+    {id:'installment', en:'Installment Follow-up', bn:'কিস্তি ফলোআপ', icon:'📞'},
+    {id:'cib', en:'CIB Issue', bn:'CIB সমস্যা', icon:'🔍'},
+    {id:'guarantor', en:'Guarantor Document', bn:'গ্যারান্টর ডকুমেন্ট', icon:'👤'},
+    {id:'trade_license', en:'Trade License', bn:'ট্রেড লাইসেন্স', icon:'🏪'},
+    {id:'nid_mismatch', en:'NID Mismatch', bn:'NID অমিল', icon:'🪪'},
+    {id:'sign_mismatch', en:'Signature Mismatch', bn:'স্বাক্ষর অমিল', icon:'✍️'},
+    {id:'acc_statement', en:'Account Statement', bn:'অ্যাকাউন্ট স্টেটমেন্ট', icon:'📑'},
+    {id:'dps_fdr', en:'DPS/FDR', bn:'DPS/FDR', icon:'💰'},
+    {id:'interest', en:'Interest Rate', bn:'ইন্টারেস্ট রেট', icon:'📈'},
+    {id:'sanction', en:'Loan Sanction', bn:'লোন স্যাংশন', icon:'✅'},
+    {id:'visit_schedule', en:'Visit Schedule', bn:'ভিজিট শিডিউল', icon:'📅'},
+    {id:'payment_reminder', en:'Payment Reminder', bn:'পেমেন্ট রিমাইন্ডার', icon:'🔔'},
+    {id:'doc_collection', en:'Document Collection', bn:'ডকুমেন্ট কালেকশন', icon:'📦'},
+    {id:'personal', en:'Personal', bn:'পার্সোনাল', icon:'🏠'},
+    {id:'family', en:'Family Matter', bn:'পারিবারিক বিষয়', icon:'👨‍👩‍👧‍👦'},
+    {id:'health', en:'Health information', bn:'স্বাস্থ্য তথ্য', icon:'🏥'},
+    {id:'child', en:'Child Information', bn:'শিশুর তথ্য', icon:'👶'},
+    {id:'family_member', en:'Family Member Information', bn:'পরিবারের সদস্যের তথ্য', icon:'👪'},
+    {id:'relative', en:'Relative information', bn:'আত্মীয়ের তথ্য', icon:'🤝'},
+    {id:'other', en:'Other', bn:'অন্যান্য', icon:'📌'},
+  ];
+  const OFFICE_GROUPS = [
+    {id:'general', name:'General Office', icon:'📋', count:'8 Items', items:[
+      {id:'mail_check', label:'Mail check & reply', icon:'📧'},
+      {id:'closing', label:'Closing', icon:'📊'},
+      {id:'clearance', label:'Clearance', icon:'✅'},
+      {id:'loan_file', label:'Loan File Process', icon:'📁'},
+      {id:'cib_search', label:'CIB Search', icon:'🔍'},
+      {id:'statement', label:'Statement', icon:'📄'},
+      {id:'send_report', label:'Send Report', icon:'📤'},
+      {id:'account_opening', label:'Account Opening', icon:'👤'},
+    ]},
+    {id:'daily_core', name:'Daily Core', icon:'⚡', count:'5 Items', items:[
+      {id:'cash_balancing', label:'Cash Balancing', icon:'💰'},
+      {id:'vault_closing', label:'Vault Closing', icon:'🔒'},
+      {id:'bach_clearing', label:'BACH - Cheque Clearing', icon:'🏦'},
+      {id:'rtgs_beftn', label:'RTGS / BEFTN', icon:'🔄'},
+      {id:'fund_transfer', label:'Fund Transfer', icon:'💸'},
+    ]},
+    {id:'loan_credit', name:'Loan & Credit', icon:'📈', count:'6 Items', items:[
+      {id:'loan_disb', label:'Loan Disbursement', icon:'💵'},
+      {id:'overdue_rec', label:'Overdue Recovery', icon:'⏰'},
+      {id:'loan_proposal', label:'Loan Proposal', icon:'📝'},
+      {id:'mortgage_doc', label:'Mortgage Document', icon:'🏠'},
+      {id:'sanction_letter', label:'Sanction Letter', icon:'✉️'},
+      {id:'site_visit', label:'Site Visit Report', icon:'📍'},
+    ]},
+    {id:'compliance', name:'Compliance & Reports', icon:'🛡️', count:'6 Items', items:[
+      {id:'kyc_update', label:'KYC Update', icon:'🪪'},
+      {id:'tp_update', label:'TP Update', icon:'📝'},
+      {id:'str_sar', label:'STR/SAR', icon:'🚨'},
+      {id:'compliance_report', label:'Compliance Report', icon:'📊'},
+      {id:'audit_file', label:'Audit File', icon:'🔍'},
+      {id:'bb_report', label:'Bangladesh Bank Report', icon:'🏛️'},
+    ]},
+    {id:'customer', name:'Customer Service', icon:'🤝', count:'6 Items', items:[
+      {id:'lc_work', label:'LC Work', icon:'🌐'},
+      {id:'remittance', label:'Remittance', icon:'💱'},
+      {id:'account_closing', label:'Account Closing', icon:'🔒'},
+      {id:'client_meeting', label:'Client Meeting', icon:'👥'},
+      {id:'ho_mail_reply', label:'Head Office Mail Reply', icon:'📧'},
+      {id:'branch_meeting', label:'Branch Meeting', icon:'🏢'},
+    ]},
+    {id:'others', name:'Others', icon:'📌', count:'4 Items', items:[
+      {id:'training', label:'Training', icon:'🎓'},
+      {id:'leave_app', label:'Leave Application', icon:'🌴'},
+      {id:'stationery', label:'Stationery Order', icon:'📎'},
+      {id:'other_office', label:'Other', icon:'📌'},
+    ]},
+  ];
+
+  const [activeTab, setActiveTab] = React.useState('call');
+  const [personName, setPersonName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [date, setDate] = React.useState('31/10/2026');
+  const [dateInput, setDateInput] = React.useState('2026-10-31');
+  const [hour, setHour] = React.useState('06');
+  const [minute, setMinute] = React.useState('03');
+  const [amPm, setAmPm] = React.useState('PM');
+  const [taskTitle, setTaskTitle] = React.useState('');
+  const [priority, setPriority] = React.useState('normal');
+  const [notes, setNotes] = React.useState('');
+  const [selectedSubjects, setSelectedSubjects] = React.useState([]);
+  const [subjectSearch, setSubjectSearch] = React.useState('');
+  const [showSubject, setShowSubject] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [officeSearch, setOfficeSearch] = React.useState('');
+  const [officeSelected, setOfficeSelected] = React.useState([]);
+  const [officeGroupsOpen, setOfficeGroupsOpen] = React.useState({general:true});
+  const [customOfficeTask, setCustomOfficeTask] = React.useState('');
+  const [whereVisit, setWhereVisit] = React.useState('');
+  const [visitPurpose, setVisitPurpose] = React.useState('');
+
+  function toggleSubject(id){ setSelectedSubjects(prev=> prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); }
+  function removeSubject(id){ setSelectedSubjects(prev=> prev.filter(x=>x!==id)); }
+  const filteredSubjects = SUBJECT_OPTIONS.filter(o=>{
+    if(!subjectSearch) return true;
+    const s = subjectSearch.toLowerCase();
+    return o.en.toLowerCase().includes(s) || o.bn.includes(s);
+  });
+  function toggleOfficeItem(id){ setOfficeSelected(prev=> prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); }
+  function toggleOfficeGroup(gid){ setOfficeGroupsOpen(prev=> ({...prev, [gid]: !prev[gid]})); }
+  const filteredOfficeGroups = OFFICE_GROUPS.map(g=>{
+    if(!officeSearch) return g;
+    const s = officeSearch.toLowerCase();
+    const filteredItems = g.items.filter(it=> it.label.toLowerCase().includes(s));
+    if(filteredItems.length===0 && !g.name.toLowerCase().includes(s)) return null;
+    return {...g, items: filteredItems.length>0 ? filteredItems : g.items};
+  }).filter(Boolean);
+
+  function saveToFirebase(){
+    if(activeTab==='call' && !personName.trim() && selectedSubjects.length===0 && !taskTitle.trim()){
+      setToast && setToast(lang==='en' ? 'Please enter person or subject' : 'ব্যক্তি বা বিষয় লিখুন');
+      return;
+    }
+    if(activeTab==='visit' && !whereVisit.trim() && !visitPurpose.trim()){
+      setToast && setToast(lang==='en' ? 'Please enter visit location' : 'ভিজিটের স্থান লিখুন');
+      return;
+    }
+    if(activeTab==='office' && officeSelected.length===0 && !customOfficeTask.trim()){
+      setToast && setToast(lang==='en' ? 'Please select office tasks or enter custom task' : 'অফিস টাস্ক সিলেক্ট করুন');
+      return;
+    }
+    setSaving(true);
+    const isOffice = activeTab==='office';
+    const isVisit = activeTab==='visit';
+    const task = {
+      id: (typeof uid==='function' ? uid() : Date.now().toString()),
+      title: isOffice ? (officeSelected.map(s=> { for(let gr of OFFICE_GROUPS) for(let it of gr.items) if(it.id===s) return it.label; return s; }).join(', ') || customOfficeTask) : isVisit ? (whereVisit || visitPurpose) : (taskTitle || (selectedSubjects.map(s=> SUBJECT_OPTIONS.find(x=>x.id===s)?.en).join(', ')) || personName),
+      personName: isOffice ? '' : isVisit ? '' : personName,
+      phone: isOffice || isVisit ? '' : phone,
+      subjects: isOffice ? officeSelected : selectedSubjects,
+      subjectsText: isOffice ? officeSelected.join(', ') : selectedSubjects.map(s=> SUBJECT_OPTIONS.find(x=>x.id===s)?.en).join(', '),
+      whereVisit: isVisit ? whereVisit : '',
+      visitPurpose: isVisit ? visitPurpose : '',
+      customTask: isOffice ? customOfficeTask : '',
+      category: activeTab,
+      date: dateInput || date,
+      displayDate: date,
+      hour, minute, amPm,
+      time: hour+':'+minute+' '+amPm,
+      priority, notes,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      source: 'lifestyle_daily_routine'
+    };
+    try{
+      const user = firebase.auth().currentUser;
+      const saveLocal = ()=>{
+        try{
+          const prev = JSON.parse(localStorage.getItem('daily_routine_tasks_v2')||'[]');
+          localStorage.setItem('daily_routine_tasks_v2', JSON.stringify([task, ...prev]));
+          const prev2 = JSON.parse(localStorage.getItem('dailyRoutineTasks')||'[]');
+          localStorage.setItem('dailyRoutineTasks', JSON.stringify([task, ...prev2]));
+        }catch(e){}
+      };
+      if(user && firebase.firestore){
+        firebase.firestore().collection('daily_routine_tasks').doc(task.id).set({...task, uid: user.uid})
+        .then(()=>{ saveLocal(); setToast && setToast(lang==='en' ? 'Task saved to Firebase' : 'টাস্ক Firebase এ সেভ হয়েছে'); setSaving(false); })
+        .catch(e=>{ saveLocal(); setToast && setToast('Saved locally: ' + e.message); setSaving(false); });
+      } else {
+        saveLocal();
+        setToast && setToast(lang==='en' ? 'Task saved locally' : 'টাস্ক লোকালি সেভ হয়েছে');
+        setSaving(false);
+      }
+    }catch(e){ setSaving(false); setToast && setToast('Error: '+e.message); }
+  }
+
+  const inputClass = 'w-full bg-white border border-[#E8E6DC] rounded-[16px] px-4 py-3.5 text-[15px] text-[#1A1A1A] outline-none focus:border-[#1B4D3E]';
+  const labelClass = 'text-[12px] font-bold tracking-[0.08em] text-[#6B6B6B] mb-2 block';
+
+  return h('div', {className:'bg-[#FFFEF7] -m-4 p-0'},
+    h('div', {className:'p-4 border-b border-[#F3E8D3]/50 bg-[#FFFEF7]'},
+      h('h2', {className:'text-[20px] font-bold text-[#1A1A1A] flex items-center gap-3'},
+        h('span', {className:'w-10 h-10 rounded-full bg-[#F5F1E8] flex items-center justify-center text-[18px]'}, activeTab==='call' ? '📞' : activeTab==='visit' ? '📍' : '🏢'),
+        h('span', {style:{color:'#1A1A1A'}}, activeTab==='call' ? 'Add Call Task' : activeTab==='visit' ? 'Add Visit Task' : 'Add Office Work'),
+        h('span', {className:'text-[11px] font-normal text-[#8B7355] ml-1'}, 'Fill category specific details')
+      )
+    ),
+    h('div', {className:'p-4 bg-[#FFFEF7] space-y-5'},
+      h('div', {className:'flex gap-2 overflow-x-auto pb-1'},
+        [
+          {k:'call', l:'Call', i:'📞'},
+          {k:'visit', l:'Visit', i:'📍'},
+          {k:'office', l:'Office Work', i:'🏢'},
+        ].map(tb=>
+          h('button', {key:tb.k, onClick:()=>setActiveTab(tb.k), style: activeTab===tb.k ? {color:'white', backgroundColor:'#1B4D3E', borderColor:'#1B4D3E'} : {color:'#2D2A26', backgroundColor:'white', borderColor:'#E8E6DC'}, className: 'whitespace-nowrap px-5 py-2.5 rounded-full text-[13px] font-bold border flex items-center gap-2'},
+            h('span', {style: activeTab===tb.k ? {color:'white'} : {color:'#2D2A26'}}, tb.i),
+            h('span', {style: activeTab===tb.k ? {color:'white'} : {color:'#2D2A26'}}, tb.l)
+          )
+        )
+      ),
+
+      activeTab==='call' ? h('div', {className:'space-y-5'},
+        h('div', null,
+          h('label', {className:labelClass}, '👤 WHO TO CALL / PERSON'),
+          h('div', {className:'flex gap-2'},
+            h('input', {value:personName, onChange:e=>setPersonName(e.target.value), placeholder:'Rahim Uddin', className: inputClass + ' flex-1'}),
+            h('button', {onClick: async ()=>{
+              try{
+                if(navigator.contacts && navigator.contacts.select){
+                  const props=['name','tel'];
+                  const contacts = await navigator.contacts.select(props, {multiple:false});
+                  if(contacts && contacts.length>0){
+                    const c=contacts[0];
+                    if(c.name && c.name[0]) setPersonName(c.name[0]);
+                    if(c.tel && c.tel[0]) setPhone(c.tel[0]);
+                    setToast && setToast('Contact picked: '+(c.name?c.name[0]:''));
+                  }
+                } else {
+                  setToast && setToast(lang==='en' ? 'Contact picker not supported in this browser. Please type manually.' : 'এই ব্রাউজারে কন্টাক্ট পিকার সাপোর্ট করে না। হাতে লিখুন।');
+                }
+              }catch(e){
+                if(e.name!=='NotAllowedError'){
+                  setToast && setToast('Error: '+e.message);
+                }
+              }
+            }, style:{color:'white', backgroundColor:'#1B4D3E'}, className:'px-4 py-3.5 rounded-[16px] bg-[#1B4D3E] text-white text-[12px] font-bold flex items-center gap-2 shrink-0'}, h('span', null, '👤'), h('span', null, 'Pick from Contact'))
+          ),
+          h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'Tap contact icon to pick from phone')
+        ),
+        h('div', null, h('label', {className:labelClass}, 'PHONE NUMBER'), h('div', {className:'relative'}, h('span', {className:'absolute left-4 top-1/2 -translate-y-1/2 text-[18px]'}, '📞'), h('input', {value:phone, onChange:e=>setPhone(e.target.value), placeholder:'+880 1...', className: inputClass + ' pl-11'}))),
+        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
+        h('div', null,
+          h('label', {className:labelClass}, '🕒 TIME / সময়'),
+          h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'},
+            h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
+            h('span', {className:'font-bold text-[#1A1A1A]'}, ':'),
+            h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
+            h('div', {className:'flex gap-1 ml-2'},
+              h('button', {onClick:()=>setAmPm('AM'), style: amPm==='AM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), style: amPm==='PM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'PM')
+            )
+          ),
+          h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'ঘণ্টা ও মিনিট স্ক্রল করে সিলেক্ট করুন, AM/PM সেট করুন')
+        ),
+        h('div', null,
+          h('div', {className:'flex items-center justify-between mb-2'}, h('label', {className:'text-[13px] font-bold text-[#1B4D3E] flex items-center gap-2'}, '📄 বিষয় / Subject'), h('span', {style:{color:'white', backgroundColor:'#1B4D3E'}, className:'px-3 py-1 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, selectedSubjects.length + ' selected')),
+          selectedSubjects.length>0 ? h('div', {className:'flex flex-wrap gap-2 mb-3'}, selectedSubjects.map(id=>{ const opt = SUBJECT_OPTIONS.find(o=>o.id===id); if(!opt) return null; return h('div', {key:id, style:{backgroundColor:'#E8F5E9', borderColor:'#C8E6C9'}, className:'flex items-center gap-1.5 bg-[#E8F5E9] border rounded-full px-3 py-1.5 text-[12px]'}, h('span', null, opt.icon), h('span', {style:{color:'#1B5E20'}, className:'font-bold'}, opt.en), h('button', {onClick:()=>removeSubject(id), className:'ml-1 w-4 h-4 rounded-full bg-[#C8E6C9] flex items-center justify-center text-[10px] text-[#1A1A1A]'}, '×'))})) : null,
+          h('div', {className:'bg-[#F9F1E7] border border-[#F3E8D3] rounded-[16px] overflow-hidden'},
+            h('button', {onClick:()=>setShowSubject(!showSubject), className:'w-full flex items-center justify-between p-4 text-left'}, h('span', {style:{color:'#1B4D3E'}, className:'flex items-center gap-2 text-[14px] font-bold'}, h('span', null, '📄'), h('span', null, 'বিষয় / Subject')), h('span', {style:{color:'#1A1A1A', backgroundColor:'white'}, className:'px-3 py-1.5 rounded-full bg-white border text-[12px] font-bold'}, (showSubject ? 'Hide ▲' : 'Select ▼'))),
+            showSubject ? h('div', {className:'border-t border-[#F3E8D3] bg-white max-h-[320px] overflow-y-auto'}, h('div', {className:'p-3 border-b'}, h('input', {value:subjectSearch, onChange:e=>setSubjectSearch(e.target.value), placeholder:'Search subject... e.g., EMI, Cheque', className:'w-full bg-[#FFFEF7] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[13px] text-[#1A1A1A] outline-none'})), h('div', {className:'p-2 space-y-1'}, filteredSubjects.map(opt=> h('button', {key:opt.id, onClick:()=>toggleSubject(opt.id), style: selectedSubjects.includes(opt.id) ? {backgroundColor:'#E8F5E9'} : {backgroundColor:'white'}, className: 'w-full flex items-center justify-between p-3 rounded-[12px] text-left ' + (selectedSubjects.includes(opt.id) ? 'bg-[#E8F5E9] border border-[#C8E6C9]' : 'bg-white border border-transparent')}, h('span', {className:'flex items-center gap-2 text-[13px]'}, h('span', null, opt.icon), h('span', {style:{color:'#1A1A1A'}, className: selectedSubjects.includes(opt.id) ? 'font-bold text-[#1B5E20]' : ''}, opt.en)), selectedSubjects.includes(opt.id) ? h('span', {style:{color:'#2E7D32'}, className:'font-bold'}, '×') : null)))) : null
+          )
+        ),
+        h('div', null, h('label', {className:labelClass}, 'TASK TITLE (OPTIONAL)'), h('input', {value:taskTitle, onChange:e=>setTaskTitle(e.target.value), placeholder:'Auto from subject if empty', className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, 'PRIORITY'), h('div', {className:'grid grid-cols-2 gap-3'}, h('button', {onClick:()=>setPriority('normal'), style: priority==='normal' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '● Normal'), h('button', {onClick:()=>setPriority('urgent'), style: priority==='urgent' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '○ Urgent'))),
+        h('div', null, h('label', {className:labelClass}, 'NOTES'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional details...', rows:3, className: inputClass + ' resize-none h-[80px]'}))
+      ) : null,
+
+      activeTab==='visit' ? h('div', {className:'space-y-5'},
+        h('div', null, h('label', {className:labelClass}, '📍 WHERE TO VISIT / কোথায় ভিজিট করবেন'), h('input', {value:whereVisit, onChange:e=>setWhereVisit(e.target.value), placeholder:'e.g., Uttara Branch, Client office', className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, '📝 VISIT PURPOSE / কি বিষয়ে ভিজিট করবেন'), h('textarea', {value:visitPurpose, onChange:e=>setVisitPurpose(e.target.value), placeholder:'e.g., Document submission, Client meeting', rows:4, className: inputClass + ' resize-none h-[96px]'})),
+        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
+        h('div', null,
+          h('label', {className:labelClass}, '🕒 TIME / সময়'),
+          h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'},
+            h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
+            h('span', {className:'font-bold text-[#1A1A1A]'}, ':'),
+            h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
+            h('div', {className:'flex gap-1 ml-2'},
+              h('button', {onClick:()=>setAmPm('AM'), style: amPm==='AM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), style: amPm==='PM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'PM')
+            )
+          )
+        ),
+        h('div', null, h('label', {className:labelClass}, 'PRIORITY'), h('div', {className:'grid grid-cols-2 gap-3'}, h('button', {onClick:()=>setPriority('normal'), style: priority==='normal' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '● Normal'), h('button', {onClick:()=>setPriority('urgent'), style: priority==='urgent' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '○ Urgent'))),
+        h('div', null, h('label', {className:labelClass}, 'NOTES'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional details...', rows:3, className: inputClass + ' resize-none h-[80px]'}))
+      ) : null,
+
+      activeTab==='office' ? h('div', {className:'space-y-4'},
+        h('div', {className:'flex items-center justify-between'}, h('span', {style:{color:'white', backgroundColor:'#1B4D3E'}, className:'px-3 py-1 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, officeSelected.length + ' selected')),
+        h('div', {className:'relative'}, h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px]'}, '🔍'), h('input', {value:officeSearch, onChange:e=>setOfficeSearch(e.target.value), placeholder:'Search office tasks... e.g., CIB, Loan, Mail', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] pl-9 pr-4 py-2.5 text-[13px] text-[#1A1A1A] outline-none'})),
+        filteredOfficeGroups.map(group=>
+          h('div', {key:group.id, className:'bg-[#FDF8EF] border border-[#F3E8D3] rounded-[16px] overflow-hidden'},
+            h('button', {onClick:()=>toggleOfficeGroup(group.id), className:'w-full flex items-center justify-between p-4 text-left'}, h('span', {style:{color:'#5C4A32'}, className:'flex items-center gap-2 text-[13px] font-bold'}, h('span', null, group.icon), h('span', null, group.name)), h('span', {className:'flex items-center gap-2'}, h('span', {className:'text-[10px] text-[#8B7355]'}, group.count), h('span', {style:{color:'#1A1A1A'}, className:'text-[12px]'}, officeGroupsOpen[group.id] ? '∧' : '∨'))),
+            officeGroupsOpen[group.id] ? h('div', {className:'px-3 pb-3 space-y-2'}, group.items.map(it=> h('button', {key:it.id, onClick:()=>toggleOfficeItem(it.id), style: officeSelected.includes(it.id) ? {backgroundColor:'#E8F5E9'} : {backgroundColor:'white'}, className: 'w-full flex items-center gap-3 p-3 rounded-[12px] border text-left ' + (officeSelected.includes(it.id) ? 'bg-[#E8F5E9] border-[#C8E6C9]' : 'bg-white border-[#E8E6DC]')}, h('span', {style: officeSelected.includes(it.id) ? {color:'white', backgroundColor:'#2E7D32', borderColor:'#2E7D32'} : {color:'#1A1A1A', backgroundColor:'white'}, className:'w-5 h-5 rounded-[6px] border flex items-center justify-center text-[12px]'}, officeSelected.includes(it.id) ? '✓' : ''), h('span', {className:'text-[14px]'}, it.icon), h('span', {style:{color: officeSelected.includes(it.id) ? '#1B5E20' : '#1A1A1A'}, className:'text-[13px] ' + (officeSelected.includes(it.id) ? 'font-bold' : '')}, it.label)))) : null
+          )
+        ),
+        h('div', {className:'bg-white border border-[#E8E6DC] rounded-[16px] p-3'}, h('label', {className:'text-[11px] font-bold text-[#8B7355] flex items-center gap-1'}, '+ ADD CUSTOM OFFICE TASK'), h('input', {value:customOfficeTask, onChange:e=>setCustomOfficeTask(e.target.value), placeholder:'e.g., Morning briefing, File handover', className:'w-full mt-2 bg-[#FFFEF7] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[13px] text-[#1A1A1A] outline-none'}), h('p', {className:'text-[10px] text-[#8B7355] mt-1.5'}, 'Will be saved as title if no checklist selected')),
+        h('div', {className:'space-y-3'},
+          h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
+          h('div', null, h('label', {className:labelClass}, '🕒 TIME / সময়'), h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'}, h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))), h('span', {className:'font-bold text-[#1A1A1A]'}, ':'), h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))), h('div', {className:'flex gap-1 ml-2'}, h('button', {onClick:()=>setAmPm('AM'), style: amPm==='AM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'AM'), h('button', {onClick:()=>setAmPm('PM'), style: amPm==='PM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'PM')))),
+          h('div', null, h('label', {className:labelClass}, 'PRIORITY'), h('div', {className:'grid grid-cols-2 gap-3'}, h('button', {onClick:()=>setPriority('normal'), style: priority==='normal' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '● Normal'), h('button', {onClick:()=>setPriority('urgent'), style: priority==='urgent' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '○ Urgent'))),
+          h('div', null, h('label', {className:labelClass}, 'NOTES'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional details...', rows:3, className: inputClass + ' resize-none h-[80px]'}))
+        )
+      ) : null,
+
+      h('div', {className:'grid grid-cols-2 gap-3 pt-2 pb-6'},
+        h('button', {onClick:()=>{ try{ setAddType && setAddType(null); }catch(e){} }, style:{color:'#5C5C5C', backgroundColor:'#FFFEF7'}, className:'py-4 rounded-[16px] bg-[#FFFEF7] border border-[#E8E6DC] text-[15px] font-bold'}, 'Cancel'),
+        h('button', {onClick:saveToFirebase, disabled:saving, style:{color:'white', backgroundColor:'#1B4D3E'}, className:'py-4 rounded-[16px] bg-[#1B4D3E] text-white text-[15px] font-bold disabled:opacity-50'}, saving ? 'Saving...' : 'Save Task')
+      )
+    )
+  );
+}
+
+
+function TravelManager({t, lang, setToast}){
+  const TRAVEL_GROUPS = [
+    {id:'electronics', name:'ইলেকট্রনিক্স', nameEn:'Electronics', icon:'📱', items:[
+      {id:'mobile', label:'মোবাইল – Mobile', icon:'📱'},
+      {id:'tab', label:'ট্যাব – Tab', icon:'📲'},
+      {id:'laptop', label:'ল্যাপটপ – Laptop', icon:'💻'},
+      {id:'powerbank', label:'পাওয়ার ব্যাংক – Power Bank', icon:'🔋'},
+      {id:'charger', label:'চার্জার – Charger', icon:'🔌'},
+      {id:'multiplug', label:'মাল্টি প্লাগ – Multi Plug', icon:'🔌'},
+      {id:'headphone', label:'হেডফোন – Headphone', icon:'🎧'},
+      {id:'pendrive', label:'পেনড্রাইভ – Pen Drive', icon:'💾'},
+      {id:'hdd', label:'পোর্টেবল হার্ডডিস্ক – Portable Hard Disk', icon:'🗄️'},
+    ]},
+    {id:'clothing', name:'পোশাক', nameEn:'Clothing', icon:'👕', items:[
+      {id:'shirt', label:'জামা – Shirt', icon:'👔'},
+      {id:'pants', label:'প্যান্ট – Pants', icon:'👖'},
+      {id:'tshirt', label:'টিশার্ট – T-shirt', icon:'👕'},
+      {id:'underwear', label:'জাঙ্গিয়া – Underwear', icon:'🩲'},
+      {id:'socks', label:'মোজা – Socks', icon:'🧦'},
+      {id:'winter', label:'শীতের কাপড় – Winter Clothes', icon:'🧥'},
+      {id:'shorts', label:'হাফ প্যান্ট – Shorts', icon:'🩳'},
+      {id:'lungi', label:'লুঙ্গি – Lungi', icon:'🧣'},
+      {id:'gamchha', label:'গামছা – Gamchha (Towel)', icon:'🧻'},
+    ]},
+    {id:'shoes', name:'জুতা ও হেলমেট', nameEn:'Shoes & Helmet', icon:'👟', items:[
+      {id:'shoes', label:'জুতা – Shoes', icon:'👟'},
+      {id:'shoes2', label:'জুতা (২য় জোড়া) – Shoes (2nd pair)', icon:'👞'},
+      {id:'helmet', label:'হেলমেট – Helmet', icon:'🪖'},
+      {id:'shoe_brush', label:'জুতার ব্রাশ – Shoe Brush', icon:'🪥'},
+      {id:'shoe_polish', label:'জুতার কালি – Shoe Polish', icon:'🧴'},
+    ]},
+    {id:'personal', name:'ব্যক্তিগত ব্যবহার', nameEn:'Personal Use', icon:'🧼', items:[
+      {id:'shaving', label:'শেভিং কিটস – Shaving Kit', icon:'🪒'},
+      {id:'shampoo', label:'শ্যাম্পু – Shampoo', icon:'🧴'},
+      {id:'toothbrush', label:'টুথ ব্রাশ – Toothbrush', icon:'🪥'},
+      {id:'toothpaste', label:'টুথ পেস্ট – Toothpaste', icon:'🦷'},
+      {id:'nailcutter', label:'নেল কাটার – Nail Cutter', icon:'✂️'},
+      {id:'medicine', label:'ঔষধ – Medicine', icon:'💊'},
+      {id:'cigarette', label:'সিগারেট – Cigarette', icon:'🚬'},
+      {id:'lighter', label:'লাইটার – Lighter', icon:'🔥'},
+    ]},
+    {id:'papers', name:'কাগজপত্র ও টাকা', nameEn:'Papers & Money', icon:'📄', items:[
+      {id:'atm', label:'এটিএম কার্ড – ATM Card', icon:'💳'},
+      {id:'bike_papers', label:'বাইকের কাগজপত্র – Bike Papers', icon:'🏍️'},
+      {id:'license', label:'ড্রাইভিং লাইসেন্স – Driving License', icon:'🪪'},
+      {id:'passport_photos', label:'পাসপোর্ট সাইজ ছবি – Passport-size Photos', icon:'🖼️'},
+      {id:'nid_copy', label:'NID ফটোকপি – NID Photocopy', icon:'🪪'},
+      {id:'visiting_card', label:'ভিজিটিং কার্ড – Visiting Card', icon:'📇'},
+    ]},
+    {id:'stationery', name:'লেখার সরঞ্জাম', nameEn:'Writing Tools', icon:'✏️', items:[
+      {id:'pen', label:'কলম – Pen', icon:'🖊️'},
+      {id:'pad', label:'প্যাড – Notepad', icon:'📝'},
+      {id:'diary', label:'ডায়েরি – Diary', icon:'📓'},
+    ]},
+    {id:'others', name:'অন্যান্য', nameEn:'Others', icon:'📌', items:[
+      {id:'other1', label:'Other Item 1', icon:'📌'},
+      {id:'other2', label:'Other Item 2', icon:'📌'},
+    ]},
+  ];
+
+  const [selected, setSelected] = React.useState(()=>{
+    try{ const s = JSON.parse(localStorage.getItem('travel_checklist_selected')||'[]'); return Array.isArray(s)?s:[]; }catch(e){ return []; }
+  });
+  const [openGroups, setOpenGroups] = React.useState({electronics:true});
+  const [search, setSearch] = React.useState('');
+  const [othersNote, setOthersNote] = React.useState(()=>{
+    try{ return localStorage.getItem('travel_others_note')||''; }catch(e){ return ''; }
+  });
+  const [showOthers, setShowOthers] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  // NEW: Travel Partner trip details
+  const [fromLocation, setFromLocation] = React.useState(()=>{ try{ return localStorage.getItem('travel_from_loc')||''; }catch(e){ return ''; } });
+  const [destination, setDestination] = React.useState(()=>{ try{ return localStorage.getItem('travel_dest')||''; }catch(e){ return ''; } });
+  const [fromDate, setFromDate] = React.useState(()=>{ try{ return localStorage.getItem('travel_from_date')||''; }catch(e){ return ''; } });
+  const [toDate, setToDate] = React.useState(()=>{ try{ return localStorage.getItem('travel_to_date')||''; }catch(e){ return ''; } });
+  const [travelStatus, setTravelStatus] = React.useState('Not Yet');
+  const [travelList, setTravelList] = React.useState(()=>{ try{ const l=JSON.parse(localStorage.getItem('travel_partner_list')||'[]'); return Array.isArray(l)?l:[]; }catch(e){ return []; } });
+  const [showTravelList, setShowTravelList] = React.useState(false);
+  const [editingTravelId, setEditingTravelId] = React.useState(null);
+
+  // FIXED: Self-contained Travel PDF with standard header (same as income/expenses)
+  function renderTravelLocal(o){
+    const W=2480, H=3508, M=120;
+    const pages=[]; let cv, ctx, y=0;
+    function newPage(){
+      cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+      y=M;
+      // Standard header - same as history/report
+      const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
+      const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
+      const dateStr = dd+'/'+mm+'/'+yyyy;
+      const timeStr = genDateObj.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+      let profileLines=[];
+      try{
+        const lsN=localStorage.getItem('lifestyle_user_name')||''; const lsD=localStorage.getItem('lifestyle_user_designation')||''; const lsA=localStorage.getItem('lifestyle_user_address')||''; const lsM=localStorage.getItem('lifestyle_user_mobile')||'';
+        if(o.userName||lsN) profileLines.push('User: '+(o.userName||lsN));
+        if(o.userDesignation||lsD) profileLines.push('Designation: '+(o.userDesignation||lsD));
+        if(o.userAddress||lsA) profileLines.push('Address: '+(o.userAddress||lsA));
+        if(o.userMobile||lsM) profileLines.push('Mobile: '+(o.userMobile||lsM));
+      }catch(e){}
+      const devLines = ['Developer','Md. Abdus Salam','Bantra, Kalaroa, Satkhira','Mobile: +8801737265245','Email: salamwgp@gmail.com'];
+      ctx.fillStyle='#000'; ctx.font='700 52px sans-serif'; ctx.fillText((o.appName||'Lifestyle'), M, y); y+=60;
+      ctx.fillStyle='#2D2A26'; ctx.font='700 28px sans-serif'; ctx.fillText('Download: '+dateStr+' '+timeStr, M, y); y+=44;
+      ctx.font='400 26px sans-serif'; profileLines.forEach(pl=>{ ctx.fillText(pl, M, y); y+=36; });
+      let ry=M+20; const devX=W-M-700;
+      devLines.forEach((dl,i)=>{ ctx.font=(i===0?'700 30px ':'400 24px ')+'sans-serif'; ctx.fillStyle='#2D2A26'; ctx.fillText(dl, devX, ry); ry+=38; });
+      y=Math.max(y,ry)+30;
+      ctx.strokeStyle='#000'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50;
+      ctx.fillStyle='#E65100'; ctx.fillRect(M,y,W-2*M,8); y+=20;
+      ctx.fillStyle='#E65100'; ctx.font='bold 32px sans-serif'; ctx.fillText('Travel Partner Report', M, y+30); y+=70;
+      pages.push(cv);
+    }
+    function ensureSpace(need){ if(y+need > H-100){ newPage(); } }
+    function drawSection(title){
+      ensureSpace(90);
+      ctx.fillStyle='#2D2A26'; ctx.fillRect(M, y, W-2*M, 70);
+      ctx.fillStyle='#fff'; ctx.font='bold 30px sans-serif'; ctx.fillText(title, M+20, y+45);
+      y+=90;
+    }
+    function drawField(label, value){
+      if(!value && value!==0) return;
+      ensureSpace(60);
+      ctx.fillStyle='#5C4A32'; ctx.font='bold 24px sans-serif';
+      const lab = label+': ';
+      ctx.fillText(lab, M, y);
+      ctx.fillStyle='#1A1A1A'; ctx.font='24px sans-serif';
+      const v = String(value);
+      ctx.fillText(v, M+ctx.measureText(lab).width, y);
+      y+=50;
+    }
+    newPage();
+    const list = o.list||[];
+    const single = o.single;
+    if(single){
+      drawSection('Travel Details - Only Marked Fields');
+      drawField('From Location', single.fromLocation);
+      drawField('Destination', single.destination);
+      drawField('From Date / শুরুর তারিখ', single.fromDate);
+      drawField('To Date / শেষ তারিখ', single.toDate);
+      drawField('Travel Status', single.travelStatus);
+    } else if(list.length>0){
+      list.forEach((tr, idx)=>{
+        drawSection('Trip '+(idx+1)+' - '+(tr.fromLocation||'')+' → '+(tr.destination||''));
+        drawField('From Location', tr.fromLocation);
+        drawField('Destination', tr.destination);
+        drawField('From Date', tr.fromDate);
+        drawField('To Date', tr.toDate);
+        drawField('Travel Status', tr.travelStatus);
+        y+=20;
+      });
+    }
+    return pages;
+  }
+  function handleTravelPdfFixed(mode, data){
+    mode=mode||'view';
+    try{
+      const genAt=new Date();
+      const userName = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+      let o={userName, generatedAt: genAt, appName:'Lifestyle'};
+      if(data && data.id){ o.single=data; } else if(Array.isArray(data)){ o.list=data; } else if(data && (data.fromLocation||data.destination)){ o.single=data; } else { o.list=data||[]; }
+      const pages=renderTravelLocal(o);
+      const jpegs=pages.map(c=>{
+        const b64=c.toDataURL('image/jpeg',0.85).split(',')[1];
+        const bin=atob(b64), bytes=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+        return {bytes,w:c.width,h:c.height};
+      });
+      // Build PDF blob - inline buildPdfFromJpegs logic
+      const enc = new TextEncoder(), chunks = [], offsets = [];
+      let len = 0;
+      function push(x){ const b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); len += b.length; }
+      const n = jpegs.length, total = 2 + 3*n;
+      push('%PDF-1.4\n');
+      offsets[1] = len; push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+      const kids = []; for(let i=0;i<n;i++) kids.push((3+i*3)+' 0 R');
+      offsets[2] = len; push('2 0 obj\n<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + n + ' >>\nendobj\n');
+      for(let i=0;i<n;i++){
+        const pg = 3+i*3, ct = pg+1, im = pg+2, j = jpegs[i];
+        offsets[pg] = len;
+        push(pg + ' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 ' + im + ' 0 R >> >> /Contents ' + ct + ' 0 R >>\nendobj\n');
+        const content = 'q 595 0 0 842 0 0 cm /Im0 Do Q';
+        offsets[ct] = len;
+        push(ct + ' 0 obj\n<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream\nendobj\n');
+        offsets[im] = len;
+        push(im + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + j.w + ' /Height ' + j.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + j.bytes.length + ' >>\nstream\n');
+        push(j.bytes); push('\nendstream\nendobj\n');
+      }
+      const xref = len;
+      let x = 'xref\n0 ' + (total+1) + '\n0000000000 65535 f \n';
+      for(let i=1;i<=total;i++) x += String(offsets[i]).padStart(10,'0') + ' 00000 n \n';
+      push(x + 'trailer\n<< /Size ' + (total+1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+      const blob = new Blob(chunks, {type:'application/pdf'});
+      const fname='Travel-Partner-'+(o.single ? (o.single.fromLocation+'-to-'+o.single.destination) : 'All-Trips')+'-'+(new Date().toISOString().slice(0,10))+'.pdf';
+      const title='Travel Partner - '+(o.single ? (o.single.fromLocation+' to '+o.single.destination) : 'All Trips');
+      if(mode==='download'){
+        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+        setToast && setToast('Travel PDF downloaded');
+      } else if(mode==='view'){
+        try{
+          const url=URL.createObjectURL(blob); window.open(url,'_blank'); setTimeout(()=>URL.revokeObjectURL(url), 60000);
+        }catch(e){ console.error(e); }
+      } else {
+        if(navigator.share && navigator.canShare && navigator.canShare({files:[new File([blob], fname, {type:'application/pdf'})]})){
+          const file=new File([blob], fname, {type:'application/pdf'});
+          navigator.share({files:[file], title:title}).catch(()=>{});
+        } else {
+          const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+        }
+      }
+    }catch(e){ console.error('Travel PDF error', e); setToast && setToast('PDF error: '+e.message); }
+  }
+
+
+  function toggleItem(id){
+    setSelected(prev=>{
+      const next = prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id];
+      try{ localStorage.setItem('travel_checklist_selected', JSON.stringify(next)); }catch(e){}
+      return next;
+    });
+  }
+  function toggleGroup(gid){ setOpenGroups(prev=> ({...prev, [gid]: !prev[gid]})); }
+
+  const filteredGroups = TRAVEL_GROUPS.map(g=>{
+    if(!search) return g;
+    const s = search.toLowerCase();
+    const filteredItems = g.items.filter(it=> it.label.toLowerCase().includes(s));
+    if(filteredItems.length===0 && !g.name.toLowerCase().includes(s) && !g.nameEn.toLowerCase().includes(s)) return null;
+    return {...g, items: filteredItems.length>0 ? filteredItems : g.items};
+  }).filter(Boolean);
+
+  function handleSave(){
+    setSaving(true);
+    const isValidTrip = fromLocation.trim() || destination.trim();
+    const id = editingTravelId || (typeof uid==='function' ? uid() : Date.now().toString());
+    const data = {
+      id: id,
+      fromLocation,
+      destination,
+      fromDate,
+      toDate,
+      travelStatus,
+      selected,
+      othersNote,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      type: 'travel_checklist'
+    };
+    try{
+      // Save to travel partner list (multiple trips)
+      try{
+        const prevList = JSON.parse(localStorage.getItem('travel_partner_list')||'[]');
+        let newList;
+        const existingIdx = prevList.findIndex(t=>t.id===id);
+        if(existingIdx>=0){
+          newList = [...prevList];
+          newList[existingIdx] = data;
+        } else {
+          newList = [data, ...prevList];
+        }
+        localStorage.setItem('travel_partner_list', JSON.stringify(newList));
+        setTravelList(newList);
+        localStorage.setItem('travel_from_loc', fromLocation);
+        localStorage.setItem('travel_dest', destination);
+        localStorage.setItem('travel_from_date', fromDate);
+        localStorage.setItem('travel_to_date', toDate);
+        localStorage.setItem('travel_others_note', othersNote);
+      }catch(e){}
+      const user = firebase.auth().currentUser;
+      if(user && firebase.firestore){
+        firebase.firestore().collection('travel_checklists').doc(data.id).set({...data, uid: user.uid})
+        .then(()=>{
+          setToast && setToast(lang==='en' ? 'Travel saved - '+(fromLocation+' → '+destination) : 'ভ্রমণ সেভ হয়েছে - '+(fromLocation+' → '+destination));
+          setSaving(false);
+          setEditingTravelId(null);
+        }).catch(e=>{
+          setToast && setToast('Saved locally: '+e.message);
+          setSaving(false);
+        });
+      } else {
+        try{ localStorage.setItem('travel_checklist_'+data.id, JSON.stringify(data)); }catch(e){}
+        setToast && setToast(lang==='en' ? 'Travel saved - '+(fromLocation||'Trip') : 'ভ্রমণ সেভ হয়েছে');
+        setSaving(false);
+        setEditingTravelId(null);
+      }
+    }catch(e){ setSaving(false); setToast && setToast('Error: '+e.message); }
+  }
+
+  function handleNewTrip(){
+    setFromLocation('');
+    setDestination('');
+    setFromDate('');
+    setToDate('');
+    setTravelStatus('Not Yet');
+    setSelected([]);
+    setOthersNote('');
+    setEditingTravelId(null);
+    try{
+      localStorage.removeItem('travel_from_loc');
+      localStorage.removeItem('travel_dest');
+      localStorage.removeItem('travel_from_date');
+      localStorage.removeItem('travel_to_date');
+    }catch(e){}
+    setToast && setToast(lang==='en' ? 'New trip form cleared' : 'নতুন ভ্রমণ ফর্ম খালি করা হয়েছে');
+  }
+
+  function handleLoadTrip(trip){
+    setFromLocation(trip.fromLocation||'');
+    setDestination(trip.destination||'');
+    setFromDate(trip.fromDate||'');
+    setToDate(trip.toDate||'');
+    setTravelStatus(trip.travelStatus||'Not Yet');
+    setSelected(trip.selected||[]);
+    setOthersNote(trip.othersNote||'');
+    setEditingTravelId(trip.id);
+    setShowTravelList(false);
+    setToast && setToast('Loaded: '+(trip.fromLocation+' → '+trip.destination));
+    window.scrollTo(0,0);
+  }
+
+  function handleDeleteTrip(id){
+    if(confirm('এই ভ্রমণ ডিলিট করবেন?')){
+      try{
+        const prevList = JSON.parse(localStorage.getItem('travel_partner_list')||'[]');
+        const newList = prevList.filter(t=>t.id!==id);
+        localStorage.setItem('travel_partner_list', JSON.stringify(newList));
+        setTravelList(newList);
+        setToast && setToast('Deleted');
+      }catch(e){}
+    }
+  }
+
+  function toggleTravelStatus(id, status){
+    try{
+      const prevList = JSON.parse(localStorage.getItem('travel_partner_list')||'[]');
+      const newList = prevList.map(t=> t.id===id ? {...t, travelStatus: status, updatedAt: new Date().toISOString()} : t);
+      localStorage.setItem('travel_partner_list', JSON.stringify(newList));
+      setTravelList(newList);
+      setToast && setToast(status==='Travel Done' ? '✓ Travel Done - সবুজ হয়েছে' : 'Not Yet - লাল হয়েছে');
+    }catch(e){}
+  }
+
+
+  return h('div', {className:'bg-[#FFFEF7] -m-4 p-0'},
+    h('div', {className:'p-4 bg-[#FFFEF7] space-y-4'},
+      // NEW: Travel Partner - Trip Details (From Location, Destination, Dates, Status)
+      h('div', {className:'bg-white border-2 border-[#E65100] rounded-[16px] p-4 space-y-3'},
+        h('div', {className:'flex items-center justify-between'},
+          h('p', {className:'text-[13px] font-bold text-[#BF360C]'}, 'Travel Partner / ভ্রমণ পার্টনার ('+travelList.length+')'),
+          h('div', {className:'flex gap-2'},
+            h('button', {onClick:()=>setShowTravelList(!showTravelList), style:{backgroundColor:'#FFF3E0', color:'#BF360C'}, className:'px-3 py-1.5 rounded-full text-[11px] font-bold border'}, showTravelList ? 'Hide List' : 'Show List ('+travelList.length+')'),
+            h('button', {onClick:handleNewTrip, style:{backgroundColor:'#E65100', color:'white'}, className:'px-3 py-1.5 rounded-full text-[11px] font-bold'}, '+ New Trip')
+          )
+        ),
+        editingTravelId ? h('p', {className:'text-[11px] text-[#2E7D32] font-bold bg-[#E8F5E9] p-2 rounded-[8px]'}, 'এডিট করছেন: '+fromLocation+' → '+destination) : h('p', {className:'text-[11px] text-[#8B7355] bg-[#FFF8E1] p-2 rounded-[8px]'}, 'নতুন ভ্রমণ যোগ করুন - From → Destination'),
+        h('div', {className:'grid grid-cols-2 gap-3'},
+          h('div', null,
+            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'From Location'),
+            h('input', {value:fromLocation, onChange:e=>setFromLocation(e.target.value), placeholder:'Dhaka / ঢাকা', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-3 text-[13px] text-[#1A1A1A] outline-none'})
+          ),
+          h('div', null,
+            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'Destination'),
+            h('input', {value:destination, onChange:e=>setDestination(e.target.value), placeholder:'Cox Bazar / কক্সবাজার', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-3 text-[13px] text-[#1A1A1A] outline-none'})
+          )
+        ),
+        h('div', {className:'grid grid-cols-2 gap-3'},
+          h('div', null,
+            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'শুরুর তারিখ'),
+            h('div', {className:'bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-2 flex items-center justify-between'},
+              h('input', {type:'date', value:fromDate, onChange:e=>setFromDate(e.target.value), className:'flex-1 bg-transparent text-[13px] text-[#1A1A1A] outline-none'}),
+              h('span', {className:'text-[12px] text-[#8B7355]'}, '▼')
+            )
+          ),
+          h('div', null,
+            h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-1.5 block'}, 'শেষ তারিখ'),
+            h('div', {className:'bg-white border border-[#E8E6DC] rounded-[12px] px-4 py-2 flex items-center justify-between'},
+              h('input', {type:'date', value:toDate, onChange:e=>setToDate(e.target.value), className:'flex-1 bg-transparent text-[13px] text-[#1A1A1A] outline-none'}),
+              h('span', {className:'text-[12px] text-[#8B7355]'}, '▼')
+            )
+          )
+        ),
+        h('div', {className:'space-y-2'},
+          h('label', {className:'text-[11px] font-bold text-[#5C4A32] block'}, 'Travel Status / ভ্রমণ স্ট্যাটাস'),
+          h('div', {className:'grid grid-cols-2 gap-3'},
+            h('button', {onClick:()=>setTravelStatus('Travel Done'), style: travelStatus==='Travel Done' ? {backgroundColor:'#2E7D32', color:'white', borderColor:'#2E7D32'} : {backgroundColor:'white', color:'#2E7D32', borderColor:'#C8E6C9'}, className:'py-3 rounded-[12px] border-2 text-[12px] font-bold flex items-center justify-center gap-2'},
+              h('span', null, '✓'), h('span', null, 'Travel Done')
+            ),
+            h('button', {onClick:()=>setTravelStatus('Not Yet'), style: travelStatus==='Not Yet' ? {backgroundColor:'#B71C1C', color:'white', borderColor:'#B71C1C'} : {backgroundColor:'white', color:'#B71C1C', borderColor:'#FFCDD2'}, className:'py-3 rounded-[12px] border-2 text-[12px] font-bold flex items-center justify-center gap-2'},
+              h('span', null, '✕'), h('span', null, 'Not Yet')
+            )
+          ),
+          h('p', {className:'text-[10px] text-center '+(travelStatus==='Travel Done' ? 'text-[#2E7D32] font-bold' : 'text-[#B71C1C] font-bold')}, travelStatus==='Travel Done' ? '✓ সবুজ - ভ্রমণ সম্পন্ন হয়েছে' : '✕ লাল - এখনো হয়নি')
+        ),
+        showTravelList && travelList.length>0 ? h('div', {className:'space-y-2 max-h-[300px] overflow-y-auto pt-2 border-t border-[#F3E8D3]'},
+          travelList.map(tr=>
+            h('div', {key:tr.id, className:'bg-[#FFFEF7] border rounded-[12px] p-3 space-y-2 '+(tr.travelStatus==='Travel Done' ? 'border-[#4CAF50] bg-[#E8F5E9]' : 'border-[#EF9A9A] bg-[#FFEBEE]')},
+              h('div', {className:'flex items-center justify-between'},
+                h('div', {className:'flex-1'},
+                  h('p', {className:'text-[12px] font-bold text-[#1A1A1A]'}, (tr.fromLocation||'?')+' → '+(tr.destination||'?')),
+                  h('p', {className:'text-[10px] text-gray-600'}, (tr.fromDate||'')+' → '+(tr.toDate||'')+' | '+(tr.selected?.length||0)+' items'),
+                  h('p', {className:'text-[10px] font-bold '+(tr.travelStatus==='Travel Done' ? 'text-[#2E7D32]' : 'text-[#B71C1C]')}, tr.travelStatus)
+                ),
+                h('div', {className:'flex gap-1'},
+                  h('button', {onClick:()=>toggleTravelStatus(tr.id, tr.travelStatus==='Travel Done' ? 'Not Yet' : 'Travel Done'), style: tr.travelStatus==='Travel Done' ? {backgroundColor:'#B71C1C', color:'white'} : {backgroundColor:'#2E7D32', color:'white'}, className:'px-2 py-1.5 rounded-full text-[9px] font-bold'}, tr.travelStatus==='Travel Done' ? 'Not Yet' : 'Done'),
+                  h('button', {onClick:()=>handleLoadTrip(tr), style:{backgroundColor:'#1E4538', color:'white'}, className:'px-2 py-1.5 rounded-full text-[9px] font-bold'}, 'Load'),
+                  h('button', {onClick:()=>handleDeleteTrip(tr.id), style:{backgroundColor:'white', color:'#B71C1C'}, className:'px-2 py-1.5 rounded-full text-[9px] font-bold border'}, 'X')
+                )
+              )
+            )
+          )
+        ) : (showTravelList ? h('p', {className:'text-[11px] text-gray-500 text-center py-2'}, 'কোনো ভ্রমণ সেভ নেই') : null)
+      ),
+      h('div', {className:'flex items-center justify-between'},
+        h('span', {style:{color:'white', backgroundColor:'#E65100'}, className:'px-3 py-1 rounded-full bg-[#E65100] text-white text-[11px] font-bold'}, selected.length + ' selected / ' + TRAVEL_GROUPS.reduce((a,g)=>a+g.items.length,0) + ' total'),
+        h('button', {onClick:()=>{ setSelected([]); setOthersNote(''); try{ localStorage.removeItem('travel_checklist_selected'); localStorage.removeItem('travel_others_note'); }catch(e){} }, style:{color:'#BF360C'}, className:'text-[11px] font-bold underline text-[#BF360C]'}, lang==='en' ? 'Clear All' : 'সব মুছুন')
+      ),
+      h('div', {className:'relative'},
+        h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px]'}, '🔍'),
+        h('input', {value:search, onChange:e=>setSearch(e.target.value), placeholder: lang==='en' ? 'Search items... e.g., Mobile, Shirt' : 'আইটেম খুঁজুন... যেমন: মোবাইল, জামা', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] pl-9 pr-4 py-2.5 text-[13px] text-[#1A1A1A] outline-none'})
+      ),
+      filteredGroups.map(group=>
+        group.id==='others' ? h('div', {key:group.id, className:'bg-[#FFF8E1] border-2 border-[#FFCC80] rounded-[16px] overflow-hidden'},
+          h('button', {onClick:()=>{ setShowOthers(!showOthers); toggleGroup(group.id); }, className:'w-full flex items-center justify-between p-4 text-left'},
+            h('span', {style:{color:'#E65100'}, className:'flex items-center gap-2 text-[13px] font-bold'}, h('span', null, '📌'), h('span', null, lang==='en' ? 'Others / অন্যান্য' : 'অন্যান্য')),
+            h('span', {className:'flex items-center gap-2'}, h('span', {className:'text-[10px] text-[#8B7355]'}, group.items.length + ' items'), h('span', {style:{color:'#1A1A1A'}, className:'text-[12px]'}, (showOthers || openGroups[group.id]) ? '∧' : '∨'))
+          ),
+          (showOthers || openGroups[group.id]) ? h('div', {className:'px-3 pb-4 space-y-3 bg-white'},
+            h('div', {className:'pt-3'},
+              h('label', {className:'text-[11px] font-bold text-[#8B7355] mb-2 block'}, lang==='en' ? '📝 Write other travel items / notes' : '📝 অন্যান্য জিনিস / নোট লিখুন'),
+              h('textarea', {value:othersNote, onChange:e=>setOthersNote(e.target.value), placeholder: lang==='en' ? 'e.g., Extra charger, gifts, umbrella...' : 'যেমন: অতিরিক্ত চার্জার, উপহার, ছাতা...', rows:4, className:'w-full bg-[#FFFEF7] border border-[#E8E6DC] rounded-[12px] px-4 py-3 text-[13px] text-[#1A1A1A] outline-none resize-none'})
+            ),
+            h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en' ? 'This note will be saved with your checklist' : 'এই নোটটি আপনার চেকলিস্টের সাথে সেভ হবে')
+          ) : null
+        ) :
+        h('div', {key:group.id, className:'bg-[#FDF8EF] border border-[#F3E8D3] rounded-[16px] overflow-hidden'},
+          h('button', {onClick:()=>toggleGroup(group.id), className:'w-full flex items-center justify-between p-4 text-left'},
+            h('span', {style:{color:'#5C4A32'}, className:'flex items-center gap-2 text-[13px] font-bold'}, h('span', null, group.icon), h('span', null, lang==='en' ? group.nameEn : group.name)),
+            h('span', {className:'flex items-center gap-2'}, h('span', {className:'text-[10px] text-[#8B7355]'}, group.items.filter(it=>selected.includes(it.id)).length + '/' + group.items.length), h('span', {style:{color:'#1A1A1A'}, className:'text-[12px]'}, openGroups[group.id] ? '∧' : '∨'))
+          ),
+          openGroups[group.id] ? h('div', {className:'px-3 pb-3 space-y-2'},
+            group.items.map(it=>{
+              const isSelected = selected.includes(it.id);
+              return h('button', {key:it.id, onClick:()=>toggleItem(it.id), style: isSelected ? {backgroundColor:'#E8F5E9', borderColor:'#4CAF50'} : {backgroundColor:'#FFEBEE', borderColor:'#EF9A9A'}, className: 'w-full flex items-center gap-3 p-3 rounded-[12px] border-2 text-left transition-colors ' + (isSelected ? 'bg-[#E8F5E9] border-[#4CAF50]' : 'bg-[#FFEBEE] border-[#EF9A9A]')},
+                h('span', {style: isSelected ? {color:'white', backgroundColor:'#4CAF50'} : {color:'white', backgroundColor:'#F44336'}, className:'w-6 h-6 rounded-[6px] flex items-center justify-center text-[12px] font-bold'}, isSelected ? '✓' : '✕'),
+                h('span', {className:'text-[14px]'}, it.icon),
+                h('span', {style:{color: isSelected ? '#1B5E20' : '#B71C1C'}, className:'text-[13px] font-medium ' + (isSelected ? 'text-[#1B5E20] font-bold' : 'text-[#B71C1C]')}, it.label)
+              )
+            })
+          ) : null
+        )
+      ),
+      h('div', {className:'bg-white rounded-[16px] p-3 border border-[#F3E8D3] space-y-3 mt-2'},
+        h('p', {className:'text-[11px] font-bold text-[#8B7355] text-center'}, 'Travel PDF - শুধু মার্ক করা ফিল্ডগুলো PDF এ আসবে'),
+        h('div', {className:'grid grid-cols-3 gap-2'},
+          h('button', {onClick:()=>{ const data = {fromLocation, destination, fromDate, toDate, travelStatus}; handleTravelPdfFixed('download', data); }, className:'py-2.5 rounded-[12px] bg-[#2D2A26] text-white text-[11px] font-bold'}, '📄 PDF'),
+          h('button', {onClick:()=>{ const data = {fromLocation, destination, fromDate, toDate, travelStatus}; handleTravelPdfFixed('view', data); }, className:'py-2.5 rounded-[12px] bg-white border border-[#F3E8D3] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
+          h('button', {onClick:()=>{ const data = {fromLocation, destination, fromDate, toDate, travelStatus}; handleTravelPdfFixed('share', data); }, className:'py-2.5 rounded-[12px] bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '📤 Share')
+        ),
+        travelList.length>0 ? h('div', {className:'grid grid-cols-3 gap-2 pt-2 border-t border-[#F3E8D3]'},
+          h('button', {onClick:()=>handleTravelPdfFixed('download', travelList), className:'py-2.5 rounded-[12px] bg-[#E65100] text-white text-[11px] font-bold'}, '📄 All PDF'),
+          h('button', {onClick:()=>handleTravelPdfFixed('view', travelList), className:'py-2.5 rounded-[12px] bg-white border border-[#FFCC80] text-[#BF360C] text-[11px] font-bold'}, '👁️ All View'),
+          h('button', {onClick:()=>handleTravelPdfFixed('share', travelList), className:'py-2.5 rounded-[12px] bg-[#FFF3E0] border border-[#FFCC80] text-[#BF360C] text-[11px] font-bold'}, '📤 All Share')
+        ) : null
+      ),
+      h('div', {className:'grid grid-cols-2 gap-3 pt-4 pb-6'},
+        h('button', {onClick:()=>{ try{ setAddType && setAddType(null); }catch(e){} }, style:{color:'#5C5C5C', backgroundColor:'#FFFEF7'}, className:'py-4 rounded-[16px] bg-[#FFFEF7] border border-[#E8E6DC] text-[15px] font-bold'}, 'Cancel'),
+        h('button', {onClick:handleSave, disabled:saving, style:{color:'white', backgroundColor:'#E65100'}, className:'py-4 rounded-[16px] bg-[#E65100] text-white text-[15px] font-bold disabled:opacity-50'}, saving ? 'Saving...' : (lang==='en' ? 'Save Checklist' : 'সেভ করুন'))
+      )
+    )
+  );
+}
+
+
+
+function MarketSurveyManager({t, lang, setToast}){
+  const BUSINESS_TYPES = [
+    {en:"Grocery Store", bn:"মুদি দোকান"},
+    {en:"Rice and Paddy Wholesale Business", bn:"ধান চালের আড়ৎ ব্যবসা"},
+    {en:"Vegetable Wholesale Business", bn:"কাঁচা সবজী আড়ৎ/পাইকারী ব্যবসা"},
+    {en:"Fish Wholesale Business", bn:"মাছের আড়ৎ/পাইকারী ব্যবসা"},
+    {en:"Fruit Shop", bn:"ফলের দোকান"},
+    {en:"Sweet Shop / Confectionery", bn:"মিষ্টির দোকান"},
+    {en:"Bakery", bn:"বেকারি"},
+    {en:"Hotel, Restaurant & Fast Food", bn:"হোটেল, রেস্টুরেন্ট, ফাস্ট ফুড"},
+    {en:"Betel Nut Business", bn:"সুপারির ব্যবসা"},
+    {en:"Clothing, Garments, Readymade & Tailoring Business", bn:"কাপড়,গার্মেন্টস, তৈরি পোশাক, টেইলারিং ব্যবসা"},
+    {en:"Shoes, Bags & Luggage", bn:"জুতা, ব্যাগ ও লাগেজ"},
+    {en:"Cosmetics Shop", bn:"কসমেটিক্স"},
+    {en:"Tailoring Materials / Sewing Supplies", bn:"সুই-সুতা টেইলার্স এর কাচামাল"},
+    {en:"Boutique Shop", bn:"বুটিক"},
+    {en:"Bedding Items", bn:"বেডিং আইটেম"},
+    {en:"Beauty Parlor", bn:"বিউটি পার্লার"},
+    {en:"Watch & Eyewear Shop", bn:"ঘড়ি, চশমা দোকান"},
+    {en:"Construction Materials - Bricks, Sand, Rod, Cement, Tiles", bn:"ইট,বালি, রড, সিমেন্ট, টাইলস ও নির্মান সামগ্রী"},
+    {en:"Tin / CI Sheet Shop", bn:"টিন দোকান"},
+    {en:"Hardware Store", bn:"হার্ডওয়্যার"},
+    {en:"Sanitary, Pipe & Fittings", bn:"স্যানিটারি পাইপ ও ফিটিংস"},
+    {en:"Timber / Wood Business", bn:"কাঠের ব্যবসা"},
+    {en:"Saw Mill", bn:"করাতকল"},
+    {en:"Workshop - Iron & Steel", bn:"ওয়ার্কশপ লোহা/স্টীল"},
+    {en:"Aluminum & Thai Glass Business", bn:"অ্যালুমিনিয়াম,থাই গ্লাস ব্যবসা"},
+    {en:"Decorator, Lighting, Pandal & Sound System", bn:"ডেকোরেটর,লাইটিং ,প্যান্ডেল, সাউন্ড সিস্টেম"},
+    {en:"Bike Showroom", bn:"বাইক শোরুম"},
+    {en:"Bike Servicing, Parts & Garage", bn:"বাইক সার্ভিসিং, পার্টস, গ্যারেজ"},
+    {en:"Bicycle Shop", bn:"সাইকেল দোকান"},
+    {en:"Auto & Motor Parts", bn:"অটো,মোটর পার্টস"},
+    {en:"Petrol Pump / Fuel Station", bn:"পেট্রোল পাম্প"},
+    {en:"Electric & Electronics Business / Servicing", bn:"ইলেকট্রিক, ইলেকট্রনিক্স  ব্যবসা/সার্ভিসিং"},
+    {en:"Mobile Business / Servicing", bn:"মোবাইল ব্যবসা/সার্ভিসিং"},
+    {en:"Computer & Laptop Business / Servicing", bn:"কম্পিউটার,ল্যাপটপ ব্যবসা/ সার্ভিসিং"},
+    {en:"bKash / Nagad Agent - MFS", bn:"বিকাশ / নগদ এজেন্ট"},
+    {en:"Dish Cable & WiFi / ISP Business", bn:"ডিস ওয়াইফাই / ISP ব্যবসা"},
+    {en:"Library / Bookstore", bn:"লাইব্রেরি"},
+    {en:"Stationery Shop", bn:"স্টেশনারি"},
+    {en:"Printing Press, Signboard, Banner, Online Service, Studio & IT Service", bn:"প্রিন্টিং প্রেস,সাইনবোর্ড, ব্যানার,অনলাইন সেবা,স্টুডিও, আইটি সার্ভিস"},
+    {en:"Coaching Center", bn:"কোচিং সেন্টার"},
+    {en:"Pharmacy / Medicine Shop", bn:"ফার্মেসি / ঔষধ"},
+    {en:"Clinic, Diagnostic Center & Physiotherapy Center", bn:"ক্লিনিক, ডায়াগনস্টিক সেন্টার,ফিজিওথেরাপি সেন্টার"},
+    {en:"Fertilizer, Seeds, Pesticides & Agricultural Machinery", bn:"সার বীজ কীটনাশক কৃষি যন্ত্রপাতি ব্যবসা"},
+    {en:"Poultry & Fish Agro Feed Business", bn:"পোল্ট্রি মৎস্য এগ্রো ফিড ব্যবসা"},
+    {en:"Poultry & Fish Agro Farm", bn:"পোল্ট্রি মৎস্য এগ্রো খামার"},
+    {en:"Distributor Business", bn:"ডিস্ট্রিবিউটর ব্যবসা"},
+    {en:"Gift Corner", bn:"গিফট কর্নার"},
+    {en:"Sports, Toys, Jersey, Disposable Plates & Shopping Bags", bn:"স্পোর্টস,খেলনা, জার্সি, অন টাইম প্লেট, শপিং ব্যাগ ব্যবসা"},
+    {en:"Crockery Shop", bn:"ক্রোকারিজ"},
+    {en:"Furniture - Wood / Board / Plastic", bn:"ফার্নিচার কাঠ/বোর্ড/প্লাস্টিক"},
+    {en:"Oil / Spice Mill", bn:"তেল/ হলুদ/ডাল/ঝাল মিল"},
+    {en:"Net, Thread & Fishing Net Business", bn:"নেট-সুতা, জাল ব্যবসা"},
+    {en:"Scrap / Junk Business", bn:"ভাঙ্গারি ব্যবসা"},
+    {en:"Bulkhead & Dredger Business", bn:"বাল্কহেড ও ড্রেজার ব্যবসা"},
+    {en:"Homeopathic Medicine Business", bn:"হোমিওপ্যাথিক ব্যবসা"},
+    {en:"Others", bn:"অন্যান্য"}
+  ];
+  const NGO_LIST = [
+    {en:"BRAC", bn:"ব্র্যাক"},
+    {en:"ASA", bn:"আশা"},
+    {en:"BURO Bangladesh", bn:"ব্যুরো বাংলাদেশ"},
+    {en:"UDDIPAN", bn:"উদ্দীপন"},
+    {en:"TMSS", bn:"টিএমএসএস"},
+    {en:"Shakti Foundation", bn:"শক্তি ফাউন্ডেশন"},
+    {en:"Grameen Bank", bn:"গ্রামীণ ব্যাংক"},
+    {en:"Caritas", bn:"কারিতাস"},
+    {en:"SSS", bn:"এসএসএস"},
+    {en:"PKSF", bn:"পল্লী কর্ম সহায়ক ফাউন্ডেশন"},
+    {en:"Jagorani Chakra Foundation", bn:"জাগরণী চক্র ফাউন্ডেশন"},
+    {en:"RDRS Bangladesh", bn:"আরডিআরএস"},
+    {en:"PROSHIKA", bn:"প্রশিকা"},
+    {en:"SSS", bn:"সোসাইটি ফর সোশাল সার্ভিস"},
+    {en:"CODEC", bn:"কোডেক"},
+    {en:"BRAC Bank Samity", bn:"ব্র্যাক ব্যাংক সমিতি"},
+    {en:"DISA", bn:"দিশা"},
+    {en:"Sajida Foundation", bn:"সাজেদা ফাউন্ডেশন"},
+    {en:"Padakhep", bn:"পদক্ষেপ মানবিক উন্নয়ন কেন্দ্র"},
+    {en:"BRDB", bn:"বিআরডিবি"},
+    {en:"POPI", bn:"পপি"},
+    {en:"RDRS", bn:"আরএফ"},
+    {en:"UDD", bn:"উত্তরা ডেভেলপমেন্ট প্রোগ্রাম"},
+    {en:"Jeevan", bn:"জীবন"},
+    {en:"Prottyasha", bn:"প্রত্যাশা"},
+    {en:"SDC", bn:"সোসাইটি ডেভেলপমেন্ট কমিটি"},
+    {en:"Wave Foundation", bn:"ওয়েভ ফাউন্ডেশন"},
+    {en:"REB", bn:"আরইবি"},
+    {en:"CSS", bn:"সিএসএস"},
+    {en:"SDI", bn:"এসডিআই"},
+    {en:"PIDIM", bn:"পিআইডি"},
+    {en:"RKS", bn:"আরকেএস"},
+    {en:"BASA", bn:"বাসা"},
+    {en:"PMK", bn:"পল্লী মঙ্গল কর্মসূচি"},
+    {en:"BES", bn:"বিইএস"},
+    {en:"JAKAS Foundation", bn:"জাকস ফাউন্ডেশন"},
+    {en:"Ananda", bn:"আনন্দ"},
+    {en:"BEES", bn:"বিজ"},
+    {en:"NDP", bn:"এনডিপি"},
+    {en:"CCDB", bn:"সিসিডিবি"},
+    {en:"World Vision", bn:"ওয়ার্ল্ড ভিশন"},
+    {en:"CARE Bangladesh", bn:"কেয়ার বাংলাদেশ"},
+    {en:"Plan International", bn:"প্ল্যান ইন্টারন্যাশনাল"},
+    {en:"Oxfam", bn:"অক্সফাম"},
+    {en:"Save the Children", bn:"সেভ দ্য চিলড্রেন"}
+  ];
+  const BANK_LIST = [
+    {en:"Sonali Bank PLC", bn:"সোনালী ব্যাংক PLC"},
+    {en:"Janata Bank PLC", bn:"জনতা ব্যাংক PLC"},
+    {en:"Agrani Bank PLC", bn:"অগ্রণী ব্যাংক PLC"},
+    {en:"Rupali Bank PLC", bn:"রূপালী ব্যাংক PLC"},
+    {en:"BASIC Bank Limited", bn:"বেসিক ব্যাংক লিমিটেড"},
+    {en:"Bangladesh Development Bank", bn:"বাংলাদেশ ডেভেলপমেন্ট ব্যাংক"},
+    {en:"Bangladesh Krishi Bank", bn:"বাংলাদেশ কৃষি ব্যাংক"},
+    {en:"Rajshahi Krishi Unnayan Bank", bn:"রাজশাহী কৃষি উন্নয়ন ব্যাংক"},
+    {en:"Ansar-VDP Unnayan Bank", bn:"আনসার-ভিডিপি উন্নয়ন ব্যাংক"},
+    {en:"Karmasangsthan Bank", bn:"কর্মসংস্থান ব্যাংক"},
+    {en:"Probashi Kallyan Bank", bn:"প্রবাসী কল্যাণ ব্যাংক"},
+    {en:"Palli Sanchay Bank", bn:"পল্লী সঞ্চয় ব্যাংক"},
+    {en:"BRAC Bank PLC", bn:"ব্র্যাক ব্যাংক PLC"},
+    {en:"Dutch-Bangla Bank PLC", bn:"ডাচ্-বাংলা ব্যাংক PLC"},
+    {en:"Islami Bank Bangladesh PLC", bn:"ইসলামী ব্যাংক বাংলাদেশ PLC"},
+    {en:"City Bank PLC", bn:"সিটি ব্যাংক PLC"},
+    {en:"Eastern Bank PLC", bn:"ইস্টার্ন ব্যাংক PLC"},
+    {en:"Prime Bank PLC", bn:"প্রাইম ব্যাংক PLC"},
+    {en:"Dhaka Bank PLC", bn:"ঢাকা ব্যাংক PLC"},
+    {en:"Uttara Bank PLC", bn:"উত্তরা ব্যাংক PLC"},
+    {en:"Pubali Bank PLC", bn:"পূবালী ব্যাংক PLC"},
+    {en:"AB Bank PLC", bn:"এবি ব্যাংক PLC"},
+    {en:"National Bank PLC", bn:"ন্যাশনাল ব্যাংক PLC"},
+    {en:"IFIC Bank PLC", bn:"আইএফআইসি ব্যাংক PLC"},
+    {en:"Bank Asia PLC", bn:"ব্যাংক এশিয়া PLC"},
+    {en:"The Premier Bank PLC", bn:"দি প্রিমিয়ার ব্যাংক PLC"},
+    {en:"Mercantile Bank PLC", bn:"মার্কেন্টাইল ব্যাংক PLC"},
+    {en:"Mutual Trust Bank PLC", bn:"মিউচুয়াল ট্রাস্ট ব্যাংক PLC"},
+    {en:"One Bank PLC", bn:"ওয়ান ব্যাংক PLC"},
+    {en:"EXIM Bank PLC", bn:"এক্সিম ব্যাংক PLC"},
+    {en:"Al-Arafah Islami Bank PLC", bn:"আল-আরাফাহ ইসলামী ব্যাংক PLC"},
+    {en:"Social Islami Bank PLC", bn:"সোশ্যাল ইসলামী ব্যাংক PLC"},
+    {en:"Shahjalal Islami Bank PLC", bn:"শাহজালাল ইসলামী ব্যাংক PLC"},
+    {en:"First Security Islami Bank PLC", bn:"ফার্স্ট সিকিউরিটি ইসলামী ব্যাংক PLC"},
+    {en:"Union Bank PLC", bn:"ইউনিয়ন ব্যাংক PLC"},
+    {en:"Standard Bank PLC", bn:"স্ট্যান্ডার্ড ব্যাংক PLC"},
+    {en:"Global Islami Bank PLC", bn:"গ্লোবাল ইসলামী ব্যাংক PLC"},
+    {en:"ICB Islamic Bank PLC", bn:"আইসিবি ইসলামিক ব্যাংক PLC"},
+    {en:"Jamuna Bank PLC", bn:"যমুনা ব্যাংক PLC"},
+    {en:"Trust Bank PLC", bn:"ট্রাস্ট ব্যাংক PLC"},
+    {en:"NCC Bank PLC", bn:"এনসিসি ব্যাংক PLC"},
+    {en:"Midland Bank PLC", bn:"মিডল্যান্ড ব্যাংক PLC"},
+    {en:"Modhumoti Bank PLC", bn:"মধুমতি ব্যাংক PLC"},
+    {en:"Meghna Bank PLC", bn:"মেঘনা ব্যাংক PLC"},
+    {en:"South Bangla Agriculture Bank PLC", bn:"সাউথ বাংলা এগ্রিকালচার ব্যাংক PLC"},
+    {en:"Southeast Bank PLC", bn:"সাউথইস্ট ব্যাংক PLC"},
+    {en:"NRB Bank PLC", bn:"এনআরবি ব্যাংক PLC"},
+    {en:"NRB Commercial Bank PLC", bn:"এনআরবি কমার্শিয়াল ব্যাংক PLC"},
+    {en:"NRBC Bank PLC", bn:"এনআরবিসি ব্যাংক PLC"},
+    {en:"Shimanto Bank PLC", bn:"সীমান্ত ব্যাংক PLC"},
+    {en:"Bengal Commercial Bank PLC", bn:"বেঙ্গল কমার্শিয়াল ব্যাংক PLC"},
+    {en:"Citizen Bank PLC", bn:"সিটিজেন ব্যাংক PLC"},
+    {en:"Community Bank PLC", bn:"কমিউনিটি ব্যাংক PLC"},
+    {en:"Padma Bank PLC", bn:"পদ্মা ব্যাংক PLC"},
+    {en:"United Commercial Bank PLC", bn:"ইউনাইটেড কমার্শিয়াল ব্যাংক PLC"},
+    {en:"Standard Chartered Bank", bn:"স্ট্যান্ডার্ড চার্টার্ড ব্যাংক"},
+    {en:"HSBC Bank", bn:"এইচএসবিসি"},
+    {en:"Citibank NA", bn:"সিটি ব্যাংক এনএ"},
+    {en:"State Bank of India", bn:"স্টেট ব্যাংক অব ইন্ডিয়া"},
+    {en:"Habib Bank", bn:"হাবিব ব্যাংক"},
+    {en:"National Bank of Pakistan", bn:"ন্যাশনাল ব্যাংক অব পাকিস্তান"},
+    {en:"Woori Bank", bn:"উরি ব্যাংক"},
+    {en:"Bank Al-Falah", bn:"ব্যাংক আল-ফালাহ"}
+  ];
+  const NBFI_LIST = [
+    {en:"IDLC Finance PLC", bn:"আইডিএলসি ফাইন্যান্স PLC"},
+    {en:"LankaBangla Finance PLC", bn:"লংকাবাংলা ফাইন্যান্স PLC"},
+    {en:"IPDC Finance", bn:"আইপিডিসি ফাইন্যান্স"},
+    {en:"DBH Finance PLC", bn:"ডিবিএইচ ফাইন্যান্স PLC"},
+    {en:"IPDC", bn:"ইন্ডাস্ট্রিয়াল প্রমোশন অ্যান্ড ডেভেলপমেন্ট কোম্পানি"},
+    {en:"Islamic Finance and Investment Ltd", bn:"ইসলামিক ফাইন্যান্স"},
+    {en:"National Housing Finance", bn:"ন্যাশনাল হাউজিং ফাইন্যান্স"},
+    {en:"Midas Financing Ltd", bn:"মাইডাস ফাইন্যান্সিং"},
+    {en:"Bangladesh Finance", bn:"বাংলাদেশ ফাইন্যান্স"},
+    {en:"Bay Leasing & Investment", bn:"বে লিজিং অ্যান্ড ইনভেস্টমেন্ট"},
+    {en:"GSP Finance", bn:"জিএসপি ফাইন্যান্স"},
+    {en:"First Finance Ltd", bn:"ফার্স্ট ফাইন্যান্স"},
+    {en:"Phoenix Finance", bn:"ফিনিক্স ফাইন্যান্স"},
+    {en:"Prime Finance & Investment Ltd", bn:"প্রাইম ফাইন্যান্স"},
+    {en:"Union Capital Ltd", bn:"ইউনিয়ন ক্যাপিটাল"},
+    {en:"Uttara Finance & Investment Ltd", bn:"উত্তরা ফাইন্যান্স"},
+    {en:"International Leasing", bn:"ইন্টারন্যাশনাল লিজিং"},
+    {en:"Fareast Finance", bn:"ফেয়ারইস্ট ফাইন্যান্স"},
+    {en:"Aviva Finance Ltd", bn:"আভিভা ফাইন্যান্স"},
+    {en:"BD Finance", bn:"বিডি ফাইন্যান্স"},
+    {en:"CVC Finance PLC", bn:"সিভিসি ফাইন্যান্স"},
+    {en:"Meridian Finance", bn:"মেরিডিয়ান ফাইন্যান্স"},
+    {en:"LankaBangla Investment", bn:"লঙ্কাবাংলা ইনভেস্টমেন্ট"},
+    {en:"IIDFC", bn:"আইআইডিএফসি"},
+    {en:"Saudi-Bangladesh Industrial Finance", bn:"সৌদি-বাংলাদেশ ফাইন্যান্স"},
+    {en:"IDCOL", bn:"ইনফ্রাস্ট্রাকচার ডেভেলপমেন্ট"},
+    {en:"BIFL", bn:"বাংলাদেশ ইনফ্রাস্ট্রাকচার ফাইন্যান্স"},
+    {en:"Capitec Grameen", bn:"ক্যাপিটেক গ্রামীণ"},
+    {en:"Strategic Finance Ltd", bn:"স্ট্র্যাটেজিক ফাইন্যান্স"},
+    {en:"FAS Finance", bn:"ফাস ফাইন্যান্স"},
+    {en:"Fas Finance", bn:"এফএলআইডি"},
+    {en:"Peoples Leasing", bn:"পিপলস লিজিং"},
+    {en:"Premier Leasing", bn:"প্রিমিয়ার লিজিং"},
+    {en:"Hajj Finance PLC", bn:"হজ ফাইন্যান্স"}
+  ];
+
+  const [surveyList, setSurveyList] = React.useState(()=>{
+    try{ const list = JSON.parse(localStorage.getItem('market_surveys_list')||'null'); if(Array.isArray(list)) return list; }catch(e){}
+    return [];
+  });
+  const [editingId, setEditingId] = React.useState(null);
+  const [form, setForm] = React.useState(()=>{
+    try{ const saved = JSON.parse(localStorage.getItem('market_survey_form')||'null'); if(saved && !Array.isArray(saved)) return saved; }catch(e){}
+    return {
+      ownershipType:'1 Person (100%)', owner1Pct:100, owner2Pct:0,
+      businessName:'', ownerName:'', mobileNo:'', address:'', businessType:'', businessTypeSearch:'',
+      cashInHand:'', goodsInTransit:'', stock:'', receivables:'', payables:'', monthlySales:'', yearlySales:'', advanceToSuppliers:'', possessionValue:'', shopAdvance:'', buildingCost:'', furniture:'', machineries:'', vehicleNo:'', vehiclePrice:'', totalEmployee:'', totalSalary:'',
+      wholesalePct:'', wholesaleMargin:'', retailPct:'', retailMargin:'', avgMargin:'',
+      electricity:'', transportCost:'', adminCost:'', ownerDrawing:'', rentBusiness:'', monthlyTotalExpense:'0', tax:'',
+      supplier1Business:'', supplier1Owner:'', supplier1Mobile:'', supplier1Payable:'', supplier2Business:'', supplier2Owner:'', supplier2Mobile:'', supplier2Payable:'',
+      buyer1Business:'', buyer1Owner:'', buyer1Mobile:'', buyer1Receivable:'', buyer2Business:'', buyer2Owner:'', buyer2Mobile:'', buyer2Receivable:'',
+      noOfShop:'', shopRentYearly:'', noOfGodown:'', godownAdvance:'', godownRentYearly:'',
+      existingLoanType:'NGO', existingLoanSearch:'', existingLoanOrg:'', loanType:'', disbursementDate:'', disbursementAmount:'', totalEMI:'', currentOutstanding:'',
+      familyExpensePerson1:'', houseRent:'', houseElectricity:'', foodCloth:'', education:'', telephoneBill:'', medical:'', entertainment:'', conveyance:'', othersExpense:'', familyExpenseTotal:'0',
+      rentalIncome:'', otherBusinessIncome:'', transportBusiness:'', remittance:'', otherBusinessIncome2:'', totalBusinessIncome:'', salaryOtherIncome:'', totalIncome:'0',
+      totalFamilyAsset:'', totalLiabilities:'', netWorth:'0', totalValue:'',
+      personalAsset:'', personalLiabilities:'', personalNetWorth:'', personalAssetDetails:'', desiredLoan:'', whichMonth:'', emiComfort:'', shop1Class:'', shop2Class:'', shop3Class:'', shop4Class:'', shop1Address:'', shop2Address:'', shop3Address:'', shop4Address:'', godown1Class:'', godown2Class:'', godown3Class:'', godown4Class:'', godown5Class:'', address1:'', address2:'', address3:'', address4:'', address5:'',
+      noOfGuarantor:'2', guarantor1Type:'Family', guarantor1Name:'', guarantor1Spouse:'', guarantor1Mobile:'', guarantor1Occupation:'Businessman', guarantor1PersonalAsset:'', guarantor1CCLoan:'', guarantor2Type:'Family', guarantor2Name:'', guarantor2Spouse:'', guarantor2Mobile:'', guarantor2Occupation:'', guarantor2PersonalAsset:'', guarantor2CCLoan:'',
+      selectedBizItems:[], selectedLoans:{ngo:[], bank:[], nbfi:[]}, othersNGO:''
+    };
+  });
+  const [showBusinessList, setShowBusinessList] = React.useState(false);
+  const [showLoanList, setShowLoanList] = React.useState(false);
+  const [showOthersNGO, setShowOthersNGO] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(()=>{ try{ localStorage.setItem('market_surveys_list', JSON.stringify(surveyList)); }catch(e){} }, [surveyList]);
+  React.useEffect(()=>{ try{ localStorage.setItem('market_survey_form', JSON.stringify(form)); }catch(e){} 
+    const m = parseFloat(form.monthlySales)||0; if(m){ setForm(f=>({...f, yearlySales: (m*12).toString()})); }
+  }, [form.monthlySales]);
+
+  React.useEffect(()=>{
+    const asset=parseFloat(form.personalAsset)||0;
+    const liab=parseFloat(form.personalLiabilities)||0;
+    const pnw=asset-liab;
+    const pnwStr=pnw.toString();
+    if(form.personalNetWorth!==pnwStr){
+      setForm(f=>({...f, personalNetWorth: pnwStr}));
+    }
+  }, [form.personalAsset, form.personalLiabilities]);
+
+  React.useEffect(()=>{
+    const exp = (parseFloat(form.houseRent)||0)+(parseFloat(form.houseElectricity)||0)+(parseFloat(form.foodCloth)||0)+(parseFloat(form.education)||0)+(parseFloat(form.telephoneBill)||0)+(parseFloat(form.medical)||0)+(parseFloat(form.entertainment)||0)+(parseFloat(form.conveyance)||0)+(parseFloat(form.othersExpense)||0);
+    setForm(f=>({...f, familyExpenseTotal: exp.toString()}));
+  }, [form.houseRent, form.houseElectricity, form.foodCloth, form.education, form.telephoneBill, form.medical, form.entertainment, form.conveyance, form.othersExpense]);
+
+  React.useEffect(()=>{
+    const inc = (parseFloat(form.rentalIncome)||0)+(parseFloat(form.otherBusinessIncome)||0)+(parseFloat(form.transportBusiness)||0)+(parseFloat(form.remittance)||0)+(parseFloat(form.otherBusinessIncome2)||0)+(parseFloat(form.salaryOtherIncome)||0);
+    setForm(f=>({...f, totalIncome: inc.toString()}));
+  }, [form.rentalIncome, form.otherBusinessIncome, form.transportBusiness, form.remittance, form.otherBusinessIncome2, form.salaryOtherIncome]);
+
+  // --- Business Search Logic (Bilingual + Multi-select like index) ---
+  function getTokens(str){
+    if(!str) return [];
+    return str.toLowerCase().split(/[\s,]+/).filter(x=>x.trim());
+  }
+  function isMatch(item, tokens){
+    if(tokens.length===0) return true;
+    const en=(item.en||'').toLowerCase();
+    const bn=item.bn||'';
+    return tokens.every(t=> en.includes(t) || bn.includes(t) || bn.toLowerCase().includes(t));
+  }
+  const filteredBusiness = React.useMemo(()=>{
+    const tokens = getTokens(form.businessTypeSearch);
+    return BUSINESS_TYPES.filter(b=> !(form.selectedBizItems||[]).some(s=>s.bn===b.bn && s.en===b.en) && isMatch(b, tokens));
+  }, [form.businessTypeSearch, form.selectedBizItems]);
+
+  const loanOptionsMap = {ngo: NGO_LIST, bank: BANK_LIST, nbfi: NBFI_LIST};
+  const currentLoanTab = form.existingLoanType==='Others NGO' ? 'ngo' : (form.existingLoanType==='Bank' ? 'bank' : form.existingLoanType==='NBFI' ? 'nbfi' : 'ngo');
+  const loanOptions = form.existingLoanType==='NGO' ? NGO_LIST : form.existingLoanType==='Bank' ? BANK_LIST : form.existingLoanType==='NBFI' ? NBFI_LIST : [];
+
+  const filteredLoan = React.useMemo(()=>{
+    if(!form.existingLoanSearch) return loanOptions;
+    const q = form.existingLoanSearch.toLowerCase().trim();
+    const qb = form.existingLoanSearch.trim();
+    return loanOptions.filter(o=>{
+      const en=(o.en||'').toLowerCase();
+      const bn=o.bn||'';
+      return en.includes(q) || bn.includes(qb) || bn.toLowerCase().includes(q);
+    });
+  }, [form.existingLoanSearch, form.existingLoanType]);
+
+  function toggleAllSearchBoxes(){
+    const anyOpen = showBusinessList || showLoanList;
+    if(anyOpen){
+      setShowBusinessList(false);
+      setShowLoanList(false);
+    } else {
+      setShowBusinessList(true);
+      setShowLoanList(true);
+    }
+  }
+
+  function update(k,v){ setForm(f=>({...f, [k]:v})); }
+
+  function addBizItem(b){
+    setForm(f=>{
+      const arr = f.selectedBizItems||[];
+      if(arr.some(s=>s.bn===b.bn)) return f;
+      const newArr=[...arr, b];
+      return {...f, selectedBizItems:newArr, businessType: newArr.map(x=>x.en).join(', '), businessTypeSearch:''};
+    });
+    setShowBusinessList(true);
+  }
+  function removeBizItem(idx){
+    setForm(f=>{
+      const arr=[...(f.selectedBizItems||[])];
+      arr.splice(idx,1);
+      return {...f, selectedBizItems:arr, businessType: arr.map(x=>x.en).join(', ')};
+    });
+  }
+
+  function toggleLoanItem(type, item, checked){
+    setForm(f=>{
+      const sel = f.selectedLoans||{ngo:[],bank:[],nbfi:[]};
+      const cur = sel[type]||[];
+      let next;
+      if(checked){
+        if(cur.some(x=>x.bn===item.bn)) next=cur;
+        else next=[...cur, item];
+      } else {
+        next=cur.filter(x=>x.bn!==item.bn);
+      }
+      return {...f, selectedLoans:{...sel, [type]:next}, existingLoanOrg: [...(sel.bank||[]), ...(sel.ngo||[]), ...(sel.nbfi||[])].map(x=>x.en).join(', ')};
+    });
+  }
+
+  function handleSaveSection(section){
+    // MULTI-PERSON FIX: save current form to surveyList as one person entry
+    try{
+      const personEntry = {...form, id: editingId || (Date.now()+'_'+Math.random().toString(36).slice(2)), updatedAt: new Date().toISOString(), ownerName: form.ownerName || form.businessName || 'Unnamed'};
+      setSurveyList(prev=>{
+        if(editingId){
+          return prev.map(p=> p.id===editingId ? personEntry : p);
+        } else {
+          // if same mobile exists, update else add
+          const idx = prev.findIndex(p=> p.mobileNo && form.mobileNo && p.mobileNo===form.mobileNo);
+          if(idx>=0){
+            const copy=[...prev]; copy[idx]=personEntry; return copy;
+          }
+          return [personEntry, ...prev];
+        }
+      });
+      setEditingId(personEntry.id);
+    }catch(e){}
+    setSaving(true);
+    try{
+      const user = firebase.auth().currentUser;
+      const payload = {...form, section, updatedAt: new Date().toISOString()};
+      if(user && firebase.firestore){
+        firebase.firestore().collection('market_surveys').doc(user.uid+'_'+Date.now()).set({...payload, uid:user.uid})
+        .then(()=>{ setToast && setToast(section+' saved to Firebase'); setSaving(false); })
+        .catch(e=>{ setToast && setToast('Saved locally'); setSaving(false); try{ localStorage.setItem('market_survey_'+section+'_'+Date.now(), JSON.stringify(payload)); }catch(err){} });
+      } else {
+        try{ localStorage.setItem('market_survey_'+section+'_'+Date.now(), JSON.stringify(payload)); }catch(err){}
+        setToast && setToast(section+' saved locally');
+        setSaving(false);
+      }
+    }catch(e){ setSaving(false); setToast && setToast('Error '+e.message); }
+  }
+
+  function handleFinallySave(){
+    try{
+      const personEntry = {...form, id: editingId || (Date.now()+'_'+Math.random().toString(36).slice(2)), final:true, updatedAt: new Date().toISOString(), ownerName: form.ownerName || form.businessName || 'Unnamed'};
+      setSurveyList(prev=>{
+        if(editingId) return prev.map(p=> p.id===editingId ? personEntry : p);
+        const idx = prev.findIndex(p=> p.mobileNo && form.mobileNo && p.mobileNo===form.mobileNo);
+        if(idx>=0){ const copy=[...prev]; copy[idx]=personEntry; return copy; }
+        return [personEntry, ...prev];
+      });
+      setEditingId(personEntry.id);
+    }catch(e){}
+    setSaving(true);
+    try{
+      const user = firebase.auth().currentUser;
+      const payload = {...form, final:true, updatedAt: new Date().toISOString()};
+      if(user && firebase.firestore){
+        firebase.firestore().collection('market_surveys').doc('FINAL_'+(user.uid||'local')+'_'+Date.now()).set({...payload, uid:user?.uid||'local'})
+        .then(()=>{ setToast && setToast(lang==='en' ? 'Market Survey FINALLY SAVED to Firebase' : 'মার্কেট সার্ভে ফাইনালি Firebase এ সেভ হয়েছে'); setSaving(false); })
+        .catch(e=>{ setToast && setToast('Saved locally'); setSaving(false); });
+      } else {
+        try{ localStorage.setItem('market_survey_FINAL_'+Date.now(), JSON.stringify(payload)); }catch(err){}
+        setToast && setToast('Market Survey FINALLY saved locally');
+        setSaving(false);
+      }
+    }catch(e){ setSaving(false); }
+  }
+
+  const inputClass = 'w-full bg-white border border-[#D8CFC0] rounded-[10px] px-3 py-2.5 text-[15px] text-[#1A1A1A] outline-none focus:border-[#1E4538]';
+  const labelClass = 'text-[13px] font-bold text-[#5C4A32] mb-1 block';
+  const sectionClass = 'bg-[#2D2A26] text-white rounded-[8px] px-4 py-2.5 text-[13px] font-bold flex items-center justify-between mt-6';
+
+  function loadPerson(id){
+    const p = surveyList.find(x=> x.id===id);
+    if(p){ setForm(p); setEditingId(id); window.scrollTo(0,0); setToast && setToast('Loaded: '+(p.ownerName||p.businessName)); }
+  }
+  function deletePerson(id){
+    if(!confirm('এই ব্যক্তির তথ্য মুছে ফেলবেন?')) return;
+    setSurveyList(prev=> prev.filter(x=> x.id!==id));
+    if(editingId===id){ setEditingId(null); }
+  }
+  function addNewPerson(){
+    setEditingId(null);
+    setForm({
+      ownershipType:'1 Person (100%)', owner1Pct:100, owner2Pct:0,
+      businessName:'', ownerName:'', mobileNo:'', address:'', businessType:'', businessTypeSearch:'',
+      cashInHand:'', goodsInTransit:'', stock:'', receivables:'', payables:'', monthlySales:'', yearlySales:'', advanceToSuppliers:'', possessionValue:'', shopAdvance:'', buildingCost:'', furniture:'', machineries:'', vehicleNo:'', vehiclePrice:'', totalEmployee:'', totalSalary:'',
+      wholesalePct:'', wholesaleMargin:'', retailPct:'', retailMargin:'', avgMargin:'',
+      electricity:'', transportCost:'', adminCost:'', ownerDrawing:'', rentBusiness:'', monthlyTotalExpense:'0', tax:'',
+      supplier1Business:'', supplier1Owner:'', supplier1Mobile:'', supplier1Payable:'', supplier2Business:'', supplier2Owner:'', supplier2Mobile:'', supplier2Payable:'',
+      buyer1Business:'', buyer1Owner:'', buyer1Mobile:'', buyer1Receivable:'', buyer2Business:'', buyer2Owner:'', buyer2Mobile:'', buyer2Receivable:'',
+      noOfShop:'', shopRentYearly:'', noOfGodown:'', godownAdvance:'', godownRentYearly:'',
+      existingLoanType:'NGO', existingLoanSearch:'', existingLoanOrg:'', loanType:'', disbursementDate:'', disbursementAmount:'', totalEMI:'', currentOutstanding:'',
+      familyExpensePerson1:'', houseRent:'', houseElectricity:'', foodCloth:'', education:'', telephoneBill:'', medical:'', entertainment:'', conveyance:'', othersExpense:'', familyExpenseTotal:'0',
+      rentalIncome:'', otherBusinessIncome:'', transportBusiness:'', remittance:'', otherBusinessIncome2:'', totalBusinessIncome:'', salaryOtherIncome:'', totalIncome:'0',
+      totalFamilyAsset:'', totalLiabilities:'', netWorth:'0', totalValue:'',
+      personalAsset:'', personalLiabilities:'', personalNetWorth:'', personalAssetDetails:'', desiredLoan:'', whichMonth:'', emiComfort:'', shop1Class:'', shop2Class:'', shop3Class:'', shop4Class:'', shop1Address:'', shop2Address:'', shop3Address:'', shop4Address:'', godown1Class:'', godown2Class:'', godown3Class:'', godown4Class:'', godown5Class:'', address1:'', address2:'', address3:'', address4:'', address5:'',
+      noOfGuarantor:'2', guarantor1Type:'Family', guarantor1Name:'', guarantor1Spouse:'', guarantor1Mobile:'', guarantor1Occupation:'Businessman', guarantor1PersonalAsset:'', guarantor1CCLoan:'', guarantor2Type:'Family', guarantor2Name:'', guarantor2Spouse:'', guarantor2Mobile:'', guarantor2Occupation:'', guarantor2PersonalAsset:'', guarantor2CCLoan:'',
+      selectedBizItems:[], selectedLoans:{ngo:[], bank:[], nbfi:[]}, othersNGO:''
+    });
+    try{ localStorage.removeItem('market_survey_form'); }catch(e){}
+    setToast && setToast('New person form');
+  }
+
+  return h('div', {className:'bg-[#FFFEF7] -m-4 p-0'},
+    h('div', {className:'p-4 space-y-4 max-h-[80vh] overflow-y-auto'},
+      // MULTI-PERSON LIST UI - NEW
+      h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
+        h('div', {className:'flex items-center justify-between'},
+          h('p', {className:'font-bold text-[13px]'}, 'Saved Persons ('+surveyList.length+')'),
+          h('button', {onClick:addNewPerson, className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white text-[11px] font-bold'}, '+ New Person')
+        ),
+        surveyList.length===0 ? h('p', {className:'text-[11px] text-[#8B7355] text-center py-2'}, 'No person yet - Add new') :
+        h('div', {className:'space-y-2 max-h-[160px] overflow-y-auto'},
+          surveyList.map(p=> h('div', {key:p.id, className:'flex items-center justify-between bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2 '+(editingId===p.id?'border-[#C9A86A] bg-[#FFF6E8]':'')},
+            h('div', {className:'flex-1 min-w-0 cursor-pointer', onClick:()=>loadPerson(p.id)},
+              h('p', {className:'font-bold text-[12px] truncate'}, p.ownerName||p.businessName||'Unnamed'),
+              h('p', {className:'text-[10px] text-[#8B7355] truncate'}, (p.mobileNo||'')+' • '+(p.businessName||'')+' • '+(p.updatedAt? new Date(p.updatedAt).toLocaleDateString() : ''))
+            ),
+            h('div', {className:'flex gap-1.5 ml-2'},
+              h('button', {onClick:()=>loadPerson(p.id), className:'px-2.5 py-1 rounded-full bg-white border border-[#F3E8D3] text-[10px] font-bold'}, 'Load'),
+              h('button', {onClick:()=>deletePerson(p.id), className:'px-2.5 py-1 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, 'Del')
+            )
+          ))
+        ),
+        editingId ? h('p', {className:'text-[10px] text-[#1A4D8F] bg-[#E3F2FD] rounded-full px-2.5 py-1 inline-block'}, 'Editing: '+(surveyList.find(x=>x.id===editingId)?.ownerName||'Current')) : null
+      ),
+
+      // 1 Ownership
+      h('div', {className:sectionClass}, h('span', null, '1. Ownership'), h('button', {onClick:()=>handleSaveSection('Ownership'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'grid grid-cols-1 gap-3 bg-white border rounded-[12px] p-3'},
+        h('div', null, h('label', {className:labelClass}, 'Ownership Type'), h('div', {className:'flex gap-2'}, h('button', {onClick:()=>update('ownershipType','1 Person (100%)'), style: form.ownershipType.includes('1 Person') ? {backgroundColor:'#1E4538', color:'white'} : {backgroundColor:'white', color:'#1A1A1A'}, className:'flex-1 py-2 rounded-full text-[11px] font-bold border'}, '1 Person (100%)'), h('button', {onClick:()=>update('ownershipType','2 Persons'), style: form.ownershipType.includes('2 Persons') ? {backgroundColor:'#1E4538', color:'white'} : {backgroundColor:'white', color:'#1A1A1A'}, className:'flex-1 py-2 rounded-full text-[11px] font-bold border'}, '2 Persons'))),
+        h('div', {className:'grid grid-cols-1 gap-2'}, h('div', null, h('label', {className:labelClass}, 'Owner 1 %'), h('input', {value:form.owner1Pct, onChange:e=>update('owner1Pct', e.target.value), className:inputClass})), h('div', null, h('label', {className:labelClass}, 'Owner 2 %'), h('input', {value:form.owner2Pct, onChange:e=>update('owner2Pct', e.target.value), className:inputClass})))
+      ),
+
+      // 2 Business Information
+      h('div', {className:sectionClass}, h('span', null, '2. Business Information'), h('button', {onClick:()=>handleSaveSection('Business Information'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+        h('div', null, h('label', {className:labelClass}, 'Business Name*'), h('input', {value:form.businessName, onChange:e=>update('businessName', e.target.value), className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, 'Owner Name'), h('input', {value:form.ownerName, onChange:e=>update('ownerName', e.target.value), className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, 'Mobile No'), h('input', {value:form.mobileNo, onChange:e=>update('mobileNo', e.target.value), className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, 'Address'), h('input', {value:form.address, onChange:e=>update('address', e.target.value), className:inputClass})),
+        // --- Business Type Search like index.html ---
+        h('div', null,
+          h('label', {className:labelClass}, 'Business Type - Search: বালি, rod, cement, চুন, grocer'),
+          h('div', {className:'relative'},
+            h('input', {id:'bizSearch', value:form.businessTypeSearch, onClick:()=>toggleAllSearchBoxes(), onFocus:()=>{ setShowBusinessList(true); setShowLoanList(true); }, onChange:e=>{ update('businessTypeSearch', e.target.value); setShowBusinessList(true); setShowLoanList(true); }, placeholder:'Search: বালি, rod, cement, চুন, grocer - বাংলা / English', className:'w-full border-2 border-blue-100 rounded-xl p-3 '+inputClass}),
+            showBusinessList ? h('div', {id:'bizList', className:'grid gap-2 mt-3 max-h-[320px] overflow-y-auto border-2 border-blue-100 rounded-xl p-2 bg-gray-50'},
+              filteredBusiness.length===0 ? h('p', {className:'text-xs text-gray-400 p-3 text-center'}, (form.selectedBizItems&&form.selectedBizItems.length>0) ? 'সব ব্যবসা সিলেক্ট করা হয়েছে / All selected' : 'No results / কোনো ফলাফল নেই') :
+              filteredBusiness.slice(0,100).map(bt=> h('div', {key:bt.en+'_'+bt.bn, onClick:()=>addBizItem(bt), className:'p-2.5 border rounded-xl hover:bg-blue-50 hover:border-blue-300 cursor-pointer flex justify-between items-center text-sm bg-white'}, h('span', {className:'font-medium text-[#1A1A1A]'}, bt.bn), h('span', {className:'text-gray-400 text-[11px] ml-2 text-right'}, bt.en)))
+            ) : null
+          ),
+          // Selected chips
+          h('div', {id:'selectedBiz', className:'flex flex-wrap gap-2 mt-3'},
+            (form.selectedBizItems||[]).map((it,idx)=> h('div', {key:it.bn+idx, className:'bg-green-50 border border-green-200 rounded-full px-3 py-1.5 text-xs flex items-center gap-2'}, h('span', null, it.bn+' ('+it.en+')'), h('button', {onClick:()=>removeBizItem(idx), className:'bg-red-100 text-red-600 rounded-full w-5 h-5 flex items-center justify-center'}, '✕')))
+          ),
+          form.businessType ? h('p', {className:'text-[11px] mt-2 text-[#2E7D32] font-bold'}, 'Selected: '+(form.selectedBizItems||[]).map(x=>x.bn+' ('+x.en+')').join(', ')) : h('p', {className:'text-[11px] mt-1 text-[#8B7355]'}, 'কোনো ব্যবসার ধরন সিলেক্ট করুন / No business selected')
+        ),
+        h('div', {className:'grid grid-cols-1 gap-3'},
+          [['cashInHand','Cash In Hand (Lac)','যেমন: 25 = 25 Lac'],['goodsInTransit','Goods In Transit (Lac)',''],['stock','Stock (Lac)',''],['receivables','Receivables (Lac)',''],['payables','Payables (Lac)',''],['monthlySales','Monthly Sales (Lac)',''],['yearlySales','Yearly Sales (Auto x12)','Auto'],['advanceToSuppliers','Advance Payment to Suppliers (Lac)',''],['possessionValue','Possession Value (নিজের জায়গার বাজার মূল্য) (Lac)',''],['shopAdvance','Shop Advance (জমা টাকা) (Lac)',''],['buildingCost','Building Cost (নিট খরচ) (Lac)',''],['furniture','Furniture, Fixture & Decoration (Lac)',''],['machineries','Machineries & Equipments (Lac)',''],['vehicleNo','Vehicle No',''],['vehiclePrice','Vehicle Price (Lac)',''],['totalEmployee','Total Employee No',''],['totalSalary','Total Salary (Thousand)','']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[2], className:inputClass})))
+        ),
+        h('div', {className:'mt-4 border-t pt-3 space-y-3'},
+          h('p', {className:'text-[12px] font-bold text-[#1E4538]'}, 'Sales % & Margin - Percentage'),
+          h('div', {className:'grid grid-cols-1 gap-3'},
+            [['wholesalePct','Wholesale Sales %'],['wholesaleMargin','Profit Margin %'],['retailPct','Retail Sales %'],['retailMargin','Profit Margin %'],['avgMargin','Average Margin % (Auto)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+          )
+        ),
+        h('div', {className:'mt-4 border-t pt-3 space-y-3'},
+          [['electricity','Electricity (Thousand)'],['transportCost','Transportation Cost (Thousand)'],['adminCost','Admin/Operating (Thousand)'],['ownerDrawing','Owners Drawing (Thousand)'],['rentBusiness','Rent for Business Premises (Thousand)'],['monthlyTotalExpense','Monthly Total Operating Expenses (Auto)'],['tax','Tax (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+        ),
+        h('div', {className:sectionClass}, h('span', null, 'Supplier Information (Amount in (Lac))')),
+        h('div', {className:'space-y-3'},
+          h('div', null, h('p', {className:'text-[11px] font-bold text-[#1E4538]'}, '• Supplier 1 / সাপ্লায়ার ১'), h('div', {className:'grid grid-cols-1 gap-2 mt-2'}, [['supplier1Business','Business Name - Supplier 1'],['supplier1Owner','Owner Name - Supplier 1'],['supplier1Mobile','Mobile - Supplier 1'],['supplier1Payable','Payable (Lac) - Supplier 1']].map(f=> h('input', {key:f[0], value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[1], className:inputClass})))),
+          h('div', null, h('p', {className:'text-[11px] font-bold text-[#1E4538]'}, '• Supplier 2 / সাপ্লায়ার ২'), h('div', {className:'grid grid-cols-1 gap-2 mt-2'}, [['supplier2Business','Business Name - Supplier 2'],['supplier2Owner','Owner Name - Supplier 2'],['supplier2Mobile','Mobile - Supplier 2'],['supplier2Payable','Payable (Lac) - Supplier 2']].map(f=> h('input', {key:f[0], value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[1], className:inputClass}))))
+        ),
+        h('div', {className:sectionClass}, h('span', null, 'Buyer Information (Amount in (Lac))')),
+        h('div', {className:'space-y-3'},
+          h('div', null, h('p', {className:'text-[11px] font-bold text-[#1E4538]'}, '• Buyer 1 / ক্রেতা ১'), h('div', {className:'grid grid-cols-1 gap-2 mt-2'}, [['buyer1Business','Business Name - Buyer 1'],['buyer1Owner','Owner Name - Buyer 1'],['buyer1Mobile','Mobile - Buyer 1'],['buyer1Receivable','Receivable (Lac) - Buyer 1']].map(f=> h('input', {key:f[0], value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[1], className:inputClass})))),
+          h('div', null, h('p', {className:'text-[11px] font-bold text-[#1E4538]'}, '• Buyer 2 / ক্রেতা ২'), h('div', {className:'grid grid-cols-1 gap-2 mt-2'}, [['buyer2Business','Business Name - Buyer 2'],['buyer2Owner','Owner Name - Buyer 2'],['buyer2Mobile','Mobile - Buyer 2'],['buyer2Receivable','Receivable (Lac) - Buyer 2']].map(f=> h('input', {key:f[0], value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[1], className:inputClass}))))
+        ),
+        h('div', {className:'grid grid-cols-1 gap-3 mt-4'},
+          [['noOfShop','No of Shop'],['shopRentYearly','Shop Rent Yearly (Thousand)'],['noOfGodown','No of Godown'],['godownAdvance','Godown Advance (Lac)'],['godownRentYearly','Godown Rent Yearly (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+        )
+      ),
+
+      // 3 Existing Loan - like index.html with tabs and checkboxes
+      h('div', {className:sectionClass}, h('span', null, '3. Existing Loan'), h('button', {onClick:()=>handleSaveSection('Existing Loan'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+        h('div', {className:'flex gap-2 flex-wrap'}, 
+          [['NGO','NGO'],['Bank','Bank'],['NBFI','NBFI'],['Others NGO','Others NGO']].map(t=> h('button', {key:t[0], onClick:()=>{ update('existingLoanType', t[0]); if(t[0]==='Others NGO'){ setShowOthersNGO(v=>!v); } setShowLoanList(true); setShowBusinessList(true); }, style: form.existingLoanType===t[0] ? {backgroundColor:'#1A1A1A', color:'white'} : (t[0]==='Others NGO' ? {backgroundColor:'#2b2b2b', color:'white'} : {backgroundColor:'#F5F1E8', color:'#1A1A1A'}), className:'px-4 py-2 rounded-full text-[11px] font-bold border'}, t[1]))
+        ),
+        showOthersNGO ? h('div', {id:'othersNGOBox', className:'mb-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-xl'},
+          h('label', {className:'font-semibold text-sm text-amber-800'}, 'Others NGO Name / অন্যান্য NGO নাম'),
+          h('input', {id:'othersNGOInput', value:form.othersNGO, onChange:e=>update('othersNGO', e.target.value), placeholder:'Others NGO নাম লিখুন', className:'w-full mt-2 border-2 border-amber-100 rounded-xl p-3 '+inputClass})
+        ) : null,
+        h('div', {className:'relative'},
+          h('input', {id:'loanSearch', value:form.existingLoanSearch, onClick:()=>toggleAllSearchBoxes(), onFocus:()=>{ setShowLoanList(true); setShowBusinessList(true); }, onChange:e=>{ update('existingLoanSearch', e.target.value); setShowLoanList(true); setShowBusinessList(true); }, placeholder:'Search NGO/Bank/NBFI - বাংলা / English', className:'w-full border-2 border-emerald-100 rounded-xl p-3 mb-3 '+inputClass}),
+          showLoanList ? h('div', {id:'loanTabs', className:'space-y-3'},
+            // NGO Tab Content
+            form.existingLoanType==='NGO' ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
+              (form.selectedLoans&&form.selectedLoans.ngo&&form.selectedLoans.ngo.length>0) ? h('div', null,
+                form.selectedLoans.ngo.map(it=> h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:()=>toggleLoanItem('ngo', it, false), className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')))
+              ) : null,
+              filteredLoan.length===0 ? h('p', {className:'text-xs text-gray-400 p-3'}, 'No results / কোনো ফলাফল নেই') :
+              filteredLoan.map(item=> h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked:(form.selectedLoans&&form.selectedLoans.ngo&&form.selectedLoans.ngo.some(x=>x.bn===item.bn)), onChange:e=>toggleLoanItem('ngo', item, e.target.checked), className:'mt-1 loan-check'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))))
+            ) : null,
+            // Bank Tab
+            form.existingLoanType==='Bank' ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
+              (form.selectedLoans&&form.selectedLoans.bank&&form.selectedLoans.bank.length>0) ? h('div', null,
+                form.selectedLoans.bank.map(it=> h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:()=>toggleLoanItem('bank', it, false), className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')))
+              ) : null,
+              filteredLoan.map(item=> h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked:(form.selectedLoans&&form.selectedLoans.bank&&form.selectedLoans.bank.some(x=>x.bn===item.bn)), onChange:e=>toggleLoanItem('bank', item, e.target.checked), className:'mt-1'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))))
+            ) : null,
+            // NBFI Tab
+            form.existingLoanType==='NBFI' ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
+              (form.selectedLoans&&form.selectedLoans.nbfi&&form.selectedLoans.nbfi.length>0) ? h('div', null,
+                form.selectedLoans.nbfi.map(it=> h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:()=>toggleLoanItem('nbfi', it, false), className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')))
+              ) : null,
+              filteredLoan.map(item=> h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked:(form.selectedLoans&&form.selectedLoans.nbfi&&form.selectedLoans.nbfi.some(x=>x.bn===item.bn)), onChange:e=>toggleLoanItem('nbfi', item, e.target.checked), className:'mt-1'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))))
+            ) : null,
+            form.existingLoanType==='Others NGO' ? h('div', {className:'p-3 bg-gray-50 border rounded-xl text-sm'}, 'Others NGO এর জন্য উপরের বক্সে নাম লিখুন - উপরে Others NGO বাটনে ক্লিক করলে বক্স ওপেন হবে') : null,
+            h('button', {onClick:()=>{ setShowLoanList(false); setShowBusinessList(false); }, className:'w-full py-2 text-[11px] font-bold text-white bg-[#1E4538] rounded-full mt-2'}, '✕ বন্ধ করুন / Hide')
+          ) : null
+        ),
+        form.existingLoanOrg ? h('p', {className:'text-[11px] text-[#2E7D32] font-bold'}, 'Selected: '+form.existingLoanOrg) : null,
+        h('div', {className:'space-y-3 mt-2'},
+          h('div', {className:'col-span-2'},
+            h('label', {className:labelClass}, 'Loan Type - CC, Monthly, Weekly, Daily (এক বা একাধিক টিক দিন)'),
+            h('div', {className:'grid grid-cols-1 gap-2 mt-1'},
+              ['CC','Monthly','Weekly','Daily'].map(opt=>{
+                const selected = (form.loanType||'').split(',').map(s=>s.trim()).filter(Boolean);
+                const checked = selected.includes(opt);
+                return h('label', {key:opt, className:'flex items-center gap-2 border rounded-[10px] px-3 py-2.5 text-[12px] cursor-pointer '+(checked?'bg-[#E8F5E9] border-[#2E7D32] font-bold text-[#1B5E20]':'bg-white border-[#D8CFC0]')},
+                  h('input', {type:'checkbox', checked:checked, onChange:e=>{
+                    const cur = (form.loanType||'').split(',').map(s=>s.trim()).filter(Boolean);
+                    let next;
+                    if(e.target.checked){ if(!cur.includes(opt)) next=[...cur, opt]; else next=cur; } else { next=cur.filter(x=>x!==opt); }
+                    update('loanType', next.join(', '));
+                  }, className:'w-4 h-4 accent-[#1E4538]'}),
+                  h('span', null, opt)
+                );
+              })
+            ),
+            form.loanType ? h('p', {className:'text-[10px] text-[#2E7D32] mt-2 font-bold'}, 'Selected: '+form.loanType) : h('p', {className:'text-[10px] text-gray-500 mt-1'}, 'এক বা একাধিক সিলেক্ট করুন')
+          ),
+          h('div', {className:'grid grid-cols-1 gap-3'},
+            [['disbursementDate','Disbursement Date Month/Year'],['disbursementAmount','Disbursement Amount (Lac)'],['totalEMI','Total EMI (Thousand)'],['currentOutstanding','Current Outstanding (Lac)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+          )
+        )
+      ),
+// 4 Family Expenditure
+      h('div', {className:sectionClass}, h('span', null, '4. Family Expenditure (Monthly)'), h('button', {onClick:()=>handleSaveSection('Family Expenditure'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+        h('p', {className:'text-[11px] font-bold'}, 'Person 1'),
+        h('div', {className:'grid grid-cols-1 gap-3'},
+          [['houseRent','House Rent (Thousand)'],['houseElectricity','House Electricity (Thousand)'],['foodCloth','Food & Cloth (Thousand)'],['education','Education (Thousand)'],['telephoneBill','Telephone Bill (Thousand)'],['medical','Medical (Thousand)'],['entertainment','Entertainment (Thousand)'],['conveyance','Conveyance (Thousand)'],['othersExpense','Others (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+        ),
+        h('div', null, h('label', {className:labelClass}, 'Total (Auto)'), h('input', {value:form.familyExpenseTotal, readOnly:true, className:inputClass + ' bg-[#E8F5E9]'})),
+        h('div', {className:'grid grid-cols-1 gap-3 mt-4'},
+          [['rentalIncome','Rental Income (Thousand)'],['otherBusinessIncome','Other Business Income Details - Business Name'],['transportBusiness','Transport Business (Thousand)'],['remittance','Remittance (Thousand)'],['otherBusinessIncome2','Other Business Income (Thousand)'],['salaryOtherIncome','Salary / Other Income (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+        ),
+        h('div', null, h('label', {className:labelClass}, 'Total (Auto) (Thousand)'), h('input', {value:form.totalIncome, readOnly:true, className:inputClass + ' bg-[#E8F5E9]'}))
+      ),
+
+      // 6 Family Asset & Liability
+      h('div', {className:sectionClass}, h('span', null, '6. Family Asset & Liability'), h('button', {onClick:()=>handleSaveSection('Family Asset'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 grid grid-cols-1 gap-3'},
+        [['totalFamilyAsset','Total Family Asset (Lac)'],['totalLiabilities','Total Liabilities (Lac)'],['netWorth','Net Worth (Auto) (Lac)'],['totalValue','Total Value (Lac)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+      ),
+
+      // 7 Personal Asset & 8 New Loan Requirement
+      h('div', {className:sectionClass}, h('span', null, '7. Personal Asset'), h('button', {onClick:()=>handleSaveSection('Personal Asset'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+        h('div', {className:'grid grid-cols-1 gap-3'},
+          [
+            ['personalAsset','Personal Asset (Lac)'],
+            ['personalLiabilities','Personal Liabilities (Lac)'],
+            ['personalNetWorth','Personal Total Net Worth (PNW) (Lac) - Auto']
+          ].map(f=>{
+            const isAuto = f[0]==='personalNetWorth';
+            return h('div', {key:f[0]},
+              h('label', {className:labelClass}, f[1]),
+              h('input', {
+                value: isAuto ? (()=>{
+                  const asset=parseFloat(form.personalAsset)||0;
+                  const liab=parseFloat(form.personalLiabilities)||0;
+                  const pnw=asset-liab;
+                  return pnw.toString();
+                })() : (form[f[0]]||''),
+                onChange:e=>{
+                  if(isAuto) return;
+                  update(f[0], e.target.value);
+                },
+                readOnly:isAuto,
+                placeholder: isAuto ? 'Auto: Asset - Liabilities' : 'যেমন: 50',
+                className:inputClass + (isAuto ? ' bg-[#E8F5E9] font-bold text-[#1B5E20]' : '')
+              })
+            );
+          })
+        ),
+        h('p', {className:'text-[10px] text-[#2E7D32] font-bold'}, 'PNW Auto: Personal Asset 50 (Lac) - Personal Liabilities 10 (Lac) = 40 (Lac)'),
+        h('div', {className:'mt-2'}, h('label', {className:labelClass}, 'Details'), h('textarea', {value:form.personalAssetDetails, onChange:e=>update('personalAssetDetails', e.target.value), placeholder:'বিস্তারিত লিখুন', className:inputClass + ' h-[60px] resize-none'}))
+      ),
+
+      h('div', {className:sectionClass}, h('span', null, '8. New Loan Requirement'), h('button', {onClick:()=>handleSaveSection('New Loan Requirement'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+        h('div', {className:'grid grid-cols-1 gap-3'},
+          [['desiredLoan','Desired Loan (Lac)'],['whichMonth','Which Month'],['emiComfort','EMI Comfort (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+        ),
+        h('p', {className:'text-[11px] font-bold mt-4'}, 'Shop 1-4 & Godown 1-5 Classification (1st, 2nd, 3rd টিক দিন)'),
+        h('div', {className:'space-y-4'},
+          h('div', {className:'grid grid-cols-1 gap-3'},
+            [['shop1Class','Shop 1 insurance class'],['shop2Class','Shop 2 insurance class'],['shop3Class','Shop 3 insurance class'],['shop4Class','Shop 4 insurance class'],['godown1Class','Godown 1 insurance class'],['godown2Class','Godown 2 insurance class'],['godown3Class','Godown 3 insurance class'],['godown4Class','Godown 4 insurance class'],['godown5Class','Godown 5 insurance class']].map(f=>{
+              const key=f[0]; const label=f[1];
+              return h('div', {key:key, className:'bg-gray-50 border rounded-[10px] p-2.5'},
+                h('label', {className:labelClass}, label),
+                h('div', {className:'grid grid-cols-3 gap-2 mt-1'},
+                  ['1st','2nd','3rd'].map(opt=>{
+                    const selected = (form[key]||'').split(',').map(s=>s.trim()).filter(Boolean);
+                    const checked = selected.includes(opt);
+                    return h('label', {key:key+'_'+opt, className:'flex items-center justify-center gap-1.5 border rounded-full px-2 py-2 text-[11px] font-bold cursor-pointer '+(checked?'bg-[#1E4538] text-white border-[#1E4538]':'bg-white text-[#1A1A1A] border-[#D8CFC0]')},
+                      h('input', {type:'checkbox', checked:checked, onChange:e=>{
+                        const cur = (form[key]||'').split(',').map(s=>s.trim()).filter(Boolean);
+                        let next;
+                        if(e.target.checked){ if(!cur.includes(opt)) next=[...cur, opt]; else next=cur; } else { next=cur.filter(x=>x!==opt); }
+                        update(key, next.join(', '));
+                      }, className:'w-3.5 h-3.5 accent-[#1E4538]'}),
+                      h('span', null, opt)
+                    );
+                  })
+                ),
+                form[key] ? h('p', {className:'text-[10px] text-[#2E7D32] mt-1 font-bold'}, 'Selected: '+form[key]) : null
+              );
+            })
+          ),
+          h('div', {className:'grid grid-cols-1 gap-3 mt-3'},
+            [['shop1Address','Shop 1 Business Address'],['shop2Address','Shop 2 Business Address'],['shop3Address','Shop 3 Business Address'],['shop4Address','Shop 4 Business Address'],['address1','Godown address 1'],['address2','Godown address 2'],['address3','Godown address 3'],['address4','Godown address 4'],['address5','Godown address 5']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+          )
+        )
+      ),
+
+      // 9 Guarantors
+      h('div', {className:sectionClass}, h('span', null, '9. Guarantors'), h('button', {onClick:()=>handleSaveSection('Guarantors'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-4'},
+        h('div', {className:'flex gap-2 items-end'},
+          h('div', {className:'flex-1'}, h('label', {className:labelClass}, 'No of Guarantor'), h('input', {type:'number', min:1, max:10, value:form.noOfGuarantor, onChange:e=>update('noOfGuarantor', e.target.value), placeholder:'যেমন: 3', className:inputClass})),
+          h('button', {onClick:()=>{
+            const n=parseInt(form.noOfGuarantor)||1;
+            if(n<1||n>10){ alert('1 থেকে 10 এর মধ্যে লিখুন'); return; }
+            update('_guarantorGenerated', Date.now().toString());
+            if(typeof setToast==='function') setToast(n+' Guarantor generated');
+          }, style:{backgroundColor:'#1E4538', color:'white'}, className:'px-5 py-2.5 rounded-[10px] font-bold text-[12px] h-[42px]'}, 'Generate')
+        ),
+        h('p', {className:'text-[10px] text-gray-500'}, 'No of Guarantor লিখে Generate ক্লিক করলে নিচে ঘর ওপেন হবে'),
+        ...Array.from({length: Math.min(10, Math.max(1, parseInt(form.noOfGuarantor)||2))}, (_, idx)=>{
+          const i=idx+1;
+          const typeKey='guarantor'+i+'Type';
+          const nameKey='guarantor'+i+'Name';
+          const spouseKey='guarantor'+i+'Spouse';
+          const mobileKey='guarantor'+i+'Mobile';
+          const occKey='guarantor'+i+'Occupation';
+          const assetKey='guarantor'+i+'PersonalAsset';
+          const ccLoanKey='guarantor'+i+'CCLoan';
+          const orgAddrKey='guarantor'+i+'OrgAddress';
+          const bizAgeKey='guarantor'+i+'BusinessAge';
+          const bankNameKey='guarantor'+i+'BankName';
+          const loanLimitKey='guarantor'+i+'LoanLimit';
+          return h('div', {key:'g_'+i, className:'border-2 rounded-[12px] p-3 space-y-3 bg-[#FFFEF7] border-[#E8DCC6]'},
+            h('p', {className:'text-[13px] font-bold text-[#1A1A1A]'}, 'Guarantor '+i+' / গ্যারান্টর '+i),
+            h('div', {className:'flex gap-2'}, [['Family','Family'],['3rd Party','3rd Party']].map(o=> h('button', {key:o[0]+'_'+i, onClick:()=>update(typeKey, o[0]), style: (form[typeKey]||'Family')===o[0] ? {backgroundColor:'#1A1A1A', color:'white'} : {backgroundColor:'white', color:'#1A1A1A'}, className:'px-3 py-1.5 rounded-full text-[11px] border font-bold'}, o[1]))),
+            h('div', {className:'grid grid-cols-1 gap-2'},
+              h('div', null, h('label', {className:labelClass}, 'Name / নাম'), h('input', {value:form[nameKey]||'', onChange:e=>update(nameKey, e.target.value), placeholder:'গ্যারান্টরের নাম', className:inputClass})),
+              h('div', null, h('label', {className:labelClass}, 'Spouse Name / স্বামী-স্ত্রীর নাম'), h('input', {value:form[spouseKey]||'', onChange:e=>update(spouseKey, e.target.value), className:inputClass})),
+              h('div', null, h('label', {className:labelClass}, 'Mobile No / মোবাইল'), h('input', {value:form[mobileKey]||'', onChange:e=>update(mobileKey, e.target.value), className:inputClass})),
+              h('div', null,
+                h('label', {className:labelClass}, 'Occupation / পেশা - টিক দিন'),
+                h('div', {className:'flex gap-2 mt-1'},
+                  ['Business Man','Service Holder'].map(opt=>{
+                    const cur=form[occKey]||'';
+                    const checked=cur.split(',').map(s=>s.trim()).includes(opt);
+                    return h('label', {key:opt+'_'+i, className:'flex-1 flex items-center gap-2 border rounded-full px-3 py-2 text-[11px] font-bold cursor-pointer '+(checked?'bg-[#1E4538] text-[#C9A86A] border-[#1E4538]':'bg-white text-[#1A1A1A] border-[#D8CFC0]')},
+                      h('input', {type:'checkbox', checked:checked, onChange:e=>{
+                        const curArr=(form[occKey]||'').split(',').map(s=>s.trim()).filter(Boolean);
+                        let next;
+                        if(e.target.checked){ if(!curArr.includes(opt)) next=[...curArr, opt]; else next=curArr; } else { next=curArr.filter(x=>x!==opt); }
+                        update(occKey, next.join(', '));
+                      }, className:'w-3.5 h-3.5'}),
+                      h('span', null, opt)
+                    );
+                  })
+                )
+              ),
+              h('div', null, h('label', {className:labelClass}, 'প্রতিষ্ঠানের ঠিকানা / Organization Address'), h('input', {value:form[orgAddrKey]||'', onChange:e=>update(orgAddrKey, e.target.value), placeholder:'প্রতিষ্ঠানের ঠিকানা লিখুন', className:inputClass})),
+              h('div', {className:'grid grid-cols-1 gap-2'},
+                h('div', null, h('label', {className:labelClass}, 'ব্যবসা/চাকরির বয়স / Business/Job Age'), h('input', {value:form[bizAgeKey]||'', onChange:e=>update(bizAgeKey, e.target.value), placeholder:'যেমন: 5 বছর', className:inputClass})),
+                h('div', null, h('label', {className:labelClass}, 'Personal Asset'), h('input', {value:form[assetKey]||'', onChange:e=>update(assetKey, e.target.value), className:inputClass}))
+              ),
+              h('div', null,
+                h('label', {className:labelClass}, 'CC Loan - Yes / No টিক দিন'),
+                h('div', {className:'flex gap-2 mt-1'},
+                  ['Yes','No'].map(opt=>{
+                    const cur=form[ccLoanKey]||'';
+                    const checked=cur===opt;
+                    return h('label', {key:opt+'_cc_'+i, className:'flex-1 flex items-center justify-center gap-2 border rounded-full px-3 py-2 text-[11px] font-bold cursor-pointer '+(checked?(opt==='Yes'?'bg-[#E8F5E9] text-[#1B5E20] border-[#2E7D32]':'bg-[#FFEBEE] text-[#B71C1C] border-[#E57373]'):'bg-white text-[#1A1A1A] border-[#D8CFC0]')},
+                      h('input', {type:'radio', name:'ccLoan_'+i, checked:checked, onChange:()=>update(ccLoanKey, opt), className:'w-3.5 h-3.5'}),
+                      h('span', null, opt)
+                    );
+                  })
+                ),
+                (form[ccLoanKey]==='Yes' || (form[ccLoanKey]||'').toLowerCase().includes('yes')) ? h('div', {className:'grid grid-cols-1 gap-2 mt-3 p-2 bg-white border rounded-[10px]'},
+                  h('div', null, h('label', {className:labelClass}, 'Bank Name'), h('input', {value:form[bankNameKey]||'', onChange:e=>update(bankNameKey, e.target.value), placeholder:'ব্যাংকের নাম', className:inputClass})),
+                  h('div', null, h('label', {className:labelClass}, 'Loan Limit'), h('input', {value:form[loanLimitKey]||'', onChange:e=>update(loanLimitKey, e.target.value), placeholder:'যেমন: 5 Lac', className:inputClass}))
+                ) : null
+              )
+            )
+          );
+        })
+      ),
+
+      h('div', {className:'bg-white border-2 border-[#1E4538] rounded-[12px] p-4 mt-4 space-y-3'},
+        h('p', {className:'text-[12px] font-bold text-[#1E4538] text-center'}, 'PDF / View / Share - Market Survey'),
+        h('div', {className:'grid grid-cols-3 gap-2'},
+          h('button', {onClick:()=>handleMarketSurveyPdf('view', form), style:{backgroundColor:'#E3F2FD', color:'#0D47A1'}, className:'py-3 rounded-[10px] font-bold text-[12px] border flex flex-col items-center gap-1'}, h('span', {className:'text-[18px]'}, '👁️'), h('span', null, 'View')),
+          h('button', {onClick:()=>handleMarketSurveyPdf('download', form), style:{backgroundColor:'#E8F5E9', color:'#1B5E20'}, className:'py-3 rounded-[10px] font-bold text-[12px] border flex flex-col items-center gap-1'}, h('span', {className:'text-[18px]'}, '📄'), h('span', null, 'PDF')),
+          h('button', {onClick:()=>handleMarketSurveyPdf('share', form), style:{backgroundColor:'#FFF3E0', color:'#E65100'}, className:'py-3 rounded-[10px] font-bold text-[12px] border flex flex-col items-center gap-1'}, h('span', {className:'text-[18px]'}, '📤'), h('span', null, 'Share'))
+        ),
+        h('p', {className:'text-[10px] text-gray-500 text-center'}, 'তথ্য গুলো PDF আকারে View, Download বা Share করুন')
+      ),
+      h('div', {className:'bg-[#2D2A26] rounded-[12px] p-4 mt-6'},
+        h('p', {className:'text-[11px] text-[#C9A86A] text-center mb-3'}, 'সব সেকশন যাচাই করে নিন, তারপর Finally Save'),
+        h('button', {onClick:handleFinallySave, disabled:saving, style:{backgroundColor:'#C9A86A', color:'#2D2A26'}, className:'w-full py-3.5 rounded-[12px] font-bold text-[14px] flex items-center justify-center gap-2'}, h('span', null, '✓'), h('span', null, saving ? 'Saving...' : 'FINALLY SAVE / ফাইনালি সেভ করুন'))
+      ),
+      h('div', {className:'pb-10'})
+    )
+  );
+}
+
 function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds }){
   const [bName, setBName] = useState('');
   const [bAmount, setBAmount] = useState('');
@@ -2954,7 +4505,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
         ),
         h('p', {className:'text-[13px] text-[#8B7355] bg-[#FFF8E1] border border-[#FFE082] rounded-[12px] p-2.5'}, 'দাম ও খাত দিতে হবে, নইলে সেভ হবে না'),
         h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-4 space-y-4'},
-          h('div', {className:'grid grid-cols-2 gap-3'},
+          h('div', {className:'grid grid-cols-1 gap-3'},
             h('div', null,
               h('label', {className:'text-[13px] font-bold text-[#8B7355] mb-1.5 block'}, 'দাম *'),
               h('input', {type:'number', value:popupAmount, onChange:e=>setPopupAmount(e.target.value), placeholder:'যেমন: 50', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-4 py-3 text-[14px] outline-none focus:border-[#C9A86A]'})
@@ -2983,7 +4534,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
             ) : null
           )
         ),
-        h('div', {className:'grid grid-cols-2 gap-3 pt-2 pb-6'},
+        h('div', {className:'grid grid-cols-1 gap-3 pt-2 pb-6'},
           h('button', {onClick:()=>setPopupItem(null), className:'py-4 rounded-[14px] bg-white border border-[#F3E8D3] text-[#2D2A26] font-bold text-[14px]'}, 'বাতিল'),
           h('button', {onClick:confirmYes, disabled: !popupAmount || !popupCat, className:'py-4 rounded-[14px] bg-[#2E7D32] text-white font-bold text-[14px] disabled:opacity-40 shadow-lg'}, 'Yes - ব্যয়ে যোগ করুন')
         )
@@ -3020,7 +4571,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
         h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'পণ্যের নাম *'),
         h('input', {type:'text', value:bName, onChange:e=>setBName(e.target.value), placeholder:'যেমন: আলু', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none focus:border-[#C9A86A]'})
       ),
-      h('div', {className:'grid grid-cols-2 gap-2'},
+      h('div', {className:'grid grid-cols-1 gap-2'},
         h('div', null,
           h('label', {className:'text-[12px] font-bold text-[#8B7355] mb-1 block'}, 'দাম (ঐচ্ছিক)'),
           h('input', {type:'number', value:bAmount, onChange:e=>setBAmount(e.target.value), placeholder:'0 - পরে দিতে পারবেন', className:'w-full bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] outline-none focus:border-[#C9A86A]'})
@@ -3140,8 +4691,10 @@ function App(){
   },[]);
 
   const [historyFilter, setHistoryFilter] = useState(loadLS('lifestyle_last_historyFilter', 'all'));
+  const [historyBankNameFilter, setHistoryBankNameFilter] = useState('');
   const [openPersonKind, setOpenPersonKind] = useState(loadLS('lifestyle_last_openPersonKind', null));
   const [openPersonId, setOpenPersonId] = useState(loadLS('lifestyle_last_openPersonId', null));
+  const [openBankName, setOpenBankName] = useState(loadLS('lifestyle_last_openBankName', null));
   const [openCategoryKind, setOpenCategoryKind] = useState(loadLS('lifestyle_last_openCategoryKind', null));
   const [openCategoryName, setOpenCategoryName] = useState(loadLS('lifestyle_last_openCategoryName', null));
   const [addType, setAddType] = useState(loadLS('lifestyle_last_addType', null));
@@ -3207,6 +4760,7 @@ function App(){
   useEffect(()=>{ try{ saveLS('lifestyle_last_historyFilter', historyFilter); }catch(e){} }, [historyFilter]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonKind', openPersonKind); }catch(e){} }, [openPersonKind]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openPersonId', openPersonId); }catch(e){} }, [openPersonId]);
+  useEffect(()=>{ try{ saveLS('lifestyle_last_openBankName', openBankName); }catch(e){} }, [openBankName]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openCategoryKind', openCategoryKind); }catch(e){} }, [openCategoryKind]);
   useEffect(()=>{ try{ saveLS('lifestyle_last_openCategoryName', openCategoryName); }catch(e){} }, [openCategoryName]);
   useEffect(()=>{ try{ saveLS('lifestyle_people_trash', peopleTrash); }catch(e){} }, [peopleTrash]);
@@ -3751,6 +5305,9 @@ setTimeout(()=>{
   function openPerson(kind, person){
     setOpenPersonKind(kind); setOpenPersonId(person.id); customSetPage('personDetail');
   }
+  function openBankDetail(bankName){
+    setOpenBankName(bankName); customSetPage('bankDetail');
+  }
   function openCategory(kind, categoryName){
     setOpenCategoryKind(kind); setOpenCategoryName(categoryName); customSetPage('categoryDetail');
   }
@@ -3807,8 +5364,12 @@ setTimeout(()=>{
     if(historyFilter==='income' && historyIncomeCategory){
       list = list.filter(x => x.category===historyIncomeCategory || x.categoryBn===historyIncomeCategory);
     }
+    // BANK NAME CLICKABLE FILTER - only when bank_loan filter active
+    if(historyFilter==='bank_loan' && historyBankNameFilter){
+      list = list.filter(x => x.type==='bank_loan' && (x.category===historyBankNameFilter || x.categoryBn===historyBankNameFilter));
+    }
     return list.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||''));
-  }, [transactions, peopleGiven, peopleTaken, bankLoans, historyFilter, search, historyFrom, historyTo, historyExpenseCategory, historyIncomeCategory]);
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, historyFilter, search, historyFrom, historyTo, historyExpenseCategory, historyIncomeCategory, historyBankNameFilter]);
 
   /* ---- render pages ---- */
   let pageContent = null;
@@ -3828,36 +5389,37 @@ setTimeout(()=>{
         lastSyncTime ? h('p', {className:'text-[11px] text-[#8B7355]'}, lastSyncTime) : null
       ) : null,
       h('div', null,
-        h('h2', {className:'text-[18px] font-bold mb-3'}, t.today),
-        h('div', {className:'grid grid-cols-3 gap-3'},
-          h('div', {onClick:()=>{ setHistoryFilter('income'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, t.todayIncome),
-            h('p', {className:'text-[16px] font-bold mt-1 text-[#1B5E20]'}, fmtMoney(todayIncome))
-          ),
-          h('div', {onClick:()=>{ setHistoryFilter('expense'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, t.todayExpense),
-            h('p', {className:'text-[16px] font-bold mt-1 text-[#B71C1C]'}, fmtMoney(todayExpense))
-          ),
-          h('div', {onClick:()=>{ setHistoryFilter('all'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[11px] font-semibold text-[#8B7355]'}, t.todayBalance),
-            h('p', {className:'text-[16px] font-bold mt-1'}, fmtMoney(todayIncome-todayExpense))
-          )
-        )
-      ),
-      h('div', null,
-        h('h2', {className:'text-[18px] font-bold mb-3'}, t.thisMonth || 'Monthly'),
+        h('h2', {className:'text-[18px] font-bold mb-3'}, lang==='en' ? 'Overview' : 'সারসংক্ষেপ'),
         h('div', {className:'grid grid-cols-3 gap-3'},
           h('div', {onClick:()=>goHistoryFiltered('income'), className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, t.monthlyIncome),
             h('p', {className:'text-[14px] font-bold mt-1 text-[#1B5E20]'}, fmtMoney(monthIncome))
           ),
+          h('div', {onClick:()=>{ setHistoryFilter('expense'); setHistoryFrom(today()); setHistoryTo(today()); customSetPage('history'); }, className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
+            h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, t.todayExpense),
+            h('p', {className:'text-[16px] font-bold mt-1 text-[#B71C1C]'}, fmtMoney(todayExpense))
+          ),
           h('div', {onClick:()=>goHistoryFiltered('expense'), className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
             h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, t.monthlyExpense),
             h('p', {className:'text-[14px] font-bold mt-1 text-[#B71C1C]'}, fmtMoney(monthExpense))
+          )
+        )
+      ),
+                        // NEW: Daily Routine Row + Travel + Market Survey
+      h('div', null,
+        h('h2', {className:'text-[18px] font-bold mb-3'}, lang==='en' ? 'Routine & Work' : 'রুটিন ও কাজ'),
+        h('div', {className:'grid grid-cols-3 gap-3'},
+          h('div', {onClick:()=>setAddType('daily_routine'), className:'bg-[#E3F2FD] rounded-[20px] p-3.5 border border-[#BBDEFB] cursor-pointer active:scale-[0.98] transition-transform flex flex-col justify-center items-center text-center'},
+            h('p', {className:'text-[16px] font-extrabold leading-tight text-[#0D47A1]'}, 'Daily'),
+            h('p', {className:'text-[16px] font-extrabold leading-tight text-[#0D47A1]'}, 'Routine')
           ),
-          h('div', {onClick:()=>customSetPage('reports'), className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[11px] font-semibold text-[#8B7355]'}, t.monthlyBalance),
-            h('p', {className:'text-[14px] font-bold mt-1'}, fmtMoney(monthIncome-monthExpense))
+          h('div', {onClick:()=>setAddType('travel'), className:'bg-[#FFF3E0] rounded-[20px] p-3.5 border border-[#FFCC80] cursor-pointer active:scale-[0.98] transition-transform flex flex-col justify-center items-center text-center'},
+            h('p', {className:'text-[16px] font-extrabold leading-tight text-[#BF360C]'}, 'Travel'),
+            h('p', {className:'text-[16px] font-extrabold leading-tight text-[#BF360C]'}, 'Partner')
+          ),
+          h('div', {onClick:()=>setAddType('market_survey'), className:'bg-[#F3E5F5] rounded-[20px] p-3.5 border border-[#CE93D8] cursor-pointer active:scale-[0.98] transition-transform flex flex-col justify-center items-center text-center'},
+            h('p', {className:'text-[16px] font-extrabold leading-tight text-[#4A148C]'}, 'Market'),
+            h('p', {className:'text-[16px] font-extrabold leading-tight text-[#4A148C]'}, 'Survey')
           )
         )
       ),
@@ -4077,22 +5639,25 @@ setTimeout(()=>{
             h('div', {className:'text-[10px] text-[#8B7355]'}, (historyExpenseCategory ? (lang==='en'?'Category: ':'খাত: ') + historyExpenseCategory : (historyIncomeCategory ? (lang==='en'?'Category: ':'খাত: ') + historyIncomeCategory : '')))
           )
         ),
-        h('p', {className:'text-[10px] text-[#8B7355] px-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+(historyFrom||historyTo ? ' • '+(historyFrom||'...')+' to '+(historyTo||'...') : '')+' • '+filteredHistory.length+' records • User, Date, Time included')
+        h('div', {className:'flex flex-wrap items-center gap-2 px-1'},
+          h('p', {className:'text-[10px] text-[#8B7355] flex-1'}, (lang==='en'?'Filtered: ':'ফিল্টার: ')+historyFilter+(historyBankNameFilter ? ' • Bank: '+historyBankNameFilter : '')+(historyFrom||historyTo ? ' • '+(historyFrom||'...')+' to '+(historyTo||'...') : '')+' • '+filteredHistory.length+' records • User, Date, Time included'),
+          historyBankNameFilter ? h('button', {onClick:()=>{ setHistoryBankNameFilter(''); setSearch(''); }, className:'px-2.5 py-1 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, '✕ '+(historyBankNameFilter||'')+' Clear') : null
+        )
       ),
       filteredHistory.length === 0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'},
         h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)
       ) : h('div', {className:'space-y-2.5'},
-        filteredHistory.map(x => h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
+        filteredHistory.map(x => h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3 ' + (x.type==='bank_loan' ? 'cursor-pointer hover:bg-[#FFF6E8] active:scale-[0.99]' : ''), onClick:(e)=>{ if(x.type==='bank_loan' && x.category){ const target = e.target; if(target && target.closest && target.closest('button')) return; openBankDetail(x.category); } }},
           h('div', {className:'flex-1 min-w-0'},
-            h('p', {className:'font-bold text-[14px] truncate text-[#2D2A26] cursor-pointer ' + (['loan_given','loan_taken','return_received','repayment','income','expense'].includes(x.type) ? 'text-[#2D2A26] hover:underline' : ''), onClick:()=>{ const isLT=['loan_given','loan_taken','return_received','repayment'].includes(x.type); if(isLT && x.personId){ const list = (x.personKind==='taken' || x.type==='loan_taken' || x.type==='repayment') ? peopleTaken : peopleGiven; const pers = list.find(p=>p.id===x.personId); if(pers){ openPerson(list===peopleTaken?'taken':'given', pers); } } else if((x.type==='income' || x.type==='expense') && x.category){ openCategory(x.type, x.category); } }}, (['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? (x.personName||'Unknown Person') : (lang==='en'?x.category:x.categoryBn))),
+            x.type==='bank_loan' ? h('button', {onClick:(e)=>{ try{ e.stopPropagation(); e.preventDefault(); }catch(_){} openBankDetail(x.category); setHistoryBankNameFilter(x.category); setHistoryFilter('bank_loan'); }, className:'font-bold text-[14px] truncate text-[#1A56DB] hover:text-[#0F3DAA] hover:underline underline-offset-2 cursor-pointer select-none touch-manipulation text-left bg-transparent border-none p-0 m-0 hover:bg-[#F3E8D3] px-2 py-1 rounded-[8px]'}, (lang==='en'?x.category:x.categoryBn)) : h('p', {className:'font-bold text-[14px] truncate text-[#2D2A26] select-none touch-manipulation ' + (['loan_given','loan_taken','return_received','repayment','income','expense'].includes(x.type) ? 'text-[#1A56DB] hover:underline underline-offset-2 cursor-pointer active:text-[#0F3DAA]' : ''), onClick:(e)=>{ try{ if(e && e.stopPropagation) e.stopPropagation(); if(e && e.preventDefault) e.preventDefault(); }catch(_){} try{ const isLT=['loan_given','loan_taken','return_received','repayment'].includes(x.type); if(isLT && x.personId){ const list = (x.personKind==='taken' || x.type==='loan_taken' || x.type==='repayment') ? peopleTaken : peopleGiven; const pers = list.find(p=>p.id===x.personId); if(pers){ openPerson(list===peopleTaken?'taken':'given', pers); } } else if((x.type==='income' || x.type==='expense') && x.category){ openCategory(x.type, x.category); } }catch(_){} }}, (['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? (x.personName||'Unknown Person') : (lang==='en'?x.category:x.categoryBn))),
             h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' • '+x.note:'') + (x.fromChannel && !['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? ' • '+x.fromChannel : '') + (x.fromChannel && ['loan_given','loan_taken','return_received','repayment'].includes(x.type) ? ' • '+x.fromChannel + (x.toChannel && x.toChannel!==x.fromChannel ? ' → '+x.toChannel : '') : ''))
           ),
 
           h('div', {className:'text-right'},
             h('p', {className:'font-bold text-[14px] ' + (x.type==='income'?'text-[#2E7D32]':'text-[#B71C1C]')}, (x.type==='income'?'+':'-') + fmtMoney(x.amount).replace('\u09F3 ','\u09F3')),
             h('div', {className:'flex gap-2 justify-end mt-1'},
-              h('button', {onClick:()=>handleHistoryEdit(x), className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm'}, t.edit),
-              h('button', {onClick:()=>setConfirmDelTx(x), className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm'}, t.delete)
+              h('button', {onClick:(e)=>{ try{ e.stopPropagation(); e.preventDefault(); }catch(_){} handleHistoryEdit(x); }, className:'text-[15px] font-bold text-[#2D2A26] px-5 py-2.5 bg-white border-2 border-[#F3E8D3] rounded-[12px] shadow-sm touch-manipulation'}, t.edit),
+              h('button', {onClick:(e)=>{ try{ e.stopPropagation(); e.preventDefault(); }catch(_){} setConfirmDelTx(x); }, className:'text-[15px] font-bold text-[#B71C1C] px-5 py-2.5 bg-white border-2 border-[#FFCDD2] rounded-[12px] shadow-sm touch-manipulation'}, t.delete)
             )
           )
         ))
@@ -4163,7 +5728,7 @@ setTimeout(()=>{
           h('button', {onClick:function(){ handleCategoryPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[11px] font-bold'}, '📤 Share')
         )
       ),
-      h('div', {className:'bg-white rounded-[16px] p-2.5 border border-[#F3E8D3] grid grid-cols-2 gap-2.5'},
+      h('div', {className:'bg-white rounded-[16px] p-2.5 border border-[#F3E8D3] grid grid-cols-1 gap-2.5'},
         h('div', {className:'flex flex-col gap-1'},
           h('label', {className:'text-[11px] font-bold text-[#2D2A26] ml-1'}, 'From'),
           h('input', {type:'date', value:categoryDetailFromDate, onChange:function(e){ setCategoryDetailFromDate(e.target.value); }, className:'w-full bg-[#FFFBF5] border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[12px] text-[#2D2A26] outline-none'})
@@ -4175,7 +5740,7 @@ setTimeout(()=>{
       ),
       catTransactions.length===0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'}, h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)) :
       h('div', {className:'space-y-2.5'},
-        catTransactions.map(function(x){ return h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3'},
+        catTransactions.map(function(x){ return h('div', {key:x.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3] flex items-center gap-3 ' + (x.type==='bank_loan' ? 'cursor-pointer hover:bg-[#FFF6E8] active:scale-[0.99]' : ''), onClick:(e)=>{ if(x.type==='bank_loan' && x.category){ const target = e.target; if(target && target.closest && target.closest('button')) return; openBankDetail(x.category); } }},
           h('div', {className:'flex-1 min-w-0'},
             h('p', {className:'font-bold text-[14px] truncate text-[#2D2A26]'}, lang==='en'?x.category:x.categoryBn),
             h('p', {className:'text-[11px] text-[#8B7355] truncate'}, x.date + (x.note?' • '+x.note:'') + (x.fromChannel ? ' • '+x.fromChannel : ''))
@@ -4188,6 +5753,68 @@ setTimeout(()=>{
             )
           )
         ); })
+      )
+    );
+  } else if(page === 'bankDetail' && openBankName){
+    const bankSpecificLoans = bankLoans.filter(b => b.bankName === openBankName).slice().sort((a,b)=> (b.loanDate||'').localeCompare(a.loanDate||''));
+    const bankTotal = bankSpecificLoans.reduce((s,x)=> s + (x.amount||0),0);
+    const bankCount = bankSpecificLoans.length;
+    function handleBankDetailPdf(mode){
+      try{
+        mode = mode || 'download';
+        var genAt = new Date();
+        var resolved = (function(){ try{ var lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; if(typeof userName==='string' && userName.trim()) return userName; if(lsN) return lsN; if(typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) return googleUser.name||googleUser.email; }catch(e){} return 'User'; })();
+        var lsD = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation')) || '';
+        var lsA = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address')) || '';
+        var lsM = (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile')) || '';
+        var list = bankSpecificLoans.map(function(b){ return {id:b.id, date:b.loanDate||b.disbursementDate||'', type:'bank_loan', amount:b.amount, category:b.bankName, categoryBn:b.bankName, note:(b.termMonths+'mo • '+b.interestRate+'%'), kind:'bank', bankName:b.bankName, termMonths:b.termMonths, interestRate:b.interestRate}; });
+        var o={t:t, lang:lang, filter:'bank_loan-'+openBankName, list:list, userName:resolved, userDesignation:lsD, userAddress:lsA, userMobile:lsM, generatedAt:genAt, appName:t.appName, categoryName:openBankName, categoryKind:'bank_loan', total:bankTotal};
+        var fname='Lifestyle-Bank-'+openBankName.replace(/\s+/g,'-')+'-'+today()+'.pdf';
+        var title=openBankName+' Bank Loan';
+        if(mode==='view'){
+          try{ var pages=renderHistoryPages(o); showPdfPreviewFromCanvases(pages); }catch(e){ try{ var blob=buildHistoryPdfBlob(o); viewPdfBlob(blob); }catch(e2){} }
+        } else if(mode==='download'){
+          try{ var blob=buildHistoryPdfBlob(o); downloadPdfBlob(blob,fname); if(typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }catch(e){ console.error(e); }
+        } else {
+          try{ var blob=buildHistoryPdfBlob(o); shareOrDownloadPdf(blob,fname,title).then(function(res){ if(res==='downloaded' && typeof setToast==='function') setToast(t.pdfDownloaded||'PDF downloaded'); }); }catch(e){ console.error(e); }
+        }
+      }catch(e){ console.error(e); }
+    }
+    pageContent = h('div', {className:'pt-5 pb-6 space-y-4'},
+      h('div', {className:'flex items-center gap-2'},
+        h(IconBtn, {onClick:function(){ customSetPage('history'); }}, '\u2190'),
+        h('h2', {className:'text-[18px] font-bold flex-1 truncate'}, openBankName),
+        h('span', {className:'px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#E3F2FD] text-[#1A4D8F] border border-[#BBDEFB]'}, bankCount+' '+(lang==='en'?'Loans':'টি লোন'))
+      ),
+      h('div', {className:'bg-[#2D2A26] rounded-[20px] p-4 text-white'},
+        h('p', {className:'text-[12px] text-white/70'}, openBankName+' - '+t.bankLoans),
+        h('p', {className:'text-[24px] font-bold mt-1'}, fmtMoney(bankTotal)),
+        h('p', {className:'text-[11px] text-white/60 mt-2'}, bankCount+' '+(lang==='en'?'records':'টি রেকর্ড')),
+        h('div', {className:'mt-3 grid grid-cols-3 gap-2'},
+          h('button', {onClick:function(){ handleBankDetailPdf('download'); }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
+          h('button', {onClick:function(){ handleBankDetailPdf('view'); }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
+          h('button', {onClick:function(){ handleBankDetailPdf('share'); }, className:'py-2.5 rounded-full bg-[#2D2A26] border border-white/20 text-white text-[11px] font-bold'}, '📤 Share')
+        )
+      ),
+      bankSpecificLoans.length===0 ? h('div', {className:'bg-white rounded-[20px] p-8 border border-[#F3E8D3] text-center'}, h('p', {className:'text-[13px] text-[#8B7355]'}, t.noData)) :
+      h('div', {className:'space-y-2.5'},
+        bankSpecificLoans.map(function(b){
+          const emi = (typeof calcEMI==='function') ? calcEMI(b.amount, b.interestRate, b.termMonths) : 0;
+          return h('div', {key:b.id, className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3]'},
+            h('div', {className:'flex justify-between items-start gap-3'},
+              h('div', {className:'flex-1 min-w-0'},
+                h('p', {className:'font-bold text-[15px] truncate'}, b.bankName),
+                h('p', {className:'text-[12px] text-[#8B7355] mt-1'}, (b.loanDate||'')+' • '+b.termMonths+'mo • '+b.interestRate+'% • EMI: '+fmtMoney(emi)),
+                h('p', {className:'text-[11px] text-[#8B7355] mt-1 truncate'}, b.note||''),
+                h('p', {className:'font-bold text-[16px] text-[#B71C1C] mt-2'}, fmtMoney(b.amount))
+              ),
+              h('div', {className:'flex flex-col gap-2 ml-2'},
+                h('button', {onClick:function(){ setEditingBankLoan(b); }, className:'px-4 py-2 rounded-[12px] bg-white border border-[#F3E8D3] text-[12px] font-bold text-[#2D2A26]'}, t.edit),
+                h('button', {onClick:function(){ setConfirmDelBank(b); }, className:'px-4 py-2 rounded-[12px] bg-white border border-[#FFCDD2] text-[12px] font-bold text-[#B71C1C]'}, t.delete)
+              )
+            )
+          );
+        })
       )
     );
   } else if(page === 'reports'){
@@ -4345,7 +5972,7 @@ setTimeout(()=>{
 
       h('div', {className:'bg-white rounded-[20px] p-4 border border-[#F3E8D3]'},
         h('h3', {className:'font-bold text-[14px] mb-3'}, t.pdfTitle),
-        h('div', {className:'grid grid-cols-2 gap-3'},
+        h('div', {className:'grid grid-cols-1 gap-3'},
           h(Field, {label:t.dateFrom}, h(TextInput, {type:'date', value:reportFrom, onChange:e=>setReportFrom(e.target.value)})),
           h(Field, {label:t.dateTo}, h(TextInput, {type:'date', value:reportTo, onChange:e=>setReportTo(e.target.value)}))
         ),
@@ -4573,6 +6200,15 @@ setTimeout(()=>{
         h(BankLoanForm, {t, lang, initial: editingBankLoan, onSave: saveBankLoan})
       ) : null,
       
+      (addType === 'daily_routine') ? h(BottomSheet, {title: lang==='en' ? 'Daily Routine - Add Task' : 'ডেইলি রুটিন - কাজ যোগ করুন', onClose: ()=>setAddType(null)}, 
+        h(DailyRoutineManager, {t, lang, setToast})
+      ) : null,
+      (addType === 'travel') ? h(BottomSheet, {title: lang==='en' ? 'Travel Checklist' : 'ভ্রমণ চেকলিস্ট', onClose: ()=>setAddType(null)}, 
+        h(TravelManager, {t, lang, setToast})
+      ) : null,
+      (addType === 'market_survey') ? h(BottomSheet, {title: lang==='en' ? 'Market Survey' : 'মার্কেট সার্ভে', onClose: ()=>setAddType(null)}, 
+        h(MarketSurveyManager, {t, lang, setToast})
+      ) : null,
       (addType === 'bazar') ? h(BottomSheet, {title: t.todayBazar||'আজকের বাজার', onClose: ()=>setAddType(null)}, h(BazarManager, {bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds})) : null,
       editingHistoryLoan ? h(BottomSheet, {
         title: (editingHistoryLoan.kind==='given' ? (lang==='en'?'Edit Given - ':'প্রদান সম্পাদনা - ') : (lang==='en'?'Edit Taken - ':'গ্রহণ সম্পাদনা - ')) + editingHistoryLoan.personName,
@@ -4865,6 +6501,214 @@ async function handleReportPdf(mode){
     }
   }catch(e){ console.error(e); }
   if(typeof setReportBusy==='function') setReportBusy(false);
+}
+
+
+
+function renderMarketSurveyPages(o){
+  const W=2480, H=3508, M=120;
+  const pages=[]; let cv, ctx, y=0;
+  function newPage(){
+    cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+    y=M;
+    // Header
+    ctx.fillStyle='#1E4538'; ctx.fillRect(0,0,W,180);
+    ctx.fillStyle='#C9A86A'; ctx.font='bold 54px sans-serif'; ctx.fillText(o.appName||'Lifestyle', M, 110);
+    ctx.fillStyle='#fff'; ctx.font='28px sans-serif'; ctx.fillText('Market Survey Report', M, 150);
+    ctx.font='20px sans-serif'; ctx.fillText('Generated: '+ (o.generatedAt?o.generatedAt.toLocaleString():'') + ' | User: '+(o.userName||''), M, 175);
+    y=220;
+    pages.push(cv);
+    return;
+  }
+  function ensureSpace(need){
+    if(y+need > H-100){ newPage(); }
+  }
+  function drawSection(title){
+    ensureSpace(90);
+    ctx.fillStyle='#2D2A26'; ctx.fillRect(M, y, W-2*M, 70);
+    ctx.fillStyle='#fff'; ctx.font='bold 30px sans-serif'; ctx.fillText(title, M+20, y+45);
+    y+=90;
+  }
+  function drawField(label, value){
+    if(!value && value!==0) return;
+    ensureSpace(60);
+    ctx.fillStyle='#5C4A32'; ctx.font='bold 24px sans-serif';
+    const lab = label+': ';
+    ctx.fillText(lab, M, y);
+    ctx.fillStyle='#1A1A1A'; ctx.font='24px sans-serif';
+    const v = String(value);
+    // wrap
+    let maxW = W-2*M - ctx.measureText(lab).width - 20;
+    let lines=[];
+    let cur='';
+    for(let ch of v){ cur+=ch; if(ctx.measureText(cur).width>maxW){ lines.push(cur.slice(0,-1)); cur=ch; } }
+    if(cur) lines.push(cur);
+    ctx.fillText(lines[0]||'', M+ctx.measureText(lab).width, y);
+    y+=40;
+    for(let i=1;i<lines.length;i++){
+      ensureSpace(50);
+      ctx.fillText(lines[i], M, y);
+      y+=40;
+    }
+    y+=10;
+  }
+  newPage();
+  // Sections
+  const f=o.form||{};
+  drawSection('1. Ownership');
+  drawField('Ownership Type', f.ownershipType);
+  drawField('Owner 1 %', f.owner1Pct);
+  drawField('Owner 2 %', f.owner2Pct);
+  drawSection('2. Business Information');
+  drawField('Business Name', f.businessName);
+  drawField('Owner Name', f.ownerName);
+  drawField('Mobile', f.mobileNo);
+  drawField('Address', f.address);
+  drawField('Business Types', (f.selectedBizItems||[]).map(x=>x.bn+' ('+x.en+')').join(', ') || f.businessType);
+  const simpleFields = ['cashInHand','goodsInTransit','stock','receivables','payables','monthlySales','yearlySales','advanceToSuppliers','possessionValue','shopAdvance','buildingCost','furniture','machineries','vehicleNo','vehiclePrice','totalEmployee','totalSalary','wholesalePct','wholesaleMargin','retailPct','retailMargin','avgMargin','electricity','transportCost','adminCost','ownerDrawing','rentBusiness','monthlyTotalExpense','tax','noOfShop','shopRentYearly','noOfGodown','godownAdvance','godownRentYearly'];
+  simpleFields.forEach(k=> drawField(k, f[k]));
+  drawSection('3. Existing Loan');
+  drawField('Existing Loan Type', f.existingLoanType);
+  drawField('NGO Selected', (f.selectedLoans&&f.selectedLoans.ngo||[]).map(x=>x.bn+' ('+x.en+')').join(', '));
+  drawField('Bank Selected', (f.selectedLoans&&f.selectedLoans.bank||[]).map(x=>x.bn+' ('+x.en+')').join(', '));
+  drawField('NBFI Selected', (f.selectedLoans&&f.selectedLoans.nbfi||[]).map(x=>x.bn+' ('+x.en+')').join(', '));
+  drawField('Others NGO', f.othersNGO);
+  drawField('Loan Type', f.loanType);
+  drawField('Disbursement Date', f.disbursementDate);
+  drawField('Disbursement Amount', f.disbursementAmount);
+  drawField('Total EMI', f.totalEMI);
+  drawField('Current Outstanding', f.currentOutstanding);
+  drawSection('4. Family Expenditure & Income');
+  ['familyExpensePerson1','houseRent','houseElectricity','foodCloth','education','telephoneBill','medical','entertainment','conveyance','othersExpense','familyExpenseTotal','rentalIncome','otherBusinessIncome','transportBusiness','remittance','otherBusinessIncome2','totalBusinessIncome','salaryOtherIncome','totalIncome'].forEach(k=> drawField(k, f[k]));
+  drawSection('6. Family Asset & Liability');
+  ['totalFamilyAsset','totalLiabilities','netWorth','totalValue','personalAssetDetails','desiredLoan','whichMonth','emiComfort'].forEach(k=> drawField(k, f[k]));
+  drawSection('9. Guarantors');
+  ['noOfGuarantor','guarantor1Type','guarantor1Name','guarantor1Spouse','guarantor1Mobile','guarantor1Occupation','guarantor1PersonalAsset','guarantor1CCLoan','guarantor2Type','guarantor2Name','guarantor2Spouse','guarantor2Mobile','guarantor2Occupation','guarantor2PersonalAsset','guarantor2CCLoan'].forEach(k=> drawField(k, f[k]));
+
+  return pages;
+}
+
+function renderTravelPartnerPages(o){
+  const W=2480, H=3508, M=120;
+  const pages=[]; let cv, ctx, y=0;
+  function newPage(){
+    cv=document.createElement('canvas'); cv.width=W; cv.height=H; ctx=cv.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+    y=M;
+    ctx.fillStyle='#E65100'; ctx.fillRect(0,0,W,180);
+    ctx.fillStyle='#fff'; ctx.font='bold 54px sans-serif'; ctx.fillText(o.appName||'Lifestyle', M, 110);
+    ctx.font='28px sans-serif'; ctx.fillText('Travel Partner Report', M, 150);
+    ctx.font='20px sans-serif'; ctx.fillText('Generated: '+ (o.generatedAt?o.generatedAt.toLocaleString():'') + ' | User: '+(o.userName||''), M, 175);
+    y=220;
+    pages.push(cv);
+  }
+  function ensureSpace(need){ if(y+need > H-100){ newPage(); } }
+  function drawSection(title){
+    ensureSpace(90);
+    ctx.fillStyle='#2D2A26'; ctx.fillRect(M, y, W-2*M, 70);
+    ctx.fillStyle='#fff'; ctx.font='bold 30px sans-serif'; ctx.fillText(title, M+20, y+45);
+    y+=90;
+  }
+  function drawField(label, value){
+    if(!value && value!==0) return;
+    ensureSpace(60);
+    ctx.fillStyle='#5C4A32'; ctx.font='bold 24px sans-serif';
+    const lab = label+': ';
+    ctx.fillText(lab, M, y);
+    ctx.fillStyle='#1A1A1A'; ctx.font='24px sans-serif';
+    const v = String(value);
+    let maxW = W-2*M - ctx.measureText(lab).width - 20;
+    let lines=[]; let cur='';
+    for(let ch of v){ cur+=ch; if(ctx.measureText(cur).width>maxW){ lines.push(cur.slice(0,-1)); cur=ch; } }
+    if(cur) lines.push(cur);
+    ctx.fillText(lines[0]||'', M+ctx.measureText(lab).width, y);
+    y+=40;
+    for(let i=1;i<lines.length;i++){ ensureSpace(50); ctx.fillText(lines[i], M, y); y+=40; }
+    y+=10;
+  }
+  newPage();
+  const list = o.list||[];
+  const single = o.single;
+  if(single){
+    drawSection('Travel Details - Only Marked Fields');
+    drawField('From Location', single.fromLocation);
+    drawField('Destination', single.destination);
+    drawField('From Date / শুরুর তারিখ', single.fromDate);
+    drawField('To Date / শেষ তারিখ', single.toDate);
+    drawField('Travel Status', single.travelStatus);
+  } else if(list.length>0){
+    list.forEach((tr, idx)=>{
+      drawSection('Trip '+(idx+1)+' - '+(tr.fromLocation||'')+' → '+(tr.destination||''));
+      drawField('From Location', tr.fromLocation);
+      drawField('Destination', tr.destination);
+      drawField('From Date / শুরুর তারিখ', tr.fromDate);
+      drawField('To Date / শেষ তারিখ', tr.toDate);
+      drawField('Travel Status', tr.travelStatus);
+      y+=20;
+    });
+  } else {
+    drawSection('No Trips');
+    drawField('Info', 'No travel data saved');
+  }
+  return pages;
+}
+function buildTravelPdfBlob(o){
+  const pages=renderTravelPartnerPages(o);
+  const jpegs=pages.map(c=>{
+    const b64=c.toDataURL('image/jpeg',0.85).split(',')[1];
+    const bin=atob(b64), bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return {bytes,w:c.width,h:c.height};
+  });
+  return buildPdfFromJpegs(jpegs);
+}
+async function handleTravelPdf(mode, data){
+  mode=mode||'view';
+  try{
+    var genAt=new Date();
+    var resolvedUN = (typeof userName!=='undefined' && userName) || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+    var o={userName: resolvedUN, generatedAt: genAt, appName: (typeof t!=='undefined'&&t.appName)||'Lifestyle'};
+    if(data && data.id){ o.single=data; } else if(data && Array.isArray(data)){ o.list=data; } else if(data && (data.fromLocation||data.destination)){ o.single=data; } else { o.list=data||[]; }
+    var fname='Travel-Partner-'+(o.single ? (o.single.fromLocation+'-to-'+o.single.destination) : 'All-Trips')+'-'+(new Date().toISOString().slice(0,10))+'.pdf';
+    var title='Travel Partner - '+(o.single ? (o.single.fromLocation+' to '+o.single.destination) : 'All Trips');
+    if(mode==='view'){
+      try{ var pages=renderTravelPartnerPages(o); if(typeof showPdfPreviewFromCanvases==='function'){ showPdfPreviewFromCanvases(pages); } else { var blob=buildTravelPdfBlob(o); viewPdfBlob(blob); } }catch(e){ try{ var blob=buildTravelPdfBlob(o); viewPdfBlob(blob); }catch(e2){} }
+    } else if(mode==='download'){
+      try{ var blob=buildTravelPdfBlob(o); downloadPdfBlob(blob,fname); if(typeof setToast==='function') setToast('Travel PDF downloaded'); }catch(e){ console.error(e); }
+    } else {
+      try{ var blob=buildTravelPdfBlob(o); var res=await shareOrDownloadPdf(blob,fname,title); if(res==='downloaded' && typeof setToast==='function') setToast('Travel PDF downloaded'); }catch(e){ console.error(e); }
+    }
+  }catch(e){ console.error(e); }
+}
+
+
+function buildMarketSurveyPdfBlob(o){
+  const pages=renderMarketSurveyPages(o);
+  const jpegs=pages.map(c=>{
+    const b64=c.toDataURL('image/jpeg',0.85).split(',')[1];
+    const bin=atob(b64), bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return {bytes,w:c.width,h:c.height};
+  });
+  return buildPdfFromJpegs(jpegs);
+}
+async function handleMarketSurveyPdf(mode, formData){
+  mode=mode||'view';
+  try{
+    var genAt=new Date();
+    var resolvedUN = (typeof userName!=='undefined' && userName) || (typeof googleUser!=='undefined' && googleUser && (googleUser.name||googleUser.email)) || (typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name')) || 'User';
+    var o={form: formData, userName: resolvedUN, generatedAt: genAt, appName: (typeof t!=='undefined'&&t.appName)||'Lifestyle'};
+    var fname='Market-Survey-'+(formData.businessName||'Report')+'-'+(new Date().toISOString().slice(0,10))+'.pdf';
+    var title='Market Survey - '+(formData.businessName||'');
+    if(mode==='view'){
+      try{ var pages=renderMarketSurveyPages(o); if(typeof showPdfPreviewFromCanvases==='function'){ showPdfPreviewFromCanvases(pages); } else { var blob=buildMarketSurveyPdfBlob(o); viewPdfBlob(blob); } }catch(e){ try{ var blob=buildMarketSurveyPdfBlob(o); viewPdfBlob(blob); }catch(e2){} }
+    } else if(mode==='download'){
+      try{ var blob=buildMarketSurveyPdfBlob(o); downloadPdfBlob(blob,fname); if(typeof setToast==='function') setToast('PDF downloaded'); }catch(e){ console.error(e); }
+    } else {
+      try{ var blob=buildMarketSurveyPdfBlob(o); var res=await shareOrDownloadPdf(blob,fname,title); if(res==='downloaded' && typeof setToast==='function') setToast('PDF downloaded'); }catch(e){ console.error(e); }
+    }
+  }catch(e){ console.error(e); }
 }
 
 
