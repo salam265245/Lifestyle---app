@@ -3578,6 +3578,7 @@ setTimeout(()=>{
       return newList;
     });
     setAddType(null); setEditingTx(null);
+    try{ setHistoryExpenseCategory(''); setHistoryIncomeCategory(''); setHistoryExpenseCategoryOpen(false); setHistoryIncomeCategoryOpen(false); }catch(e){}
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
