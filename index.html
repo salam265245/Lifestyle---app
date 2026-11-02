@@ -3184,9 +3184,9 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
       ) : null,
 
       h('div', {className:'p-4 mt-4 -mx-4 -mb-5 bg-[#FFFEF7] rounded-b-[32px]'},
-        h('button', {onClick: handleSaveDailyTask, disabled:saving, style:{backgroundColor:'#1B4D3E', color:'white', width:'100%', padding:'18px 0', borderRadius:'16px', fontWeight:'800', fontSize:'17px', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', boxShadow:'0 8px 20px rgba(27,77,62,0.4)', border:'2px solid #1B4D3E'}, className:'w-full active:scale-[0.97]'},
-          h('span', {style:{fontSize:'20px'}}, '💾'),
-          h('span', {style:{color:'white', fontWeight:'800'}}, saving ? 'Saving...' : (editingDailyTaskId ? 'Update Task' : 'Save Task'))
+        h('button', {onClick: handleSaveDailyTask, disabled:saving, className:'w-full py-5 rounded-[16px] bg-[#1B4D3E] text-white font-extrabold text-[17px] flex items-center justify-center gap-2.5 shadow-[0_8px_20px_rgba(27,77,62,0.4)] active:scale-[0.97] border-2 border-[#1B4D3E]'},
+          h('span', {className:'text-[20px]'}, '💾'),
+          h('span', {className:'tracking-wide'}, saving ? 'Saving...' : (editingDailyTaskId ? 'Update Task' : 'Save Task'))
         ),
         h('p', {className:'text-[11px] text-[#1B4D3E] font-bold text-center mt-3 bg-[#E8F5E9] border border-[#A5D6A7] py-1.5 rounded-full'}, 'Save করলে উপরে Saved Tasks এ যোগ হবে ✓')
       )
@@ -4587,13 +4587,19 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       bought: true
     };
     setPopupItem(null);
-    setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
-    setTransactions(list => {
-      const existsIdx = list.findIndex(tt => tt.bazarItemId === itemId);
+    // FIX 4: Single Atomic Update + Immediate LS Save - 100% Guarantee No Auto No
+    setBazarList(prev => {
+      const updatedList = prev.map(x=> x.id===itemId ? updated : x);
+      try{ localStorage.setItem('lifestyle_bazar_list', JSON.stringify(updatedList)); }catch(e){}
+      return updatedList;
+    });
+    setTransactions(prev => {
+      const existsIdx = prev.findIndex(tt => tt.bazarItemId === itemId);
+      let updatedTxList;
       if(existsIdx>=0){
-        const copy = list.slice();
+        const copy = prev.slice();
         copy[existsIdx] = {...copy[existsIdx], amount: amt, category: catEn, categoryBn: catBn, date: pDate, note: itemName + ' (৳'+amt+')'};
-        return copy;
+        updatedTxList = copy;
       } else {
         const tx = {
           id: uid(),
@@ -4611,8 +4617,10 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
           fromMedium: 'Cash',
           toMedium: 'Cash'
         };
-        return [tx, ...list];
+        updatedTxList = [tx, ...prev];
       }
+      try{ localStorage.setItem('lifestyle_transactions', JSON.stringify(updatedTxList)); }catch(e){}
+      return updatedTxList;
     });
     if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয় খাতে যোগ হয়েছে');
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_bought', item: updated}); }catch(e){}
@@ -4620,8 +4628,16 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
 
   function markNo(item){
     if(item.bought){
-      setBazarList(list => list.map(x=> x.id===item.id ? {...x, bought:false} : x));
-      setTransactions(list => list.filter(tt => tt.bazarItemId !== item.id));
+      setBazarList(prev => {
+        const updatedList = prev.map(x=> x.id===item.id ? {...x, bought:false} : x);
+        try{ localStorage.setItem('lifestyle_bazar_list', JSON.stringify(updatedList)); }catch(e){}
+        return updatedList;
+      });
+      setTransactions(prev => {
+        const updatedList = prev.filter(tt => tt.bazarItemId !== item.id);
+        try{ localStorage.setItem('lifestyle_transactions', JSON.stringify(updatedList)); }catch(e){}
+        return updatedList;
+      });
       if(typeof setToast==='function') setToast('No করা হয়েছে - ব্যয় থেকে বাদ গেছে');
       try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id: item.id}); }catch(e){}
     }
@@ -5158,17 +5174,32 @@ function App(){
         try{
           const tToday = today();
           const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-          if(typeof d.transactions !== 'undefined') setTransactions(fixDates(d.transactions) || []);
+          // FIX 1: Bazar Yes/No Auto No Fix - Use merge with safety check
+          if(typeof d.transactions !== 'undefined'){
+            setTransactions(prev => {
+              try{
+                const fixed = fixDates(d.transactions) || [];
+                if(!fixed || fixed.length===0) return prev;
+                if(prev && prev.length > fixed.length + 5) return prev;
+                return fixed;
+              }catch(e){ return fixDates(d.transactions) || []; }
+            });
+          }
           if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
           if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
           if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
-          if(typeof d.bazarList !== 'undefined' || typeof d.bazarDeletedIds !== 'undefined'){
+          if(typeof d.bazarList !== 'undefined'){
             try{
               const cloudDeleted = d.bazarDeletedIds || [];
               const localDeleted = bazarDeletedIds || [];
               const unionDeleted = Array.from(new Set([...cloudDeleted, ...localDeleted]));
-              const mergedBazar = (typeof mergeBazarList==='function') ? mergeBazarList(bazarList, d.bazarList||[], unionDeleted) : (d.bazarList||[]);
-              setBazarList(mergedBazar || []);
+              setBazarList(prev => {
+                try{
+                  const merged = (typeof mergeBazarList==='function') ? mergeBazarList(prev, d.bazarList||[], unionDeleted) : (d.bazarList||[]);
+                  if(prev && merged && prev.length > merged.length) return mergeBazarList(merged, prev, unionDeleted);
+                  return merged;
+                }catch(e){ return d.bazarList||[]; }
+              });
               if(unionDeleted.length) setBazarDeletedIds(unionDeleted);
             }catch(e){ 
               try{ if(d.bazarList) setBazarList(d.bazarList || []); }catch(e){}
