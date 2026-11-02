@@ -4334,6 +4334,10 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
           bought: false
         };
       });
+      try{
+        const existingBulk = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'[]');
+        localStorage.setItem('lifestyle_bazar_list', JSON.stringify(newItems.concat(Array.isArray(existingBulk)?existingBulk:[])));
+      }catch(e){}
       setBazarList(function(list){ return newItems.concat(list); });
       setBulkText('');
       if(typeof setToast==='function') setToast(unique.length + ' টি পণ্য লিস্টে যোগ হয়েছে');
@@ -4375,6 +4379,10 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       date: bDate || today(),
       bought: false
     };
+    try{
+      const existing = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'[]');
+      localStorage.setItem('lifestyle_bazar_list', JSON.stringify([item, ...(Array.isArray(existing)?existing:[])]));
+    }catch(e){}
     setBazarList(list => [item, ...list]);
     setBName('');
     setBAmount('');
@@ -4929,7 +4937,12 @@ function App(){
       const db = firebase.firestore();
       const now = new Date().toISOString();
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
-      const data = {transactions: transactions||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: bazarList||[], bazarDeletedIds: bazarDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
+      // FIX: Read latest bazarList from LS to avoid stale closure losing recent add
+      let latestBazar = bazarList;
+      try{ const lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null'); if(Array.isArray(lsBazar) && lsBazar.length>= (bazarList||[]).length) latestBazar = lsBazar; }catch(e){}
+      let latestTx = transactions;
+      try{ const lsTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); if(Array.isArray(lsTx) && lsTx.length>= (transactions||[]).length) latestTx = lsTx; }catch(e){}
+      const data = {transactions: latestTx||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: latestBazar||[], bazarDeletedIds: bazarDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -4972,7 +4985,12 @@ function App(){
           if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
           if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
           if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
-          if(typeof d.bazarList !== 'undefined') setBazarList(d.bazarList || []);
+          if(typeof d.bazarList !== 'undefined'){
+            try{
+              const mergedBazar = (typeof mergeBazarList==='function') ? mergeBazarList(bazarList, d.bazarList, d.bazarDeletedIds||bazarDeletedIds) : d.bazarList;
+              setBazarList(mergedBazar || []);
+            }catch(e){ setBazarList(d.bazarList || []); }
+          }
           if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
           if(d.userName) setUserName(d.userName);
           if(d.userDesignation) setUserDesignation(d.userDesignation);
