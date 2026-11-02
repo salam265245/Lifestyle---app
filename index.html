@@ -5091,13 +5091,13 @@ function App(){
       const db = firebase.firestore();
       const now = new Date().toISOString();
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
-      // FIX: Read latest bazarList from LS to avoid stale closure losing recent add
+      // FIX V20: Always read latest from LS unconditionally - fixes Delete not syncing
       let latestBazar = bazarList;
-      try{ const lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null'); if(Array.isArray(lsBazar) && lsBazar.length>= (bazarList||[]).length) latestBazar = lsBazar; }catch(e){}
+      try{ const lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null'); if(Array.isArray(lsBazar)) latestBazar = lsBazar; }catch(e){}
       let latestTx = transactions;
-      try{ const lsTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); if(Array.isArray(lsTx) && lsTx.length>= (transactions||[]).length) latestTx = lsTx; }catch(e){}
-            let latestDailyTasks = dailyTasks;
-      try{ const lsDaily = JSON.parse(localStorage.getItem('lifestyle_daily_tasks')||'null'); if(Array.isArray(lsDaily) && lsDaily.length>= (dailyTasks||[]).length) latestDailyTasks = lsDaily; }catch(e){}
+      try{ const lsTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); if(Array.isArray(lsTx)) latestTx = lsTx; }catch(e){}
+      let latestDailyTasks = dailyTasks;
+      try{ const lsDaily = JSON.parse(localStorage.getItem('lifestyle_daily_tasks')||'null'); if(Array.isArray(lsDaily)) latestDailyTasks = lsDaily; }catch(e){}
       const data = {transactions: latestTx||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: latestBazar||[], bazarDeletedIds: bazarDeletedIds||[], dailyTasks: latestDailyTasks||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
