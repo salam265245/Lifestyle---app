@@ -730,7 +730,10 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
         amount: parseFloat(amount) || 0,
         category: cat.en, categoryBn: cat.bn,
         date, note,
-        medium: channel, channel: channel, fromChannel: channel, toChannel: channel, fromMedium: channel, toMedium: channel
+        medium: channel, channel: channel, fromChannel: channel, toChannel: channel, fromMedium: channel, toMedium: channel,
+        bazarItemId: initial ? initial.bazarItemId : undefined,
+        // Preserve original note's item name if bazar linked
+        _preserveBazar: true
       });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
@@ -5353,17 +5356,40 @@ setTimeout(()=>{
       tx.date = today();
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
+    // FIX: Bidirectional sync - Expense edit -> Bazar list price update
     if(tx.bazarItemId){
-      setBazarList(blist => blist.map(b => {
-        if(b.id===tx.bazarItemId){
-          return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
-        }
-        return b;
-      }));
+      setBazarList(blist => {
+        const updated = blist.map(b => {
+          if(b.id===tx.bazarItemId){
+            return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
+          }
+          return b;
+        });
+        try{ localStorage.setItem('lifestyle_bazar_list', JSON.stringify(updated)); }catch(e){}
+        return updated;
+      });
+    } else if(tx.id){
+      // Also check if this tx id corresponds to a bazar-linked tx (when bazarItemId lost, recover from prev state)
+      setBazarList(blist => {
+        // Find if any bazar item's transaction matches this id via previous transactions list
+        try{
+          const prevTxs = JSON.parse(localStorage.getItem('lifestyle_transactions')||'[]');
+          const oldTx = prevTxs.find(t=>t.id===tx.id);
+          if(oldTx && oldTx.bazarItemId){
+            tx.bazarItemId = oldTx.bazarItemId;
+            const updated = blist.map(b => b.id===oldTx.bazarItemId ? {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true } : b);
+            try{ localStorage.setItem('lifestyle_bazar_list', JSON.stringify(updated)); }catch(e){}
+            return updated;
+          }
+        }catch(e){}
+        return blist;
+      });
     }
     setTransactions(list => {
       const exists = list.some(x=>x.id===tx.id);
-      return exists ? list.map(x=>x.id===tx.id?tx:x) : [tx, ...list];
+      const merged = exists ? list.map(x=>x.id===tx.id?{...x, ...tx, bazarItemId: x.bazarItemId || tx.bazarItemId}:x) : [tx, ...list];
+      try{ localStorage.setItem('lifestyle_transactions', JSON.stringify(merged)); }catch(e){}
+      return merged;
     });
     setAddType(null); setEditingTx(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
