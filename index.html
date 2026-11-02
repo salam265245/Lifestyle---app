@@ -348,7 +348,7 @@ const { useState, useEffect, useMemo, useRef } = React;
 const h = React.createElement;
 
 /* ---------- helpers ---------- */
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,6) + '-' + performance.now().toString(36).replace('.',''); }
 function today(){ 
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -3170,8 +3170,10 @@ function App(){
           }
           if(msg.type==='tx_saved' && msg.tx){
             setTransactions(prev=>{
-              const exists = prev.some(x=>x.id===msg.tx.id);
-              return exists ? prev.map(x=>x.id===msg.tx.id?msg.tx:x) : [msg.tx, ...prev];
+              var exists = prev.some(function(x){ return x.id===msg.tx.id; });
+              var newList = exists ? prev.map(function(x){ return x.id===msg.tx.id?msg.tx:x; }) : [msg.tx].concat(prev);
+              try{ saveLS('lifestyle_transactions', newList); }catch(e){}
+              return newList;
             });
             if(msg.tx.bazarItemId){
               setBazarList(prev=> prev.map(b=> b.id===msg.tx.bazarItemId ? {...b, amount: msg.tx.amount, category: msg.tx.category, categoryBn: msg.tx.categoryBn, date: msg.tx.date, bought:true} : b));
@@ -3555,17 +3557,25 @@ setTimeout(()=>{
       tx.date = today();
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
+    // Ensure unique id if missing
+    if(!tx.id) tx.id = uid();
     if(tx.bazarItemId){
-      setBazarList(blist => blist.map(b => {
-        if(b.id===tx.bazarItemId){
-          return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
-        }
-        return b;
-      }));
+      setBazarList(blist => {
+        var updated = blist.map(b => {
+          if(b.id===tx.bazarItemId){
+            return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
+          }
+          return b;
+        });
+        try{ saveLS('lifestyle_bazar_list', updated); }catch(e){}
+        return updated;
+      });
     }
     setTransactions(list => {
-      const exists = list.some(x=>x.id===tx.id);
-      return exists ? list.map(x=>x.id===tx.id?tx:x) : [tx, ...list];
+      var exists = list.some(function(x){ return x.id===tx.id; });
+      var newList = exists ? list.map(function(x){ return x.id===tx.id?tx:x; }) : [tx].concat(list);
+      try{ saveLS('lifestyle_transactions', newList); }catch(e){}
+      return newList;
     });
     setAddType(null); setEditingTx(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
