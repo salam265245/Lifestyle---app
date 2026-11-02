@@ -4881,6 +4881,10 @@ function App(){
           if(msg.type==='bazar_deleted'){
             setBazarList(prev=> prev.filter(x=> x.id!==msg.id));
             setTransactions(prev=> prev.filter(tt=> tt.bazarItemId!==msg.id));
+            try{ if(typeof setBazarDeletedIds==='function'){ setBazarDeletedIds(prev=>{ const s=new Set([...(prev||[]), msg.id]); return Array.from(s); }); } }catch(e){}
+          }
+          if(msg.type==='daily_task_deleted'){
+            try{ /* handled via state */ }catch(e){}
           }
           if(msg.type==='tx_saved' && msg.tx){
             setTransactions(prev=>{
@@ -5091,14 +5095,18 @@ function App(){
       const db = firebase.firestore();
       const now = new Date().toISOString();
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
-      // FIX V20: Always read latest from LS unconditionally - fixes Delete not syncing
+      // FIX V21: Always read latest from LS unconditionally - fixes Delete returning + Instant Update
       let latestBazar = bazarList;
       try{ const lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null'); if(Array.isArray(lsBazar)) latestBazar = lsBazar; }catch(e){}
       let latestTx = transactions;
       try{ const lsTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); if(Array.isArray(lsTx)) latestTx = lsTx; }catch(e){}
       let latestDailyTasks = dailyTasks;
       try{ const lsDaily = JSON.parse(localStorage.getItem('lifestyle_daily_tasks')||'null'); if(Array.isArray(lsDaily)) latestDailyTasks = lsDaily; }catch(e){}
-      const data = {transactions: latestTx||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: latestBazar||[], bazarDeletedIds: bazarDeletedIds||[], dailyTasks: latestDailyTasks||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
+      let latestDeletedIds = bazarDeletedIds;
+      try{ const lsDel = JSON.parse(localStorage.getItem('lifestyle_bazar_deleted_ids')||'null'); if(Array.isArray(lsDel)) latestDeletedIds = lsDel; }catch(e){}
+      // Ensure deleted ids are filtered from bazarList before upload
+      try{ if(Array.isArray(latestBazar) && Array.isArray(latestDeletedIds)) latestBazar = latestBazar.filter(x=> !latestDeletedIds.includes(x.id)); }catch(e){}
+      const data = {transactions: latestTx||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: latestBazar||[], bazarDeletedIds: latestDeletedIds||[], dailyTasks: latestDailyTasks||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -5141,13 +5149,18 @@ function App(){
           if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
           if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
           if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
-          if(typeof d.bazarList !== 'undefined'){
+          if(typeof d.bazarList !== 'undefined' || typeof d.bazarDeletedIds !== 'undefined'){
             try{
-              const mergedBazar = (typeof mergeBazarList==='function') ? mergeBazarList(bazarList, d.bazarList, d.bazarDeletedIds||bazarDeletedIds) : d.bazarList;
+              const cloudDeleted = d.bazarDeletedIds || [];
+              const localDeleted = bazarDeletedIds || [];
+              const unionDeleted = Array.from(new Set([...cloudDeleted, ...localDeleted]));
+              const mergedBazar = (typeof mergeBazarList==='function') ? mergeBazarList(bazarList, d.bazarList||[], unionDeleted) : (d.bazarList||[]);
               setBazarList(mergedBazar || []);
-            }catch(e){ setBazarList(d.bazarList || []); }
+              if(unionDeleted.length) setBazarDeletedIds(unionDeleted);
+            }catch(e){ 
+              try{ if(d.bazarList) setBazarList(d.bazarList || []); }catch(e){}
+            }
           }
-          if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
           if(typeof d.dailyTasks !== 'undefined') setDailyTasks(d.dailyTasks || []);
           if(d.userName) setUserName(d.userName);
           if(d.userDesignation) setUserDesignation(d.userDesignation);
