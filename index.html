@@ -2724,7 +2724,8 @@ function EmailAuthForm({t, onAuth}){
 
 
 
-function DailyRoutineManager({t, lang, setToast}){
+
+function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, setDailyTasks: propSetDailyTasks}){
   const SUBJECT_OPTIONS = [
     {id:'emi', en:'EMI', bn:'EMI', icon:'💳'},
     {id:'doc_loan', en:'Document for loan process', bn:'লোন প্রসেসের ডকুমেন্ট', icon:'📄'},
@@ -2805,11 +2806,13 @@ function DailyRoutineManager({t, lang, setToast}){
     ]},
   ];
 
+  // LIVE DATE - always today
   const [activeTab, setActiveTab] = React.useState('call');
   const [personName, setPersonName] = React.useState('');
   const [phone, setPhone] = React.useState('');
-  const [date, setDate] = React.useState('31/10/2026');
-  const [dateInput, setDateInput] = React.useState('2026-10-31');
+  const [date, setDate] = React.useState((()=>{ try{ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }catch(e){ return today(); } })());
+  const [dateInput, setDateInput] = React.useState(today());
+  const [dailyDate, setDailyDate] = React.useState(today());
   const [hour, setHour] = React.useState('06');
   const [minute, setMinute] = React.useState('03');
   const [amPm, setAmPm] = React.useState('PM');
@@ -2826,6 +2829,35 @@ function DailyRoutineManager({t, lang, setToast}){
   const [customOfficeTask, setCustomOfficeTask] = React.useState('');
   const [whereVisit, setWhereVisit] = React.useState('');
   const [visitPurpose, setVisitPurpose] = React.useState('');
+  const [editingDailyTaskId, setEditingDailyTaskId] = React.useState(null);
+
+  // Daily Tasks State - from localStorage + props
+  const [internalDailyTasks, setInternalDailyTasks] = React.useState(()=>{ try{ return JSON.parse(localStorage.getItem('lifestyle_daily_tasks')||'[]'); }catch(e){ return []; } });
+  const dailyTasks = propDailyTasks || internalDailyTasks;
+  const setDailyTasks = propSetDailyTasks || setInternalDailyTasks;
+
+  React.useEffect(()=>{ try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(dailyTasks)); }catch(e){} }, [dailyTasks]);
+
+  // LIVE DATE: every time component mounts or tab changes, set to today
+  React.useEffect(()=>{ 
+    const t = today(); 
+    setDailyDate(t); 
+    setDateInput(t); 
+    try{ 
+      const d=new Date(); 
+      const dd=String(d.getDate()).padStart(2,'0'); 
+      const mm=String(d.getMonth()+1).padStart(2,'0'); 
+      const yy=d.getFullYear(); 
+      setDate(dd+'/'+mm+'/'+yy); 
+    }catch(e){} 
+  }, [activeTab]);
+
+  // Also set live date on mount
+  React.useEffect(()=>{
+    const t = today();
+    setDailyDate(t);
+    setDateInput(t);
+  }, []);
 
   function toggleSubject(id){ setSelectedSubjects(prev=> prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); }
   function removeSubject(id){ setSelectedSubjects(prev=> prev.filter(x=>x!==id)); }
@@ -2844,7 +2876,7 @@ function DailyRoutineManager({t, lang, setToast}){
     return {...g, items: filteredItems.length>0 ? filteredItems : g.items};
   }).filter(Boolean);
 
-  function saveToFirebase(){
+  function handleSaveDailyTask(){
     if(activeTab==='call' && !personName.trim() && selectedSubjects.length===0 && !taskTitle.trim()){
       setToast && setToast(lang==='en' ? 'Please enter person or subject' : 'ব্যক্তি বা বিষয় লিখুন');
       return;
@@ -2857,56 +2889,147 @@ function DailyRoutineManager({t, lang, setToast}){
       setToast && setToast(lang==='en' ? 'Please select office tasks or enter custom task' : 'অফিস টাস্ক সিলেক্ট করুন');
       return;
     }
-    setSaving(true);
     const isOffice = activeTab==='office';
     const isVisit = activeTab==='visit';
-    const task = {
-      id: (typeof uid==='function' ? uid() : Date.now().toString()),
-      title: isOffice ? (officeSelected.map(s=> { for(let gr of OFFICE_GROUPS) for(let it of gr.items) if(it.id===s) return it.label; return s; }).join(', ') || customOfficeTask) : isVisit ? (whereVisit || visitPurpose) : (taskTitle || (selectedSubjects.map(s=> SUBJECT_OPTIONS.find(x=>x.id===s)?.en).join(', ')) || personName),
+    const newTask = {
+      id: editingDailyTaskId || (typeof uid==='function' ? uid() : Date.now().toString()),
+      category: activeTab,
       personName: isOffice ? '' : isVisit ? '' : personName,
       phone: isOffice || isVisit ? '' : phone,
+      date: dailyDate || dateInput || today(),
+      displayDate: date,
+      dateInput: dailyDate || dateInput,
+      timeHour: hour,
+      timeMinute: minute,
+      ampm: amPm,
+      time: hour+':'+minute+' '+amPm,
+      subject: isOffice ? (officeSelected.join(', ') || customOfficeTask) : isVisit ? (whereVisit || visitPurpose) : (taskTitle || selectedSubjects.join(', ') || personName),
       subjects: isOffice ? officeSelected : selectedSubjects,
-      subjectsText: isOffice ? officeSelected.join(', ') : selectedSubjects.map(s=> SUBJECT_OPTIONS.find(x=>x.id===s)?.en).join(', '),
       whereVisit: isVisit ? whereVisit : '',
       visitPurpose: isVisit ? visitPurpose : '',
       customTask: isOffice ? customOfficeTask : '',
-      category: activeTab,
-      date: dateInput || date,
-      displayDate: date,
-      hour, minute, amPm,
-      time: hour+':'+minute+' '+amPm,
-      priority, notes,
+      note: notes,
+      done: false,
       createdAt: new Date().toISOString(),
-      status: 'pending',
-      source: 'lifestyle_daily_routine'
     };
+    if(editingDailyTaskId){
+      setDailyTasks(prev=> prev.map(t=> t.id===editingDailyTaskId ? {...t, ...newTask, id: editingDailyTaskId} : t));
+      setToast && setToast(lang==='en' ? 'Task Updated' : 'টাস্ক আপডেট হয়েছে');
+    } else {
+      setDailyTasks(prev=> [newTask, ...prev]);
+      setToast && setToast('Task Saved');
+    }
+    setEditingDailyTaskId(null);
+    // Clear form after save but keep live date
+    // setPersonName(''); setPhone(''); setTaskTitle(''); setNotes(''); setSelectedSubjects([]); setOfficeSelected([]); setCustomOfficeTask(''); setWhereVisit(''); setVisitPurpose('');
+    const t = today();
+    setDailyDate(t);
+    setDateInput(t);
     try{
-      const user = firebase.auth().currentUser;
-      const saveLocal = ()=>{
-        try{
-          const prev = JSON.parse(localStorage.getItem('daily_routine_tasks_v2')||'[]');
-          localStorage.setItem('daily_routine_tasks_v2', JSON.stringify([task, ...prev]));
-          const prev2 = JSON.parse(localStorage.getItem('dailyRoutineTasks')||'[]');
-          localStorage.setItem('dailyRoutineTasks', JSON.stringify([task, ...prev2]));
-        }catch(e){}
-      };
-      if(user && firebase.firestore){
-        firebase.firestore().collection('daily_routine_tasks').doc(task.id).set({...task, uid: user.uid})
-        .then(()=>{ saveLocal(); setToast && setToast(lang==='en' ? 'Task saved to Firebase' : 'টাস্ক Firebase এ সেভ হয়েছে'); setSaving(false); })
-        .catch(e=>{ saveLocal(); setToast && setToast('Saved locally: ' + e.message); setSaving(false); });
-      } else {
-        saveLocal();
-        setToast && setToast(lang==='en' ? 'Task saved locally' : 'টাস্ক লোকালি সেভ হয়েছে');
-        setSaving(false);
+      const d=new Date();
+      const dd=String(d.getDate()).padStart(2,'0');
+      const mm=String(d.getMonth()+1).padStart(2,'0');
+      const yy=d.getFullYear();
+      setDate(dd+'/'+mm+'/'+yy);
+    }catch(e){}
+  }
+
+  function handleLoadTask(task){
+    setEditingDailyTaskId(task.id);
+    setActiveTab(task.category || 'call');
+    setPersonName(task.personName || '');
+    setPhone(task.phone || '');
+    setDailyDate(task.date || task.dateInput || today());
+    setDateInput(task.dateInput || task.date || today());
+    try{
+      const dStr = task.dateInput || task.date || today();
+      const d = new Date(dStr);
+      if(!isNaN(d.getTime())){
+        const dd=String(d.getDate()).padStart(2,'0');
+        const mm=String(d.getMonth()+1).padStart(2,'0');
+        const yy=d.getFullYear();
+        setDate(dd+'/'+mm+'/'+yy);
       }
-    }catch(e){ setSaving(false); setToast && setToast('Error: '+e.message); }
+    }catch(e){}
+    setHour(task.timeHour || '06');
+    setMinute(task.timeMinute || '03');
+    setAmPm(task.ampm || 'PM');
+    setTaskTitle(task.subject || '');
+    setNotes(task.note || '');
+    if(task.category==='call'){
+      setSelectedSubjects(task.subjects || []);
+    } else if(task.category==='office'){
+      setOfficeSelected(task.subjects || []);
+      setCustomOfficeTask(task.customTask || '');
+    } else if(task.category==='visit'){
+      setWhereVisit(task.whereVisit || '');
+      setVisitPurpose(task.visitPurpose || '');
+    }
+  }
+
+  function handleToggleDone(id, done){
+    setDailyTasks(prev=> prev.map(t=> t.id===id ? {...t, done: !t.done} : t));
+  }
+
+  function handleDeleteDailyTask(id){
+    setDailyTasks(prev=> prev.filter(t=> t.id!==id));
+    if(editingDailyTaskId===id) setEditingDailyTaskId(null);
+  }
+
+  function handleNewTask(){
+    setEditingDailyTaskId(null);
+    setPersonName('');
+    setPhone('');
+    setTaskTitle('');
+    setNotes('');
+    setSelectedSubjects([]);
+    setOfficeSelected([]);
+    setCustomOfficeTask('');
+    setWhereVisit('');
+    setVisitPurpose('');
+    const t = today();
+    setDailyDate(t);
+    setDateInput(t);
+    try{
+      const d=new Date();
+      const dd=String(d.getDate()).padStart(2,'0');
+      const mm=String(d.getMonth()+1).padStart(2,'0');
+      const yy=d.getFullYear();
+      setDate(dd+'/'+mm+'/'+yy);
+    }catch(e){}
+    setHour('06');
+    setMinute('03');
+    setAmPm('PM');
   }
 
   const inputClass = 'w-full bg-white border border-[#E8E6DC] rounded-[16px] px-4 py-3.5 text-[15px] text-[#1A1A1A] outline-none focus:border-[#1B4D3E]';
   const labelClass = 'text-[12px] font-bold tracking-[0.08em] text-[#6B6B6B] mb-2 block';
 
   return h('div', {className:'bg-[#FFFEF7] -m-4 p-0'},
-    h('div', {className:'p-4 border-b border-[#F3E8D3]/50 bg-[#FFFEF7]'},
+    // SAVED TASKS SECTION - TOP per spec
+    h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 m-4 mb-0'},
+      h('div', {className:'flex justify-between items-center mb-2'},
+        h('p', {className:'text-[13px] font-bold text-[#1A1A1A]'}, `Saved Tasks (${(dailyTasks||[]).length})`),
+        h('button', {onClick: handleNewTask, className:'px-3 py-1.5 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, '+ New Task')
+      ),
+      (dailyTasks||[]).length===0 ? h('p', {className:'text-[11px] text-[#8B7355] text-center py-2'}, lang==='en' ? 'No saved tasks' : 'কোনো টাস্ক নেই') :
+      h('div', {className:'space-y-2 max-h-[220px] overflow-y-auto'},
+        dailyTasks.map(task=>
+          h('div', {key:task.id, className:'rounded-[12px] p-2.5 border flex justify-between items-start gap-2 ' + (task.done ? 'bg-[#E8F5E9] border-[#A5D6A7]' : 'bg-[#FFFEF7] border-[#F3E8D3]'), onClick:()=>handleLoadTask(task)},
+            h('div', {className:'flex-1 min-w-0 cursor-pointer'},
+              h('p', {className:'font-bold text-[12px] truncate ' + (task.done ? 'text-[#1B4D3E] line-through' : 'text-[#1A1A1A]')}, task.subject || task.personName || task.category),
+              h('p', {className:'text-[10px] text-[#8B7355] truncate'}, `${task.personName||''} ${task.date||''} ${task.time||''}`.trim())
+            ),
+            h('div', {className:'flex gap-1 shrink-0'},
+              h('button', {onClick:(e)=>{ e.stopPropagation(); handleToggleDone(task.id, task.done); }, className:'px-2 py-1 rounded-full text-[10px] font-bold border ' + (task.done ? 'bg-[#1E4538] text-white border-[#1E4538]' : 'bg-white border-[#E8E6DC] text-[#8B7355]')}, task.done ? 'Yes' : 'No'),
+              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: false} : t)); }, className:'px-2 py-1 rounded-full text-[10px] font-bold bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] ' + (task.done ? 'hidden' : '')}, 'No'),
+              h('button', {onClick:(e)=>{ e.stopPropagation(); handleDeleteDailyTask(task.id); }, className:'px-2 py-1 rounded-full text-[10px] font-bold bg-white border border-[#FFCDD2] text-[#B71C1C]'}, 'Del')
+            )
+          )
+        )
+      )
+    ),
+    h('div', {className:'p-4 border-b border-[#F3E8D3]/50 bg-[#FFFEF7] mt-3'},
       h('h2', {className:'text-[20px] font-bold text-[#1A1A1A] flex items-center gap-3'},
         h('span', {className:'w-10 h-10 rounded-full bg-[#F5F1E8] flex items-center justify-center text-[18px]'}, activeTab==='call' ? '📞' : activeTab==='visit' ? '📍' : '🏢'),
         h('span', {style:{color:'#1A1A1A'}}, activeTab==='call' ? 'Add Call Task' : activeTab==='visit' ? 'Add Visit Task' : 'Add Office Work'),
@@ -2956,74 +3079,103 @@ function DailyRoutineManager({t, lang, setToast}){
           h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'Tap contact icon to pick from phone')
         ),
         h('div', null, h('label', {className:labelClass}, 'PHONE NUMBER'), h('div', {className:'relative'}, h('span', {className:'absolute left-4 top-1/2 -translate-y-1/2 text-[18px]'}, '📞'), h('input', {value:phone, onChange:e=>setPhone(e.target.value), placeholder:'+880 1...', className: inputClass + ' pl-11'}))),
-        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); setDailyDate(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
         h('div', null,
           h('label', {className:labelClass}, '🕒 TIME / সময়'),
           h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'},
             h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
             h('span', {className:'font-bold text-[#1A1A1A]'}, ':'),
             h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
-            h('div', {className:'flex gap-1 ml-2'},
-              h('button', {onClick:()=>setAmPm('AM'), style: amPm==='AM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'AM'),
-              h('button', {onClick:()=>setAmPm('PM'), style: amPm==='PM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'PM')
+            h('div', {className:'flex rounded-[12px] overflow-hidden border border-[#E8E6DC]'},
+              h('button', {onClick:()=>setAmPm('AM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='AM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='PM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'PM')
             )
           ),
           h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'ঘণ্টা ও মিনিট স্ক্রল করে সিলেক্ট করুন, AM/PM সেট করুন')
         ),
         h('div', null,
-          h('div', {className:'flex items-center justify-between mb-2'}, h('label', {className:'text-[13px] font-bold text-[#1B4D3E] flex items-center gap-2'}, '📄 বিষয় / Subject'), h('span', {style:{color:'white', backgroundColor:'#1B4D3E'}, className:'px-3 py-1 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, selectedSubjects.length + ' selected')),
-          selectedSubjects.length>0 ? h('div', {className:'flex flex-wrap gap-2 mb-3'}, selectedSubjects.map(id=>{ const opt = SUBJECT_OPTIONS.find(o=>o.id===id); if(!opt) return null; return h('div', {key:id, style:{backgroundColor:'#E8F5E9', borderColor:'#C8E6C9'}, className:'flex items-center gap-1.5 bg-[#E8F5E9] border rounded-full px-3 py-1.5 text-[12px]'}, h('span', null, opt.icon), h('span', {style:{color:'#1B5E20'}, className:'font-bold'}, opt.en), h('button', {onClick:()=>removeSubject(id), className:'ml-1 w-4 h-4 rounded-full bg-[#C8E6C9] flex items-center justify-center text-[10px] text-[#1A1A1A]'}, '×'))})) : null,
-          h('div', {className:'bg-[#F9F1E7] border border-[#F3E8D3] rounded-[16px] overflow-hidden'},
-            h('button', {onClick:()=>setShowSubject(!showSubject), className:'w-full flex items-center justify-between p-4 text-left'}, h('span', {style:{color:'#1B4D3E'}, className:'flex items-center gap-2 text-[14px] font-bold'}, h('span', null, '📄'), h('span', null, 'বিষয় / Subject')), h('span', {style:{color:'#1A1A1A', backgroundColor:'white'}, className:'px-3 py-1.5 rounded-full bg-white border text-[12px] font-bold'}, (showSubject ? 'Hide ▲' : 'Select ▼'))),
-            showSubject ? h('div', {className:'border-t border-[#F3E8D3] bg-white max-h-[320px] overflow-y-auto'}, h('div', {className:'p-3 border-b'}, h('input', {value:subjectSearch, onChange:e=>setSubjectSearch(e.target.value), placeholder:'Search subject... e.g., EMI, Cheque', className:'w-full bg-[#FFFEF7] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[13px] text-[#1A1A1A] outline-none'})), h('div', {className:'p-2 space-y-1'}, filteredSubjects.map(opt=> h('button', {key:opt.id, onClick:()=>toggleSubject(opt.id), style: selectedSubjects.includes(opt.id) ? {backgroundColor:'#E8F5E9'} : {backgroundColor:'white'}, className: 'w-full flex items-center justify-between p-3 rounded-[12px] text-left ' + (selectedSubjects.includes(opt.id) ? 'bg-[#E8F5E9] border border-[#C8E6C9]' : 'bg-white border border-transparent')}, h('span', {className:'flex items-center gap-2 text-[13px]'}, h('span', null, opt.icon), h('span', {style:{color:'#1A1A1A'}, className: selectedSubjects.includes(opt.id) ? 'font-bold text-[#1B5E20]' : ''}, opt.en)), selectedSubjects.includes(opt.id) ? h('span', {style:{color:'#2E7D32'}, className:'font-bold'}, '×') : null)))) : null
-          )
+          h('div', {className:'flex justify-between items-center'},
+            h('label', {className:labelClass}, '📄 বিষয় / Subject'),
+            h('button', {onClick:()=>setShowSubject(v=>!v), className:'px-3 py-1 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, `${selectedSubjects.length} selected`)
+          ),
+          showSubject ? h('div', {className:'mt-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2 max-h-[200px] overflow-y-auto'},
+            h('input', {value:subjectSearch, onChange:e=>setSubjectSearch(e.target.value), placeholder:'Search subject...', className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2 text-[12px] mb-2'}),
+            filteredSubjects.map(o=> h('button', {key:o.id, onClick:()=>toggleSubject(o.id), className:'w-full text-left px-3 py-2 rounded-[10px] flex items-center gap-2 text-[12px] ' + (selectedSubjects.includes(o.id) ? 'bg-[#E8F5E9] border border-[#A5D6A7]' : 'bg-white border border-transparent')}, h('span', null, o.icon), h('span', null, lang==='en'?o.en:o.bn), selectedSubjects.includes(o.id) ? h('span', {className:'ml-auto text-[#1B4D3E]'}, '✓') : null))
+          ) : null,
+          selectedSubjects.length>0 ? h('div', {className:'flex flex-wrap gap-1.5 mt-2'}, selectedSubjects.map(id=>{ const o=SUBJECT_OPTIONS.find(x=>x.id===id); return h('span', {key:id, className:'px-2.5 py-1 rounded-full bg-[#E8F5E9] border border-[#A5D6A7] text-[11px] flex items-center gap-1'}, h('span', null, o?o.icon:''), h('span', null, o? (lang==='en'?o.en:o.bn) : id), h('button', {onClick:()=>removeSubject(id), className:'ml-1 text-[#B71C1C]'}, '×')); })) : null
         ),
-        h('div', null, h('label', {className:labelClass}, 'TASK TITLE (OPTIONAL)'), h('input', {value:taskTitle, onChange:e=>setTaskTitle(e.target.value), placeholder:'Auto from subject if empty', className:inputClass})),
-        h('div', null, h('label', {className:labelClass}, 'PRIORITY'), h('div', {className:'grid grid-cols-2 gap-3'}, h('button', {onClick:()=>setPriority('normal'), style: priority==='normal' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '● Normal'), h('button', {onClick:()=>setPriority('urgent'), style: priority==='urgent' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '○ Urgent'))),
-        h('div', null, h('label', {className:labelClass}, 'NOTES'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional details...', rows:3, className: inputClass + ' resize-none h-[80px]'}))
+        h('div', null, h('label', {className:labelClass}, '📝 NOTE / নোট'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional notes...', className: inputClass + ' h-[80px]'}))
       ) : null,
 
       activeTab==='visit' ? h('div', {className:'space-y-5'},
-        h('div', null, h('label', {className:labelClass}, '📍 WHERE TO VISIT / কোথায় ভিজিট করবেন'), h('input', {value:whereVisit, onChange:e=>setWhereVisit(e.target.value), placeholder:'e.g., Uttara Branch, Client office', className:inputClass})),
-        h('div', null, h('label', {className:labelClass}, '📝 VISIT PURPOSE / কি বিষয়ে ভিজিট করবেন'), h('textarea', {value:visitPurpose, onChange:e=>setVisitPurpose(e.target.value), placeholder:'e.g., Document submission, Client meeting', rows:4, className: inputClass + ' resize-none h-[96px]'})),
-        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, '📍 WHERE TO VISIT'), h('input', {value:whereVisit, onChange:e=>setWhereVisit(e.target.value), placeholder:'Visit location', className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, '🎯 VISIT PURPOSE'), h('input', {value:visitPurpose, onChange:e=>setVisitPurpose(e.target.value), placeholder:'Purpose of visit', className:inputClass})),
+        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); setDailyDate(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
         h('div', null,
           h('label', {className:labelClass}, '🕒 TIME / সময়'),
           h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'},
-            h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
-            h('span', {className:'font-bold text-[#1A1A1A]'}, ':'),
-            h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
-            h('div', {className:'flex gap-1 ml-2'},
-              h('button', {onClick:()=>setAmPm('AM'), style: amPm==='AM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'AM'),
-              h('button', {onClick:()=>setAmPm('PM'), style: amPm==='PM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'PM')
+            h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
+            h('span', {className:'font-bold'}, ':'),
+            h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
+            h('div', {className:'flex rounded-[12px] overflow-hidden border border-[#E8E6DC]'},
+              h('button', {onClick:()=>setAmPm('AM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='AM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='PM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0] text-[#8B7355]')}, 'PM')
             )
           )
         ),
-        h('div', null, h('label', {className:labelClass}, 'PRIORITY'), h('div', {className:'grid grid-cols-2 gap-3'}, h('button', {onClick:()=>setPriority('normal'), style: priority==='normal' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '● Normal'), h('button', {onClick:()=>setPriority('urgent'), style: priority==='urgent' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '○ Urgent'))),
-        h('div', null, h('label', {className:labelClass}, 'NOTES'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional details...', rows:3, className: inputClass + ' resize-none h-[80px]'}))
+        h('div', null, h('label', {className:labelClass}, '📝 NOTE'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Visit notes...', className: inputClass + ' h-[80px]'}))
       ) : null,
 
-      activeTab==='office' ? h('div', {className:'space-y-4'},
-        h('div', {className:'flex items-center justify-between'}, h('span', {style:{color:'white', backgroundColor:'#1B4D3E'}, className:'px-3 py-1 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, officeSelected.length + ' selected')),
-        h('div', {className:'relative'}, h('span', {className:'absolute left-3 top-1/2 -translate-y-1/2 text-[14px]'}, '🔍'), h('input', {value:officeSearch, onChange:e=>setOfficeSearch(e.target.value), placeholder:'Search office tasks... e.g., CIB, Loan, Mail', className:'w-full bg-white border border-[#E8E6DC] rounded-[12px] pl-9 pr-4 py-2.5 text-[13px] text-[#1A1A1A] outline-none'})),
-        filteredOfficeGroups.map(group=>
-          h('div', {key:group.id, className:'bg-[#FDF8EF] border border-[#F3E8D3] rounded-[16px] overflow-hidden'},
-            h('button', {onClick:()=>toggleOfficeGroup(group.id), className:'w-full flex items-center justify-between p-4 text-left'}, h('span', {style:{color:'#5C4A32'}, className:'flex items-center gap-2 text-[13px] font-bold'}, h('span', null, group.icon), h('span', null, group.name)), h('span', {className:'flex items-center gap-2'}, h('span', {className:'text-[10px] text-[#8B7355]'}, group.count), h('span', {style:{color:'#1A1A1A'}, className:'text-[12px]'}, officeGroupsOpen[group.id] ? '∧' : '∨'))),
-            officeGroupsOpen[group.id] ? h('div', {className:'px-3 pb-3 space-y-2'}, group.items.map(it=> h('button', {key:it.id, onClick:()=>toggleOfficeItem(it.id), style: officeSelected.includes(it.id) ? {backgroundColor:'#E8F5E9'} : {backgroundColor:'white'}, className: 'w-full flex items-center gap-3 p-3 rounded-[12px] border text-left ' + (officeSelected.includes(it.id) ? 'bg-[#E8F5E9] border-[#C8E6C9]' : 'bg-white border-[#E8E6DC]')}, h('span', {style: officeSelected.includes(it.id) ? {color:'white', backgroundColor:'#2E7D32', borderColor:'#2E7D32'} : {color:'#1A1A1A', backgroundColor:'white'}, className:'w-5 h-5 rounded-[6px] border flex items-center justify-center text-[12px]'}, officeSelected.includes(it.id) ? '✓' : ''), h('span', {className:'text-[14px]'}, it.icon), h('span', {style:{color: officeSelected.includes(it.id) ? '#1B5E20' : '#1A1A1A'}, className:'text-[13px] ' + (officeSelected.includes(it.id) ? 'font-bold' : '')}, it.label)))) : null
+      activeTab==='office' ? h('div', {className:'space-y-5'},
+        h('div', null,
+          h('div', {className:'flex justify-between items-center mb-2'},
+            h('label', {className:labelClass}, '🏢 OFFICE WORK'),
+            h('input', {value:officeSearch, onChange:e=>setOfficeSearch(e.target.value), placeholder:'Search tasks...', className:'w-[140px] bg-white border border-[#E8E6DC] rounded-[12px] px-2 py-1 text-[11px]'})
+          ),
+          filteredOfficeGroups.map(g=>
+            h('div', {key:g.id, className:'bg-white border border-[#E8E6DC] rounded-[16px] mb-2'},
+              h('button', {onClick:()=>toggleOfficeGroup(g.id), className:'w-full flex justify-between items-center p-3'},
+                h('div', {className:'flex items-center gap-2'},
+                  h('span', null, g.icon),
+                  h('span', {className:'font-bold text-[13px]'}, g.name),
+                  h('span', {className:'text-[10px] bg-[#F5F1E8] px-2 py-0.5 rounded-full'}, g.count)
+                ),
+                h('span', {className:'text-[12px]'}, officeGroupsOpen[g.id] ? '▲' : '▼')
+              ),
+              officeGroupsOpen[g.id] ? h('div', {className:'p-2 border-t border-[#F3E8D3] space-y-1'},
+                g.items.map(it=>
+                  h('button', {key:it.id, onClick:()=>toggleOfficeItem(it.id), className:'w-full text-left px-3 py-2 rounded-[10px] flex items-center gap-2 text-[12px] ' + (officeSelected.includes(it.id) ? 'bg-[#E8F5E9] border border-[#A5D6A7]' : 'bg-[#FFFEF7] border border-transparent')},
+                    h('span', null, it.icon),
+                    h('span', {className:'flex-1'}, it.label),
+                    officeSelected.includes(it.id) ? h('span', {className:'text-[#1B4D3E]'}, '✓') : null
+                  )
+                )
+              ) : null
+            )
+          ),
+          h('div', {className:'mt-3'},
+            h('label', {className:labelClass}, '✏️ CUSTOM TASK'),
+            h('input', {value:customOfficeTask, onChange:e=>setCustomOfficeTask(e.target.value), placeholder:'Enter custom office task...', className:inputClass})
           )
         ),
-        h('div', {className:'bg-white border border-[#E8E6DC] rounded-[16px] p-3'}, h('label', {className:'text-[11px] font-bold text-[#8B7355] flex items-center gap-1'}, '+ ADD CUSTOM OFFICE TASK'), h('input', {value:customOfficeTask, onChange:e=>setCustomOfficeTask(e.target.value), placeholder:'e.g., Morning briefing, File handover', className:'w-full mt-2 bg-[#FFFEF7] border border-[#E8E6DC] rounded-[12px] px-3 py-2.5 text-[13px] text-[#1A1A1A] outline-none'}), h('p', {className:'text-[10px] text-[#8B7355] mt-1.5'}, 'Will be saved as title if no checklist selected')),
-        h('div', {className:'space-y-3'},
-          h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
-          h('div', null, h('label', {className:labelClass}, '🕒 TIME / সময়'), h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'}, h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))), h('span', {className:'font-bold text-[#1A1A1A]'}, ':'), h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))), h('div', {className:'flex gap-1 ml-2'}, h('button', {onClick:()=>setAmPm('AM'), style: amPm==='AM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'AM'), h('button', {onClick:()=>setAmPm('PM'), style: amPm==='PM' ? {color:'white', backgroundColor:'#1B4D3E'} : {color:'#8B7355', backgroundColor:'#F5F1E8'}, className:'px-4 py-2.5 rounded-[12px] text-[12px] font-bold'}, 'PM')))),
-          h('div', null, h('label', {className:labelClass}, 'PRIORITY'), h('div', {className:'grid grid-cols-2 gap-3'}, h('button', {onClick:()=>setPriority('normal'), style: priority==='normal' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '● Normal'), h('button', {onClick:()=>setPriority('urgent'), style: priority==='urgent' ? {color:'white', backgroundColor:'#1A1A1A'} : {color:'#5C5C5C', backgroundColor:'white'}, className:'py-3.5 rounded-[16px] border text-[14px] font-bold'}, '○ Urgent'))),
-          h('div', null, h('label', {className:labelClass}, 'NOTES'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional details...', rows:3, className: inputClass + ' resize-none h-[80px]'}))
-        )
+        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); setDailyDate(e.target.value); }, className:inputClass})),
+        h('div', null,
+          h('label', {className:labelClass}, '🕒 TIME'),
+          h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'},
+            h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
+            h('span', null, ':'),
+            h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
+            h('div', {className:'flex rounded-[12px] overflow-hidden border'},
+              h('button', {onClick:()=>setAmPm('AM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='AM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0]')}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), className:'px-3 py-2.5 text-[12px] font-bold ' + (amPm==='PM' ? 'bg-[#1B4D3E] text-white' : 'bg-[#F9F6F0]')}, 'PM')
+            )
+          )
+        ),
+        h('div', null, h('label', {className:labelClass}, '📝 NOTE'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Office work notes...', className: inputClass + ' h-[80px]'}))
       ) : null,
 
-      h('div', {className:'grid grid-cols-2 gap-3 pt-2 pb-6'},
-        h('button', {onClick:()=>{ try{ setAddType && setAddType(null); }catch(e){} }, style:{color:'#5C5C5C', backgroundColor:'#FFFEF7'}, className:'py-4 rounded-[16px] bg-[#FFFEF7] border border-[#E8E6DC] text-[15px] font-bold'}, 'Cancel'),
-        h('button', {onClick:saveToFirebase, disabled:saving, style:{color:'white', backgroundColor:'#1B4D3E'}, className:'py-4 rounded-[16px] bg-[#1B4D3E] text-white text-[15px] font-bold disabled:opacity-50'}, saving ? 'Saving...' : 'Save Task')
+      h('button', {onClick: handleSaveDailyTask, disabled:saving, className:'w-full py-3.5 rounded-[16px] bg-[#1B4D3E] text-white font-bold text-[14px] flex items-center justify-center gap-2'},
+        saving ? 'Saving...' : (editingDailyTaskId ? 'Update Task' : 'Save Task')
       )
     )
   );
@@ -4709,6 +4861,8 @@ function App(){
 
   const [transactions, setTransactions] = useState(initial.transactions);
   const [bazarList, setBazarList] = useState(loadLS('lifestyle_bazar_list', []));
+  const [dailyTasks, setDailyTasks] = useState(loadLS('lifestyle_daily_tasks', []));
+  useEffect(()=>{ saveLS('lifestyle_daily_tasks', dailyTasks); }, [dailyTasks]);
 
   // V18.1 BroadcastChannel for instant same-device sync
   useEffect(()=>{
@@ -4942,7 +5096,9 @@ function App(){
       try{ const lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null'); if(Array.isArray(lsBazar) && lsBazar.length>= (bazarList||[]).length) latestBazar = lsBazar; }catch(e){}
       let latestTx = transactions;
       try{ const lsTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); if(Array.isArray(lsTx) && lsTx.length>= (transactions||[]).length) latestTx = lsTx; }catch(e){}
-      const data = {transactions: latestTx||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: latestBazar||[], bazarDeletedIds: bazarDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
+            let latestDailyTasks = dailyTasks;
+      try{ const lsDaily = JSON.parse(localStorage.getItem('lifestyle_daily_tasks')||'null'); if(Array.isArray(lsDaily) && lsDaily.length>= (dailyTasks||[]).length) latestDailyTasks = lsDaily; }catch(e){}
+      const data = {transactions: latestTx||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: latestBazar||[], bazarDeletedIds: bazarDeletedIds||[], dailyTasks: latestDailyTasks||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -4992,6 +5148,7 @@ function App(){
             }catch(e){ setBazarList(d.bazarList || []); }
           }
           if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
+          if(typeof d.dailyTasks !== 'undefined') setDailyTasks(d.dailyTasks || []);
           if(d.userName) setUserName(d.userName);
           if(d.userDesignation) setUserDesignation(d.userDesignation);
           if(d.userAddress) setUserAddress(d.userAddress);
@@ -5021,7 +5178,7 @@ function App(){
       syncToCloud(googleUser);
     }, 600);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
-  }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, bazarDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto]);
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, bazarDeletedIds, dailyTasks, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
   useEffect(()=>{
     if(googleUser){ syncFromCloud(googleUser); }
@@ -6219,7 +6376,7 @@ setTimeout(()=>{
       ) : null,
       
       (addType === 'daily_routine') ? h(BottomSheet, {title: lang==='en' ? 'Daily Routine - Add Task' : 'ডেইলি রুটিন - কাজ যোগ করুন', onClose: ()=>setAddType(null)}, 
-        h(DailyRoutineManager, {t, lang, setToast})
+        h(DailyRoutineManager, {t, lang, setToast, dailyTasks, setDailyTasks})
       ) : null,
       (addType === 'travel') ? h(BottomSheet, {title: lang==='en' ? 'Travel Checklist' : 'ভ্রমণ চেকলিস্ট', onClose: ()=>setAddType(null)}, 
         h(TravelManager, {t, lang, setToast})
