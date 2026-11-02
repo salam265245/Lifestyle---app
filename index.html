@@ -3170,10 +3170,8 @@ function App(){
           }
           if(msg.type==='tx_saved' && msg.tx){
             setTransactions(prev=>{
-              var exists = prev.some(function(x){ return x.id===msg.tx.id; });
-              var newList = exists ? prev.map(function(x){ return x.id===msg.tx.id?msg.tx:x; }) : [msg.tx].concat(prev);
-              try{ saveLS('lifestyle_transactions', newList); }catch(e){}
-              return newList;
+              const exists = prev.some(x=>x.id===msg.tx.id);
+              return exists ? prev.map(x=>x.id===msg.tx.id?msg.tx:x) : [msg.tx, ...prev];
             });
             if(msg.tx.bazarItemId){
               setBazarList(prev=> prev.map(b=> b.id===msg.tx.bazarItemId ? {...b, amount: msg.tx.amount, category: msg.tx.category, categoryBn: msg.tx.categoryBn, date: msg.tx.date, bought:true} : b));
@@ -3411,18 +3409,50 @@ function App(){
           cloudLoadedRef.current = true;
           return;
         }
-        // V19: Always replace from cloud if not own write - fixes intermittent sync
+        // V20 FIX: MERGE cloud + local to prevent disappearing after save (video bug)
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
         isSyncingFromCloudRef.current = true;
         try{
           const tToday = today();
           const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-          if(typeof d.transactions !== 'undefined') setTransactions(fixDates(d.transactions) || []);
-          if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
-          if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
-          if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
-          if(typeof d.bazarList !== 'undefined') setBazarList(d.bazarList || []);
-          if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
+          // MERGE TRANSACTIONS - local wins, prevents save-then-disappear
+          if(typeof d.transactions !== 'undefined'){
+            setTransactions(prev=>{
+              var cloudTx = fixDates(d.transactions) || [];
+              var map = new Map();
+              cloudTx.forEach(function(tx){ if(tx && tx.id) map.set(tx.id, tx); });
+              (prev||[]).forEach(function(tx){ if(tx && tx.id) map.set(tx.id, tx); });
+              var merged = Array.from(map.values());
+              try{ saveLS('lifestyle_transactions', merged); }catch(e){}
+              return merged;
+            });
+          }
+          if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(function(prev){ 
+            var cloudArr = d.peopleGiven || [];
+            if(!prev || prev.length===0) return cloudArr;
+            // merge by id, local wins
+            var m = new Map(); cloudArr.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); prev.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); return Array.from(m.values());
+          });
+          if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(function(prev){ 
+            var cloudArr = d.peopleTaken || [];
+            if(!prev || prev.length===0) return cloudArr;
+            var m = new Map(); cloudArr.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); prev.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); return Array.from(m.values());
+          });
+          if(typeof d.bankLoans !== 'undefined') setBankLoans(function(prev){
+            var cloudArr = d.bankLoans || [];
+            if(!prev || prev.length===0) return cloudArr;
+            var m = new Map(); cloudArr.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); prev.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); return Array.from(m.values());
+          });
+          if(typeof d.bazarList !== 'undefined') setBazarList(function(prev){
+            var cloudArr = d.bazarList || [];
+            if(!prev || prev.length===0) return cloudArr;
+            var m = new Map(); cloudArr.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); prev.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); return Array.from(m.values());
+          });
+          if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(function(prev){
+            var cloudArr = d.bazarDeletedIds || [];
+            var set = new Set([].concat(cloudArr||[]).concat(prev||[]));
+            return Array.from(set);
+          });
           if(d.userName) setUserName(d.userName);
           if(d.userDesignation) setUserDesignation(d.userDesignation);
           if(d.userAddress) setUserAddress(d.userAddress);
@@ -3557,7 +3587,6 @@ setTimeout(()=>{
       tx.date = today();
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
-    // Ensure unique id if missing
     if(!tx.id) tx.id = uid();
     if(tx.bazarItemId){
       setBazarList(blist => {
@@ -3578,7 +3607,7 @@ setTimeout(()=>{
       return newList;
     });
     setAddType(null); setEditingTx(null);
-    try{ setHistoryExpenseCategory(''); setHistoryIncomeCategory(''); setHistoryExpenseCategoryOpen(false); setHistoryIncomeCategoryOpen(false); }catch(e){}
+    try{ setHistoryExpenseCategory(''); setHistoryIncomeCategory(''); }catch(e){}
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
