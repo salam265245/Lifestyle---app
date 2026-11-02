@@ -3015,14 +3015,14 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
       (dailyTasks||[]).length===0 ? h('p', {className:'text-[11px] text-[#8B7355] text-center py-2'}, lang==='en' ? 'No saved tasks' : 'কোনো টাস্ক নেই') :
       h('div', {className:'space-y-2 max-h-[220px] overflow-y-auto'},
         dailyTasks.map(task=>
-          h('div', {key:task.id, className:'rounded-[12px] p-2.5 border flex justify-between items-start gap-2 ' + (task.done ? 'bg-[#E8F5E9] border-[#A5D6A7]' : 'bg-[#FFFEF7] border-[#F3E8D3]'), onClick:()=>handleLoadTask(task)},
-            h('div', {className:'flex-1 min-w-0 cursor-pointer'},
-              h('p', {className:'font-bold text-[12px] truncate ' + (task.done ? 'text-[#1B4D3E] line-through' : 'text-[#1A1A1A]')}, task.subject || task.personName || task.category),
+          h('div', {key:task.id, className:'rounded-[12px] p-2.5 border flex justify-between items-start gap-2 cursor-pointer ' + (task.done===true ? 'bg-[#E8F5E9] border-[#A5D6A7]' : task.done===false ? 'bg-[#FFEBEE] border-[#FFCDD2]' : 'bg-[#FFFEF7] border-[#F3E8D3]'), onClick:()=>handleLoadTask(task)},
+            h('div', {className:'flex-1 min-w-0'},
+              h('p', {className:'font-bold text-[12px] truncate ' + (task.done===true ? 'text-[#1B4D3E]' : task.done===false ? 'text-[#B71C1C]' : 'text-[#1A1A1A]')}, task.subject || task.personName || task.category || 'Task'),
               h('p', {className:'text-[10px] text-[#8B7355] truncate'}, `${task.personName||''} ${task.date||''} ${task.time||''}`.trim())
             ),
             h('div', {className:'flex gap-1 shrink-0'},
-              h('button', {onClick:(e)=>{ e.stopPropagation(); handleToggleDone(task.id, task.done); }, className:'px-2 py-1 rounded-full text-[10px] font-bold border ' + (task.done ? 'bg-[#1E4538] text-white border-[#1E4538]' : 'bg-white border-[#E8E6DC] text-[#8B7355]')}, task.done ? 'Yes' : 'No'),
-              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: false} : t)); }, className:'px-2 py-1 rounded-full text-[10px] font-bold bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] ' + (task.done ? 'hidden' : '')}, 'No'),
+              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: true} : t)); }, className:'px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ' + (task.done===true ? 'bg-[#1E4538] text-white border-[#1E4538]' : 'bg-white border-[#E8E6DC] text-[#2D2A26] hover:bg-[#E8F5E9]')}, 'Yes'),
+              h('button', {onClick:(e)=>{ e.stopPropagation(); setDailyTasks(prev=> prev.map(t=> t.id===task.id ? {...t, done: false} : t)); }, className:'px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ' + (task.done===false ? 'bg-[#B71C1C] text-white border-[#B71C1C]' : 'bg-white border-[#FFCDD2] text-[#B71C1C] hover:bg-[#FFEBEE]')}, 'No'),
               h('button', {onClick:(e)=>{ e.stopPropagation(); handleDeleteDailyTask(task.id); }, className:'px-2 py-1 rounded-full text-[10px] font-bold bg-white border border-[#FFCDD2] text-[#B71C1C]'}, 'Del')
             )
           )
@@ -3094,15 +3094,24 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
           h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'ঘণ্টা ও মিনিট স্ক্রল করে সিলেক্ট করুন, AM/PM সেট করুন')
         ),
         h('div', null,
-          h('div', {className:'flex justify-between items-center'},
-            h('label', {className:labelClass}, '📄 বিষয় / Subject'),
-            h('button', {onClick:()=>setShowSubject(v=>!v), className:'px-3 py-1 rounded-full bg-[#1B4D3E] text-white text-[11px] font-bold'}, `${selectedSubjects.length} selected`)
+          h('label', {className:labelClass}, '📄 বিষয় / Subject'),
+          h('div', {className:'relative mt-1.5'},
+            h('input', {
+              value:subjectSearch, 
+              onClick:()=>setShowSubject(v=>!v),
+              onChange:e=>{ setSubjectSearch(e.target.value); setShowSubject(true); },
+              placeholder:'🔍 Search subject... (Click to show/hide 27 items)', 
+              className:'w-full bg-white border border-[#E8E6DC] rounded-[16px] px-4 py-3 text-[13px] focus:outline-none focus:border-[#1B4D3E] focus:ring-1 focus:ring-[#1B4D3E]'
+            }),
+            h('div', {className:'absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2'},
+              selectedSubjects.length>0 ? h('span', {className:'px-2 py-0.5 rounded-full bg-[#1B4D3E] text-white text-[10px] font-bold'}, `${selectedSubjects.length} selected`) : null,
+              h('span', {className:'text-[12px] text-[#8B7355]'}, showSubject ? '▲' : '▼')
+            )
           ),
-          showSubject ? h('div', {className:'mt-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2 max-h-[200px] overflow-y-auto'},
-            h('input', {value:subjectSearch, onChange:e=>setSubjectSearch(e.target.value), placeholder:'Search subject...', className:'w-full bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-3 py-2 text-[12px] mb-2'}),
-            filteredSubjects.map(o=> h('button', {key:o.id, onClick:()=>toggleSubject(o.id), className:'w-full text-left px-3 py-2 rounded-[10px] flex items-center gap-2 text-[12px] ' + (selectedSubjects.includes(o.id) ? 'bg-[#E8F5E9] border border-[#A5D6A7]' : 'bg-white border border-transparent')}, h('span', null, o.icon), h('span', null, lang==='en'?o.en:o.bn), selectedSubjects.includes(o.id) ? h('span', {className:'ml-auto text-[#1B4D3E]'}, '✓') : null))
+          showSubject ? h('div', {className:'mt-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2 max-h-[260px] overflow-y-auto shadow-[0_4px_12px_rgba(0,0,0,0.08)]'},
+            filteredSubjects.length>0 ? filteredSubjects.map(o=> h('button', {key:o.id, onClick:()=>toggleSubject(o.id), className:'w-full text-left px-3 py-2.5 rounded-[10px] flex items-center gap-2 text-[12px] border ' + (selectedSubjects.includes(o.id) ? 'bg-[#E8F5E9] border-[#A5D6A7] text-[#1B4D3E] font-bold' : 'bg-white border-transparent hover:bg-[#F9F6F0]')}, h('span', {className:'text-[14px]'}, o.icon), h('span', null, lang==='en'?o.en:o.bn), selectedSubjects.includes(o.id) ? h('span', {className:'ml-auto text-[#1B4D3E] text-[14px]'}, '✓') : null)) : h('p', {className:'text-center py-4 text-[12px] text-[#8B7355]'}, 'No results found')
           ) : null,
-          selectedSubjects.length>0 ? h('div', {className:'flex flex-wrap gap-1.5 mt-2'}, selectedSubjects.map(id=>{ const o=SUBJECT_OPTIONS.find(x=>x.id===id); return h('span', {key:id, className:'px-2.5 py-1 rounded-full bg-[#E8F5E9] border border-[#A5D6A7] text-[11px] flex items-center gap-1'}, h('span', null, o?o.icon:''), h('span', null, o? (lang==='en'?o.en:o.bn) : id), h('button', {onClick:()=>removeSubject(id), className:'ml-1 text-[#B71C1C]'}, '×')); })) : null
+          selectedSubjects.length>0 ? h('div', {className:'flex flex-wrap gap-1.5 mt-2.5'}, selectedSubjects.map(id=>{ const o=SUBJECT_OPTIONS.find(x=>x.id===id); return h('span', {key:id, className:'px-2.5 py-1 rounded-full bg-[#E8F5E9] border border-[#A5D6A7] text-[11px] flex items-center gap-1'}, h('span', null, o?o.icon:''), h('span', null, o? (lang==='en'?o.en:o.bn) : id), h('button', {onClick:()=>removeSubject(id), className:'ml-1 text-[#B71C1C] font-bold'}, '×')); })) : null
         ),
         h('div', null, h('label', {className:labelClass}, '📝 NOTE / নোট'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Additional notes...', className: inputClass + ' h-[80px]'}))
       ) : null,
@@ -3174,8 +3183,12 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
         h('div', null, h('label', {className:labelClass}, '📝 NOTE'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Office work notes...', className: inputClass + ' h-[80px]'}))
       ) : null,
 
-      h('button', {onClick: handleSaveDailyTask, disabled:saving, className:'w-full py-3.5 rounded-[16px] bg-[#1B4D3E] text-white font-bold text-[14px] flex items-center justify-center gap-2'},
-        saving ? 'Saving...' : (editingDailyTaskId ? 'Update Task' : 'Save Task')
+      h('div', {className:'p-4 mt-4 -mx-4 -mb-5 bg-[#FFFEF7] rounded-b-[32px]'},
+        h('button', {onClick: handleSaveDailyTask, disabled:saving, style:{backgroundColor:'#1B4D3E', color:'white', width:'100%', padding:'18px 0', borderRadius:'16px', fontWeight:'800', fontSize:'17px', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', boxShadow:'0 8px 20px rgba(27,77,62,0.4)', border:'2px solid #1B4D3E'}, className:'w-full active:scale-[0.97]'},
+          h('span', {style:{fontSize:'20px'}}, '💾'),
+          h('span', {style:{color:'white', fontWeight:'800'}}, saving ? 'Saving...' : (editingDailyTaskId ? 'Update Task' : 'Save Task'))
+        ),
+        h('p', {className:'text-[11px] text-[#1B4D3E] font-bold text-center mt-3 bg-[#E8F5E9] border border-[#A5D6A7] py-1.5 rounded-full'}, 'Save করলে উপরে Saved Tasks এ যোগ হবে ✓')
       )
     )
   );
