@@ -166,7 +166,7 @@ try { firebase.initializeApp(firebaseConfig); try{ // V19: Disabled persistence 
 
     if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v17-income-bazar-fix';
+        const CACHE='lifestyle-v20-no-shop';
         self.addEventListener('install', e=>{
           self.skipWaiting();
           e.waitUntil(
@@ -474,7 +474,7 @@ const T = {
     reportHeading:'Report', period:'Period', generated:'Generated', unpaid:'Unpaid', pdfTitle:'PDF Report',
     dateFrom:'From', dateTo:'To', sharePdf:'Share PDF (WhatsApp)', downloadPdf:'Download PDF', preparing:'Preparing...',
     pdfDownloaded:'PDF downloaded', badRange:'Please select a valid date range',
-    pickContact:'Pick from contacts', contactUnsupported:'Contact access is not available here. Please type the number.', todayBazar:'Today Bazar', bazar:'Bazar' },
+    pickContact:'Pick from contacts', contactUnsupported:'Contact access is not available here. Please type the number.', todayshop:'Today shop', shop:'shop' },
   bn: { appName:'লাইফস্টাইল', today:'আজ', thisMonth:'এই মাস', todayIncome:'আজকের আয়',
     todayExpense:'আজকের ব্যয়', todayBalance:'আজকের ব্যালেন্স', monthlyIncome:'মাসিক আয়',
     monthlyExpense:'মাসিক ব্যয়', monthlyBalance:'মাসিক ব্যালেন্স', loansReceivables:'ঋণ ও পাওনা',
@@ -501,7 +501,7 @@ const T = {
     reportHeading:'রিপোর্ট', period:'সময়কাল', generated:'তৈরির তারিখ', unpaid:'অপরিশোধিত', pdfTitle:'PDF রিপোর্ট',
     dateFrom:'শুরুর তারিখ', dateTo:'শেষ তারিখ', sharePdf:'PDF শেয়ার (WhatsApp)', downloadPdf:'PDF ডাউনলোড', preparing:'তৈরি হচ্ছে...',
     pdfDownloaded:'PDF ডাউনলোড হয়েছে', badRange:'সঠিক তারিখ নির্বাচন করুন',
-    pickContact:'কন্টাক্ট থেকে বাছুন', contactUnsupported:'এখানে কন্টাক্ট ব্যবহার করা যাচ্ছে না। নম্বর হাতে লিখুন।', todayBazar:'আজকের বাজার', bazar:'বাজার' }
+    pickContact:'কন্টাক্ট থেকে বাছুন', contactUnsupported:'এখানে কন্টাক্ট ব্যবহার করা যাচ্ছে না। নম্বর হাতে লিখুন।', todayshop:'আজকের বাজার', shop:'বাজার' }
 };
 
 /* ---------- migration from old data format ---------- */
@@ -618,9 +618,9 @@ function IconBtn(props){
 
 /* ---------- Modal shells ---------- */
 function BottomSheet(props){
-  // If bazar confirm popup is open, hide this BottomSheet's header "Today Bazar" completely
-  const isBazarSheet = (props.title||'').toLowerCase().includes('bazar') || (props.title||'').includes('বাজার');
-  const shouldHideHeader = isBazarSheet && (typeof document!=='undefined' && document.body.classList.contains('bazar-confirm-open'));
+  // If shop confirm popup is open, hide this BottomSheet's header "Today shop" completely
+  const isshopSheet = (props.title||'').toLowerCase().includes('shop') || (props.title||'').includes('বাজার');
+  const shouldHideHeader = isshopSheet && (typeof document!=='undefined' && document.body.classList.contains('shop-confirm-open'));
   return h('div', {className:'fixed inset-0 z-[70] flex items-end justify-center'},
     h('div', {className:'absolute inset-0 bg-black/50 backdrop-blur-sm', onClick: props.onClose}),
     h('div', {className:'relative w-full max-w-[460px] bg-[#FFFBF7] rounded-t-[32px] max-h-[88vh] overflow-y-auto border border-[#F3E8D3] shadow-[0_-12px_40px_rgba(0,0,0,0.2)]'},
@@ -2722,7 +2722,7 @@ function EmailAuthForm({t, onAuth}){
 
 /* ---------- Main App ---------- */
 
-function BazarManager({ bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds }){
+function shopManager({ shopList, setshopList, transactions, setTransactions, setToast, setshopDeletedIds }){
   const [bName, setBName] = useState('');
   const [bAmount, setBAmount] = useState('');
   const [bDate, setBDate] = useState(today());
@@ -2783,15 +2783,15 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
           bought: false
         };
       });
-      setBazarList(function(list){ return newItems.concat(list); });
+      setshopList(function(list){ return newItems.concat(list); });
       setBulkText('');
       if(typeof setToast==='function') setToast(unique.length + ' টি পণ্য লিস্টে যোগ হয়েছে');
     }catch(e){ console.error(e); }
   }
 
 
-  const total = useMemo(()=> bazarList.reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
-  const boughtTotal = useMemo(()=> bazarList.filter(x=>x.bought).reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [bazarList]);
+  const total = useMemo(()=> shopList.reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [shopList]);
+  const boughtTotal = useMemo(()=> shopList.filter(x=>x.bought).reduce((a,b)=> a + (parseFloat(b.amount)||0), 0), [shopList]);
   const baki = total - boughtTotal;
 
   const allCats = useMemo(()=>{
@@ -2824,7 +2824,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       date: bDate || today(),
       bought: false
     };
-    setBazarList(list => [item, ...list]);
+    setshopList(list => [item, ...list]);
     setBName('');
     setBAmount('');
     setBDate(today());
@@ -2863,9 +2863,9 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       bought: true
     };
     setPopupItem(null);
-    setBazarList(list => list.map(x=> x.id===itemId ? updated : x));
+    setshopList(list => list.map(x=> x.id===itemId ? updated : x));
     setTransactions(list => {
-      const existsIdx = list.findIndex(tt => tt.bazarItemId === itemId);
+      const existsIdx = list.findIndex(tt => tt.shopItemId === itemId);
       if(existsIdx>=0){
         const copy = list.slice();
         copy[existsIdx] = {...copy[existsIdx], amount: amt, category: catEn, categoryBn: catBn, date: pDate, note: itemName + ' (৳'+amt+')'};
@@ -2873,7 +2873,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       } else {
         const tx = {
           id: uid(),
-          bazarItemId: itemId,
+          shopItemId: itemId,
           type: 'expense',
           amount: amt,
           category: catEn,
@@ -2891,41 +2891,41 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       }
     });
     if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয় খাতে যোগ হয়েছে');
-    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_bought', item: updated}); }catch(e){}
+    try{ if(window._shopChannel) window._shopChannel.postMessage({type:'shop_bought', item: updated}); }catch(e){}
   }
 
   function markNo(item){
     if(item.bought){
-      setBazarList(list => list.map(x=> x.id===item.id ? {...x, bought:false} : x));
-      setTransactions(list => list.filter(tt => tt.bazarItemId !== item.id));
+      setshopList(list => list.map(x=> x.id===item.id ? {...x, bought:false} : x));
+      setTransactions(list => list.filter(tt => tt.shopItemId !== item.id));
       if(typeof setToast==='function') setToast('No করা হয়েছে - ব্যয় থেকে বাদ গেছে');
-      try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id: item.id}); }catch(e){}
+      try{ if(window._shopChannel) window._shopChannel.postMessage({type:'shop_deleted', id: item.id}); }catch(e){}
     }
   }
   function deleteItem(id){
     if(!confirm('এই আইটেমটি মুছে ফেলবেন?')) return;
-    setBazarList(list => list.filter(x=> x.id!==id));
-    setTransactions(list => list.filter(tt => tt.bazarItemId !== id));
+    setshopList(list => list.filter(x=> x.id!==id));
+    setTransactions(list => list.filter(tt => tt.shopItemId !== id));
     try{
-      if(typeof setBazarDeletedIds === 'function'){
-        setBazarDeletedIds(prev => {
+      if(typeof setshopDeletedIds === 'function'){
+        setshopDeletedIds(prev => {
           const s = new Set([...(prev||[]), id]);
           return Array.from(s);
         });
       }
     }catch(e){}
     if(typeof setToast==='function') setToast('আইটেম মুছেছে - ব্যয় থেকেও বাদ গেছে');
-    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'bazar_deleted', id}); }catch(e){}
+    try{ if(window._shopChannel) window._shopChannel.postMessage({type:'shop_deleted', id}); }catch(e){}
   }
 
-  // Hide parent BottomSheet header "Today Bazar" when confirm popup is open
+  // Hide parent BottomSheet header "Today shop" when confirm popup is open
   useEffect(()=>{
     if(popupItem){
-      // Hide all sticky headers containing Today Bazar / আজকের বাজার
+      // Hide all sticky headers containing Today shop / আজকের বাজার
       try{
         document.querySelectorAll('h3').forEach(h=>{
           const txt = (h.textContent||'').toLowerCase();
-          if(txt.includes('today bazar') || txt.includes('আজকের বাজার')){
+          if(txt.includes('today shop') || txt.includes('আজকের বাজার')){
             const sticky = h.closest('div.sticky');
             if(sticky) sticky.style.display='none';
             // Also hide the whole BottomSheet header container
@@ -2933,18 +2933,18 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
           }
         });
         // Also add class to body to prevent background scroll
-        document.body.classList.add('bazar-confirm-open');
+        document.body.classList.add('shop-confirm-open');
       }catch(e){}
     } else {
       try{
         document.querySelectorAll('div.sticky').forEach(d=>{ d.style.display=''; });
         document.querySelectorAll('h3').forEach(h=>{ h.style.display=''; });
-        document.body.classList.remove('bazar-confirm-open');
+        document.body.classList.remove('shop-confirm-open');
       }catch(e){}
     }
   }, [popupItem]);
 
-  // If confirm popup is open, show ONLY the popup in full size, hide Bazar list and Today Bazar header behind
+  // If confirm popup is open, show ONLY the popup in full size, hide shop list and Today shop header behind
   if(popupItem){
     return h('div', {className:'fixed inset-0 z-[9999] bg-[#FFFBF7] flex flex-col'},
       h('div', {className:'flex-1 overflow-y-auto w-full max-w-[480px] mx-auto bg-[#FFFBF7] p-4 space-y-4'},
@@ -3052,9 +3052,9 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       h('button', {onClick:handleAdd, disabled: !bName.trim(), className:'w-full py-3 rounded-[12px] bg-[#2D2A26] text-white font-bold text-[13px] disabled:opacity-40'}, 'লিস্টে যোগ করুন')
     ),
     h('div', {className:'space-y-2'},
-      bazarList.length===0 ? h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-5 text-center'},
+      shopList.length===0 ? h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-5 text-center'},
         h('p', {className:'text-[13px] text-[#8B7355]'}, 'এখনো কোন পণ্য নেই')
-      ) : bazarList.map(item=>{
+      ) : shopList.map(item=>{
         const isBought = !!item.bought;
         const rowBg = isBought ? 'bg-[#E8F5E9] border-[#A5D6A7]' : 'bg-[#FFEBEE] border-[#FFCDD2]';
         return h('div', {key:item.id, className:'flex items-center gap-2 rounded-[14px] border p-3 ' + rowBg},
@@ -3147,39 +3147,39 @@ function App(){
   const [addType, setAddType] = useState(loadLS('lifestyle_last_addType', null));
 
   const [transactions, setTransactions] = useState(initial.transactions);
-  const [bazarList, setBazarList] = useState(loadLS('lifestyle_bazar_list', []));
+  const [shopList, setshopList] = useState(loadLS('lifestyle_shop_list', []));
 
   // V18.1 BroadcastChannel for instant same-device sync
   useEffect(()=>{
     try{
       if(typeof BroadcastChannel!=='undefined'){
         const ch = new BroadcastChannel('lifestyle_v18_sync');
-        window._bazarChannel = ch;
+        window._shopChannel = ch;
         ch.onmessage = (ev)=>{
           const msg = ev.data||{};
-          if(msg.type==='bazar_bought' && msg.item){
-            setBazarList(prev=>{
+          if(msg.type==='shop_bought' && msg.item){
+            setshopList(prev=>{
               const exists = prev.some(x=>x.id===msg.item.id);
               return exists ? prev.map(x=> x.id===msg.item.id ? msg.item : x) : [msg.item, ...prev];
             });
           }
-          if(msg.type==='bazar_deleted'){
-            setBazarList(prev=> prev.filter(x=> x.id!==msg.id));
-            setTransactions(prev=> prev.filter(tt=> tt.bazarItemId!==msg.id));
+          if(msg.type==='shop_deleted'){
+            setshopList(prev=> prev.filter(x=> x.id!==msg.id));
+            setTransactions(prev=> prev.filter(tt=> tt.shopItemId!==msg.id));
           }
           if(msg.type==='tx_saved' && msg.tx){
             setTransactions(prev=>{
               const exists = prev.some(x=>x.id===msg.tx.id);
               return exists ? prev.map(x=>x.id===msg.tx.id?msg.tx:x) : [msg.tx, ...prev];
             });
-            if(msg.tx.bazarItemId){
-              setBazarList(prev=> prev.map(b=> b.id===msg.tx.bazarItemId ? {...b, amount: msg.tx.amount, category: msg.tx.category, categoryBn: msg.tx.categoryBn, date: msg.tx.date, bought:true} : b));
+            if(msg.tx.shopItemId){
+              setshopList(prev=> prev.map(b=> b.id===msg.tx.shopItemId ? {...b, amount: msg.tx.amount, category: msg.tx.category, categoryBn: msg.tx.categoryBn, date: msg.tx.date, bought:true} : b));
             }
           }
           if(msg.type==='tx_deleted'){
             setTransactions(prev=> prev.filter(x=>x.id!==msg.id));
-            if(msg.bazarItemId){
-              setBazarList(prev=> prev.map(b=> b.id===msg.bazarItemId ? {...b, bought:false} : b));
+            if(msg.shopItemId){
+              setshopList(prev=> prev.map(b=> b.id===msg.shopItemId ? {...b, bought:false} : b));
             }
           }
         };
@@ -3190,7 +3190,7 @@ function App(){
 
 
 
-  const [bazarDeletedIds, setBazarDeletedIds] = useState(loadLS('lifestyle_bazar_deleted_ids', []));
+  const [shopDeletedIds, setshopDeletedIds] = useState(loadLS('lifestyle_shop_deleted_ids', []));
   const [peopleGiven, setPeopleGiven] = useState(initial.peopleGiven);
   const [peopleTaken, setPeopleTaken] = useState(initial.peopleTaken);
   const [peopleTrash, setPeopleTrash] = useState(loadLS('lifestyle_people_trash', []));
@@ -3315,7 +3315,7 @@ function App(){
     const noIdLocal = (localArr||[]).filter(x=>!x.id);
     return Array.from(map.values()).concat(noIdLocal);
   }
-  function mergeBazarList(localArr, cloudArr, deletedIds){
+  function mergeshopList(localArr, cloudArr, deletedIds){
     deletedIds = deletedIds || [];
     if(!cloudArr) cloudArr = [];
     if(!localArr) localArr = [];
@@ -3375,13 +3375,13 @@ function App(){
       const db = firebase.firestore();
       const now = new Date().toISOString();
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
-      const data = {transactions: transactions||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], bazarList: bazarList||[], bazarDeletedIds: bazarDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
+      const data = {transactions: transactions||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], shopList: shopList||[], shopDeletedIds: shopDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
         setLastSyncTime(timeStr);
-        setSyncStatus('✓ Synced ' + new Date().toLocaleTimeString('bn-BD') + ' ('+(bazarList||[]).length+' bazar)');
+        setSyncStatus('✓ Synced ' + new Date().toLocaleTimeString('bn-BD'));
         lastCloudDataRef.current = data;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
@@ -3395,7 +3395,7 @@ function App(){
       if(unsubscribeRef.current){ unsubscribeRef.current(); }
       const db = firebase.firestore();
       unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges: false}, doc=>{
-        if(!doc.exists){ cloudLoadedRef.current=true; try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], bazarList: bazarList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
+        if(!doc.exists){ cloudLoadedRef.current=true; try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], shopList: shopList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
         const isFirstLoad = !cloudLoadedRef.current;
@@ -3418,8 +3418,8 @@ function App(){
           if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
           if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
           if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
-          if(typeof d.bazarList !== 'undefined') setBazarList(d.bazarList || []);
-          if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
+          if(typeof d.shopList !== 'undefined') setshopList(d.shopList || []);
+          if(typeof d.shopDeletedIds !== 'undefined') setshopDeletedIds(d.shopDeletedIds || []);
           if(d.userName) setUserName(d.userName);
           if(d.userDesignation) setUserDesignation(d.userDesignation);
           if(d.userAddress) setUserAddress(d.userAddress);
@@ -3449,7 +3449,7 @@ function App(){
       syncToCloud(googleUser);
     }, 600);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
-  }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, bazarDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto]);
+  }, [transactions, peopleGiven, peopleTaken, bankLoans, shopList, shopDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
   useEffect(()=>{
     if(googleUser){ syncFromCloud(googleUser); }
@@ -3490,8 +3490,8 @@ function App(){
 
   useEffect(()=>{ saveLS('lifestyle_lang', lang); }, [lang]);
   useEffect(()=>{ saveLS('lifestyle_transactions', transactions); }, [transactions]);
-  useEffect(()=>{ saveLS('lifestyle_bazar_list', bazarList); }, [bazarList]);
-  useEffect(()=>{ saveLS('lifestyle_bazar_deleted_ids', bazarDeletedIds); }, [bazarDeletedIds]);
+  useEffect(()=>{ saveLS('lifestyle_shop_list', shopList); }, [shopList]);
+  useEffect(()=>{ saveLS('lifestyle_shop_deleted_ids', shopDeletedIds); }, [shopDeletedIds]);
   useEffect(()=>{ saveLS('lifestyle_people_given', peopleGiven); }, [peopleGiven]);
   useEffect(()=>{ saveLS('lifestyle_people_taken', peopleTaken); }, [peopleTaken]);
   useEffect(()=>{ saveLS('lifestyle_bank_loans', bankLoans); }, [bankLoans]);
@@ -3554,9 +3554,9 @@ setTimeout(()=>{
       tx.date = today();
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
-    if(tx.bazarItemId){
-      setBazarList(blist => blist.map(b => {
-        if(b.id===tx.bazarItemId){
+    if(tx.shopItemId){
+      setshopList(blist => blist.map(b => {
+        if(b.id===tx.shopItemId){
           return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
         }
         return b;
@@ -3568,21 +3568,21 @@ setTimeout(()=>{
     });
     setAddType(null); setEditingTx(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
-    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
+    try{ if(window._shopChannel) window._shopChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
   function deleteTransaction(id){
     let toDeleteRef = null;
     setTransactions(list=>{
       const toDelete = list.find(x=>x.id===id);
       toDeleteRef = toDelete;
-      if(toDelete && toDelete.bazarItemId){
-        setBazarList(blist => blist.map(b=> b.id===toDelete.bazarItemId ? {...b, bought:false} : b));
+      if(toDelete && toDelete.shopItemId){
+        setshopList(blist => blist.map(b=> b.id===toDelete.shopItemId ? {...b, bought:false} : b));
       }
       return list.filter(x=>x.id!==id);
     });
     setConfirmDelTx(null);
     if(typeof setToast==='function') setToast('মুছে ফেলা হয়েছে');
-    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id, bazarItemId: toDeleteRef?toDeleteRef.bazarItemId:null}); }catch(e){}
+    try{ if(window._shopChannel) window._shopChannel.postMessage({type:'tx_deleted', id, shopItemId: toDeleteRef?toDeleteRef.shopItemId:null}); }catch(e){}
   }
 
   function addPersonWithLoan(kind, data){
@@ -3695,12 +3695,12 @@ setTimeout(()=>{
       setTransactions(list=>{
         const toDel = list.find(t=>t.id===x.id);
         toDeleteRef = toDel;
-        if(toDel && toDel.bazarItemId){
-          setBazarList(blist => blist.map(b=> b.id===toDel.bazarItemId ? {...b, bought:false} : b));
+        if(toDel && toDel.shopItemId){
+          setshopList(blist => blist.map(b=> b.id===toDel.shopItemId ? {...b, bought:false} : b));
         }
         return list.filter(t=>t.id!==x.id);
       });
-      try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id: x.id, bazarItemId: toDeleteRef?toDeleteRef.bazarItemId:null}); }catch(e){}
+      try{ if(window._shopChannel) window._shopChannel.postMessage({type:'tx_deleted', id: x.id, shopItemId: toDeleteRef?toDeleteRef.shopItemId:null}); }catch(e){}
     } else if(x.type==='bank_loan'){
       setBankLoans(list=>list.filter(b=>b.id!==x.id));
     } else if(x.type==='loan_given' || x.type==='loan_taken'){
@@ -4529,9 +4529,6 @@ setTimeout(()=>{
           h('button', {onClick:()=>{customSetPage('taken'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#E3F2FD] border border-[#BBDEFB] rounded-[20px] p-4 text-left'},
             h('span', {className:'text-[20px]'}, '\uD83D\uDCE5'), h('span', {className:'font-bold text-[15px] text-[#1A4D8F]'}, t.takeLoan)
           ),
-          h('button', {onClick:()=>{setAddType('bazar'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#FFF8E1] border border-[#FFE082] rounded-[20px] p-4 text-left'},
-            h('span', {className:'text-[20px]'}, '🛒'), h('span', {className:'font-bold text-[15px] text-[#8B7355]'}, t.todayBazar||'আজকের বাজার')
-          ),
           h('button', {onClick:()=>{setAddType('bankLoan'); setAddSheetOpen(false);}, className:'w-full flex items-center gap-4 bg-[#2D2A26] rounded-[20px] p-4 text-left'},
             h('span', {className:'text-[20px]'}, '\uD83C\uDFE6'), h('span', {className:'font-bold text-[15px] text-white'}, t.bankLoan)
           )
@@ -4554,7 +4551,7 @@ setTimeout(()=>{
         h(BankLoanForm, {t, lang, initial: editingBankLoan, onSave: saveBankLoan})
       ) : null,
       
-      (addType === 'bazar') ? h(BottomSheet, {title: t.todayBazar||'আজকের বাজার', onClose: ()=>setAddType(null)}, h(BazarManager, {bazarList, setBazarList, transactions, setTransactions, setToast, setBazarDeletedIds})) : null,
+      
       editingHistoryLoan ? h(BottomSheet, {
         title: (editingHistoryLoan.kind==='given' ? (lang==='en'?'Edit Given - ':'প্রদান সম্পাদনা - ') : (lang==='en'?'Edit Taken - ':'গ্রহণ সম্পাদনা - ')) + editingHistoryLoan.personName,
         onClose: ()=>setEditingHistoryLoan(null)
