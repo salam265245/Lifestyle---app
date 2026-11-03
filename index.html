@@ -1923,7 +1923,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
@@ -1945,7 +1945,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.paymentHistory||'Payment', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
       person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
       ensure(70); const thP=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
@@ -1966,7 +1966,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
