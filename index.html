@@ -348,7 +348,7 @@ const { useState, useEffect, useMemo, useRef } = React;
 const h = React.createElement;
 
 /* ---------- helpers ---------- */
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,6) + '-' + performance.now().toString(36).replace('.',''); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 function today(){ 
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -730,8 +730,7 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
         amount: parseFloat(amount) || 0,
         category: cat.en, categoryBn: cat.bn,
         date, note,
-        medium: channel, channel: channel, fromChannel: channel, toChannel: channel, fromMedium: channel, toMedium: channel,
-        bazarItemId: initial ? initial.bazarItemId : undefined
+        medium: channel, channel: channel, fromChannel: channel, toChannel: channel, fromMedium: channel, toMedium: channel
       });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
@@ -1924,7 +1923,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
@@ -1946,7 +1945,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.paymentHistory||'Payment', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
       person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
       ensure(70); const thP=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
@@ -1967,7 +1966,7 @@ function renderPersonLoanPages(o){
       ctx.fillText(fit(t.loanHistory||'Loan Entries', W-M*2), cDate.x+15, y+48);
       ctx.textAlign='left';
       y+=mergedH+8;
-      drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
+      drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false}); tableHeaderActive=true;
       person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
@@ -3409,50 +3408,18 @@ function App(){
           cloudLoadedRef.current = true;
           return;
         }
-        // V20 FIX: MERGE cloud + local to prevent disappearing after save (video bug)
+        // V19: Always replace from cloud if not own write - fixes intermittent sync
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
         isSyncingFromCloudRef.current = true;
         try{
           const tToday = today();
           const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-          // MERGE TRANSACTIONS - local wins, prevents save-then-disappear
-          if(typeof d.transactions !== 'undefined'){
-            setTransactions(prev=>{
-              var cloudTx = fixDates(d.transactions) || [];
-              var map = new Map();
-              cloudTx.forEach(function(tx){ if(tx && tx.id) map.set(tx.id, tx); });
-              (prev||[]).forEach(function(tx){ if(tx && tx.id) map.set(tx.id, tx); });
-              var merged = Array.from(map.values());
-              try{ saveLS('lifestyle_transactions', merged); }catch(e){}
-              return merged;
-            });
-          }
-          if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(function(prev){ 
-            var cloudArr = d.peopleGiven || [];
-            if(!prev || prev.length===0) return cloudArr;
-            // merge by id, local wins
-            var m = new Map(); cloudArr.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); prev.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); return Array.from(m.values());
-          });
-          if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(function(prev){ 
-            var cloudArr = d.peopleTaken || [];
-            if(!prev || prev.length===0) return cloudArr;
-            var m = new Map(); cloudArr.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); prev.forEach(function(p){ if(p&&p.id) m.set(p.id,p); }); return Array.from(m.values());
-          });
-          if(typeof d.bankLoans !== 'undefined') setBankLoans(function(prev){
-            var cloudArr = d.bankLoans || [];
-            if(!prev || prev.length===0) return cloudArr;
-            var m = new Map(); cloudArr.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); prev.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); return Array.from(m.values());
-          });
-          if(typeof d.bazarList !== 'undefined') setBazarList(function(prev){
-            var cloudArr = d.bazarList || [];
-            if(!prev || prev.length===0) return cloudArr;
-            var m = new Map(); cloudArr.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); prev.forEach(function(b){ if(b&&b.id) m.set(b.id,b); }); return Array.from(m.values());
-          });
-          if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(function(prev){
-            var cloudArr = d.bazarDeletedIds || [];
-            var set = new Set([].concat(cloudArr||[]).concat(prev||[]));
-            return Array.from(set);
-          });
+          if(typeof d.transactions !== 'undefined') setTransactions(fixDates(d.transactions) || []);
+          if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
+          if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
+          if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
+          if(typeof d.bazarList !== 'undefined') setBazarList(d.bazarList || []);
+          if(typeof d.bazarDeletedIds !== 'undefined') setBazarDeletedIds(d.bazarDeletedIds || []);
           if(d.userName) setUserName(d.userName);
           if(d.userDesignation) setUserDesignation(d.userDesignation);
           if(d.userAddress) setUserAddress(d.userAddress);
@@ -3587,50 +3554,35 @@ setTimeout(()=>{
       tx.date = today();
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
-    if(!tx.id) tx.id = uid();
     if(tx.bazarItemId){
-      // FIX: no side-effect saveLS inside updater - let useEffect persist
-      setBazarList(function(blist){
-        return blist.map(function(b){
-          if(b.id===tx.bazarItemId){
-            return Object.assign({}, b, {amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true });
-          }
-          return b;
-        });
-      });
+      setBazarList(blist => blist.map(b => {
+        if(b.id===tx.bazarItemId){
+          return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
+        }
+        return b;
+      }));
     }
-    setTransactions(function(list){
-      var exists = list.some(function(x){ return x.id===tx.id; });
-      var newList = exists ? list.map(function(x){ return x.id===tx.id?tx:x; }) : [tx].concat(list);
-      // FIX: removed inner saveLS to avoid React StrictMode double-invoke and quota race
-      return newList;
+    setTransactions(list => {
+      const exists = list.some(x=>x.id===tx.id);
+      return exists ? list.map(x=>x.id===tx.id?tx:x) : [tx, ...list];
     });
     setAddType(null); setEditingTx(null);
-    try{ setHistoryExpenseCategory(''); setHistoryIncomeCategory(''); }catch(e){}
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
     try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
   function deleteTransaction(id){
     let toDeleteRef = null;
-    let bazarIdToReset = null;
-    // FIX: find item first from current transactions (avoid nested setState)
-    try{
-      const curList = (typeof transactions!=='undefined' ? transactions : []);
-      const found = curList.find(function(x){ return x.id===id; });
-      if(found){ toDeleteRef = found; bazarIdToReset = found.bazarItemId || null; }
-    }catch(e){}
-    setTransactions(function(list){
-      const toDelete = list.find(function(x){ return x.id===id; });
-      if(!toDeleteRef) toDeleteRef = toDelete;
-      if(toDelete && toDelete.bazarItemId && !bazarIdToReset) bazarIdToReset = toDelete.bazarItemId;
-      return list.filter(function(x){ return x.id!==id; });
+    setTransactions(list=>{
+      const toDelete = list.find(x=>x.id===id);
+      toDeleteRef = toDelete;
+      if(toDelete && toDelete.bazarItemId){
+        setBazarList(blist => blist.map(b=> b.id===toDelete.bazarItemId ? {...b, bought:false} : b));
+      }
+      return list.filter(x=>x.id!==id);
     });
-    if(bazarIdToReset){
-      setBazarList(function(blist){ return blist.map(function(b){ return b.id===bazarIdToReset ? Object.assign({}, b, {bought:false}) : b; }); });
-    }
     setConfirmDelTx(null);
     if(typeof setToast==='function') setToast('মুছে ফেলা হয়েছে');
-    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id, bazarItemId: (bazarIdToReset || (toDeleteRef?toDeleteRef.bazarItemId:null))}); }catch(e){}
+    try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id, bazarItemId: toDeleteRef?toDeleteRef.bazarItemId:null}); }catch(e){}
   }
 
   function addPersonWithLoan(kind, data){
@@ -3740,16 +3692,14 @@ setTimeout(()=>{
   function deleteHistoryEntry(x){
     if(x.type==='income' || x.type==='expense'){
       let toDeleteRef = null;
-      var bazarIdForReset2 = null;
-      setTransactions(function(list){
-        const toDel = list.find(function(t){ return t.id===x.id; });
+      setTransactions(list=>{
+        const toDel = list.find(t=>t.id===x.id);
         toDeleteRef = toDel;
-        if(toDel && toDel.bazarItemId) bazarIdForReset2 = toDel.bazarItemId;
-        return list.filter(function(t){ return t.id!==x.id; });
+        if(toDel && toDel.bazarItemId){
+          setBazarList(blist => blist.map(b=> b.id===toDel.bazarItemId ? {...b, bought:false} : b));
+        }
+        return list.filter(t=>t.id!==x.id);
       });
-      if(bazarIdForReset2){
-        setBazarList(function(blist){ return blist.map(function(b){ return b.id===bazarIdForReset2 ? Object.assign({}, b, {bought:false}) : b; }); });
-      }
       try{ if(window._bazarChannel) window._bazarChannel.postMessage({type:'tx_deleted', id: x.id, bazarItemId: toDeleteRef?toDeleteRef.bazarItemId:null}); }catch(e){}
     } else if(x.type==='bank_loan'){
       setBankLoans(list=>list.filter(b=>b.id!==x.id));
@@ -3912,26 +3862,7 @@ setTimeout(()=>{
         )
       ),
 
-            h('div', null,
-        h('h2', {className:'text-[18px] font-bold mb-3'}, t.bazar||'বাজার'),
-        h('div', {className:'grid grid-cols-3 gap-3'},
-          h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#F9F5EB] rounded-[20px] p-3.5 border border-[#F3E8D3] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[11px] font-semibold text-[#8B7355]'}, lang==='en' ? 'Bazar List' : 'বাজার লিস্ট'),
-            h('p', {className:'text-[14px] font-bold mt-1'}, (bazarList.length + (lang==='en' ? ' items' : ' টি'))),
-            h('p', {className:'text-[14px] font-bold text-[#2D2A26] mt-1'}, '৳' + bazarList.reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
-          ),
-          h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#E8F5E9] rounded-[20px] p-3.5 border border-[#C8E6C9] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[11px] font-semibold text-[#2E7D32]'}, lang==='en' ? 'Bought' : 'কেনা হয়েছে'),
-            h('p', {className:'text-[14px] font-bold mt-1 text-[#1B5E20]'}, (bazarList.filter(x=>x.bought).length + (lang==='en' ? ' items' : ' টি'))),
-            h('p', {className:'text-[14px] font-bold text-[#1B5E20] mt-1'}, '৳' + bazarList.filter(x=>x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
-          ),
-          h('div', {onClick:()=>setAddType('bazar'), className:'bg-[#FFEBEE] rounded-[20px] p-3.5 border border-[#FFCDD2] cursor-pointer active:scale-[0.98] transition-transform'},
-            h('p', {className:'text-[11px] font-semibold text-[#C62828]'}, lang==='en' ? 'Not Bought' : 'কেনা হয় নি'),
-            h('p', {className:'text-[14px] font-bold mt-1 text-[#B71C1C]'}, (bazarList.filter(x=>!x.bought).length + (lang==='en' ? ' items' : ' টি'))),
-            h('p', {className:'text-[14px] font-bold text-[#B71C1C] mt-1'}, '৳' + bazarList.filter(x=>!x.bought).reduce((a,b)=>a+(parseFloat(b.amount)||0),0))
-          )
-        )
-      ),
+
 
       h('div', null,
         h('h2', {className:'text-[18px] font-bold mb-3'}, t.loansReceivables),
