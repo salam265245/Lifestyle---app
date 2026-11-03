@@ -100,6 +100,27 @@
   }
 }
 
+
+@keyframes expenseSlideDown {
+  0% { transform: translate(-50%, -150%); opacity: 0; }
+  20% { transform: translate(-50%, 0); opacity: 1; }
+  80% { transform: translate(-50%, 0); opacity: 1; }
+  100% { transform: translate(-50%, -150%); opacity: 0; }
+}
+.expense-popup-anim {
+  animation: expenseSlideDown 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.expense-top-popup {
+  position: fixed !important;
+  top: 12px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 9999 !important;
+  max-width: 90vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -393,28 +414,56 @@ function loadLS(key, fallback){
 }
 function saveLS(key, val){
   try{
-    localStorage.setItem(key, JSON.stringify(val));
+    var jsonStr;
+    try{ jsonStr = JSON.stringify(val); }catch(se){
+      try{ console.warn('saveLS stringify failed', key, se); }catch(_){}
+      return false;
+    }
+    localStorage.setItem(key, jsonStr);
+    try{
+      var chk = localStorage.getItem(key);
+      if(chk===null) throw new Error('verify-null');
+    }catch(ve){
+      try{ localStorage.setItem(key, jsonStr); }catch(_){}
+    }
+    return true;
   }catch(e){
     try{
-      var isQuota = e && (e.name==='QuotaExceededError' || e.code===22 || String(e).toLowerCase().indexOf('quota')!==-1);
+      var isQuota = e && (e.name==='QuotaExceededError' || e.code===22 || e.name==='NS_ERROR_DOM_QUOTA_REACHED' || String(e).toLowerCase().indexOf('quota')!==-1);
       if(isQuota){
         try{
           var keysToRemove=[];
           for(var i=0;i<localStorage.length;i++){
             var k=localStorage.key(i);
-            if(k && k.indexOf('lifestyle_draft_')===0) keysToRemove.push(k);
+            if(k && (k.indexOf('lifestyle_draft_')===0 || k.indexOf('lifestyle_last_')===0)) keysToRemove.push(k);
           }
           keysToRemove.forEach(function(k){ try{ localStorage.removeItem(k); }catch(_){} });
         }catch(_){}
-        try{ localStorage.setItem(key, JSON.stringify(val)); return; }catch(e2){}
+        try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e2){}
         if(key!=='lifestyle_profile_photo'){
           try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(_){}
-          try{ localStorage.setItem(key, JSON.stringify(val)); return; }catch(e3){}
+          try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e3){}
         }
+        try{
+          var largeKeys=[];
+          for(var j=0;j<localStorage.length;j++){
+            var kk=localStorage.key(j);
+            if(kk && kk.indexOf('lifestyle_')===0 && kk!==key){ largeKeys.push(kk); }
+          }
+          largeKeys.sort(function(a,b){ try{ return (localStorage.getItem(b)||'').length - (localStorage.getItem(a)||'').length; }catch(_){ return 0; } });
+          for(var t=0;t<Math.min(3,largeKeys.length);t++){
+            try{ localStorage.removeItem(largeKeys[t]); }catch(_){}
+            try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(_){}
+          }
+        }catch(_){}
       }
       console.warn('saveLS failed', key, e);
     }catch(e2){}
+    return false;
   }
+}
+function saveLSImmediate(key, val){
+  try{ return saveLS(key, val); }catch(_){ return false; }
 }
 /* UNIVERSAL CONTACT PICKER - reusable everywhere */
 function getContactPickerFlow(){ return { directGooglePicker: true, noDoneButton: true, autoFillSingle: true, bottomSheetForMultiple: true }; }
@@ -734,6 +783,16 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
       });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
+    cat ? h('div', {className:'px-5 pt-3 pb-2'},
+      h('div', {className:'bg-white border border-[#C9A86A] border-dashed rounded-[12px] px-3 py-2.5 flex items-center gap-2'},
+        h('span', {className:'text-[18px]'}, cat.icon || '💰'),
+        h('div', {className:'flex flex-col'},
+          h('span', {className:'text-[10px] font-bold text-[#8B7355] uppercase tracking-wide'}, lang==='en' ? 'Selected Category' : 'নির্বাচিত খাত'),
+          h('span', {className:'text-[13px] font-bold text-[#2D2A26]'}, lang==='en' ? cat.en : (cat.bn || cat.en))
+        ),
+        h('button', {type:'button', onClick:()=>setCat(null), className:'ml-auto w-6 h-6 rounded-full bg-[#FFFBF7] border border-[#F3E8D3] flex items-center justify-center text-[10px]'}, '✕')
+      )
+    ) : null,
     h('div', {className:'sticky z-20 bg-[#FFFBF7] px-5 py-3 border-b border-[#F3E8D3] flex gap-2', style:{top:'44px'}},
       h('button', {onClick:submit, disabled: !amount || !cat, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveTransaction + (amount ? ' \u2022 ' + fmtMoney(parseFloat(amount)||0) : '')),
       h('button', {type:'button', className:'px-5 py-3.5 rounded-[14px] font-bold text-[14px] bg-white border border-[#F3E8D3]'}, t.cancel)
@@ -905,6 +964,16 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
     onSave({ name: name.trim(), mobile: mobile.trim(), amount: parseFloat(amount)||0, date, note, expectedReturnDate, returnDate: expectedReturnDate, fromChannel: fromChannel, toChannel: toChannel, channel: fromChannel, fromMedium: fromChannel, toMedium: toChannel, medium: fromChannel, method: fromChannel });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
+    cat ? h('div', {className:'px-5 pt-3 pb-2'},
+      h('div', {className:'bg-white border border-[#C9A86A] border-dashed rounded-[12px] px-3 py-2.5 flex items-center gap-2'},
+        h('span', {className:'text-[18px]'}, cat.icon || '💰'),
+        h('div', {className:'flex flex-col'},
+          h('span', {className:'text-[10px] font-bold text-[#8B7355] uppercase tracking-wide'}, lang==='en' ? 'Selected Category' : 'নির্বাচিত খাত'),
+          h('span', {className:'text-[13px] font-bold text-[#2D2A26]'}, lang==='en' ? cat.en : (cat.bn || cat.en))
+        ),
+        h('button', {type:'button', onClick:()=>setCat(null), className:'ml-auto w-6 h-6 rounded-full bg-[#FFFBF7] border border-[#F3E8D3] flex items-center justify-center text-[10px]'}, '✕')
+      )
+    ) : null,
     h('div', {className:'sticky z-20 bg-[#FFFBF7] px-5 py-3 border-b border-[#F3E8D3] flex gap-2', style:{top:'44px'}},
       h('button', {onClick:submit, disabled: !amount, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveLoan),
       h('button', {type:'button', className:'px-5 py-3.5 rounded-[14px] font-bold text-[14px] bg-white border border-[#F3E8D3]'}, t.cancel)
@@ -1028,6 +1097,16 @@ function BankLoanForm({ t, lang, initial, onSave }){
     rows.push({ idx:i, date: ds, paid: !!(paidEmis[i]) });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
+    cat ? h('div', {className:'px-5 pt-3 pb-2'},
+      h('div', {className:'bg-white border border-[#C9A86A] border-dashed rounded-[12px] px-3 py-2.5 flex items-center gap-2'},
+        h('span', {className:'text-[18px]'}, cat.icon || '💰'),
+        h('div', {className:'flex flex-col'},
+          h('span', {className:'text-[10px] font-bold text-[#8B7355] uppercase tracking-wide'}, lang==='en' ? 'Selected Category' : 'নির্বাচিত খাত'),
+          h('span', {className:'text-[13px] font-bold text-[#2D2A26]'}, lang==='en' ? cat.en : (cat.bn || cat.en))
+        ),
+        h('button', {type:'button', onClick:()=>setCat(null), className:'ml-auto w-6 h-6 rounded-full bg-[#FFFBF7] border border-[#F3E8D3] flex items-center justify-center text-[10px]'}, '✕')
+      )
+    ) : null,
     h('div', {className:'sticky z-20 bg-[#FFFBF7] px-5 py-3 border-b border-[#F3E8D3] flex gap-2', style:{top:'44px'}},
       h('button', {onClick:submit, disabled: !amount || !term, className:'flex-1 py-3.5 rounded-[14px] font-bold text-[15px] bg-[#2D2A26] text-white disabled:opacity-40'}, t.saveLoan),
       h('button', {type:'button', className:'px-5 py-3.5 rounded-[14px] font-bold text-[14px] bg-white border border-[#F3E8D3]'}, t.cancel)
@@ -2863,13 +2942,14 @@ function shopManager({ shopList, setshopList, transactions, setTransactions, set
       bought: true
     };
     setPopupItem(null);
-    setshopList(list => list.map(x=> x.id===itemId ? updated : x));
+    setshopList(list => { var nl=list.map(x=> x.id===itemId ? updated : x); try{ saveLSImmediate('lifestyle_shop_list', nl); }catch(_){} return nl; });
     setTransactions(list => {
+      var nl;
       const existsIdx = list.findIndex(tt => tt.shopItemId === itemId);
       if(existsIdx>=0){
         const copy = list.slice();
         copy[existsIdx] = {...copy[existsIdx], amount: amt, category: catEn, categoryBn: catBn, date: pDate, note: itemName + ' (৳'+amt+')'};
-        return copy;
+        nl = copy;
       } else {
         const tx = {
           id: uid(),
@@ -2887,9 +2967,12 @@ function shopManager({ shopList, setshopList, transactions, setTransactions, set
           fromMedium: 'Cash',
           toMedium: 'Cash'
         };
-        return [tx, ...list];
+        nl = [tx, ...list];
       }
+      try{ saveLSImmediate('lifestyle_transactions', nl); }catch(_){}
+      return nl;
     });
+    try{ setExpensePopup(catBn || catEn || ''); }catch(_){}
     if(typeof setToast==='function') setToast('✓ '+itemName+' কেনা - ৳'+amt+' ব্যয় খাতে যোগ হয়েছে');
     try{ if(window._shopChannel) window._shopChannel.postMessage({type:'shop_bought', item: updated}); }catch(e){}
   }
@@ -3468,6 +3551,7 @@ function App(){
   const [editingHistoryPayment, setEditingHistoryPayment] = useState(null);
   const [checklistLoanId, setChecklistLoanId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [expensePopup, setExpensePopup] = useState(null);
   const [search, setSearch] = useState('');
   const [reportFrom, setReportFrom] = useState(thisMonth() + '-01');
   const [reportTo, setReportTo] = useState(today());
@@ -3501,6 +3585,7 @@ function App(){
   useEffect(()=>{ saveLS('lifestyle_user_mobile', userMobile); }, [userMobile]);
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
   useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
+  useEffect(()=>{ if(expensePopup){ const tm = setTimeout(()=>setExpensePopup(null), 2500); return ()=>clearTimeout(tm); } }, [expensePopup]);
   
 // AUTO-FIX for stuck Pending sync
 setTimeout(()=>{
@@ -3555,19 +3640,31 @@ setTimeout(()=>{
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
     if(tx.shopItemId){
-      setshopList(blist => blist.map(b => {
-        if(b.id===tx.shopItemId){
-          return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
-        }
-        return b;
-      }));
+      setshopList(blist => {
+        var nb = blist.map(b => {
+          if(b.id===tx.shopItemId){
+            return {...b, amount: tx.amount, category: tx.category, categoryBn: tx.categoryBn||tx.category, date: tx.date, bought: true };
+          }
+          return b;
+        });
+        try{ saveLSImmediate('lifestyle_shop_list', nb); }catch(_){}
+        return nb;
+      });
     }
     setTransactions(list => {
       const exists = list.some(x=>x.id===tx.id);
-      return exists ? list.map(x=>x.id===tx.id?tx:x) : [tx, ...list];
+      var nl = exists ? list.map(x=>x.id===tx.id?tx:x) : [tx, ...list];
+      try{ saveLSImmediate('lifestyle_transactions', nl); }catch(_){}
+      return nl;
     });
     setAddType(null); setEditingTx(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
+    if(tx && tx.type==='expense'){
+      try{
+        var catName = tx.categoryBn || tx.category || '';
+        setExpensePopup(catName);
+      }catch(_){}
+    }
     try{ if(window._shopChannel) window._shopChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
   function deleteTransaction(id){
@@ -3576,9 +3673,15 @@ setTimeout(()=>{
       const toDelete = list.find(x=>x.id===id);
       toDeleteRef = toDelete;
       if(toDelete && toDelete.shopItemId){
-        setshopList(blist => blist.map(b=> b.id===toDelete.shopItemId ? {...b, bought:false} : b));
+        setshopList(blist => {
+          var nb = blist.map(b=> b.id===toDelete.shopItemId ? {...b, bought:false} : b);
+          try{ saveLSImmediate('lifestyle_shop_list', nb); }catch(_){}
+          return nb;
+        });
       }
-      return list.filter(x=>x.id!==id);
+      var nl = list.filter(x=>x.id!==id);
+      try{ saveLSImmediate('lifestyle_transactions', nl); }catch(_){}
+      return nl;
     });
     setConfirmDelTx(null);
     if(typeof setToast==='function') setToast('মুছে ফেলা হয়েছে');
@@ -3587,31 +3690,46 @@ setTimeout(()=>{
 
   function addPersonWithLoan(kind, data){
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
+    const storageKey = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
     setPeople(list => {
       const idx = list.findIndex(p => p.name.trim().toLowerCase() === data.name.trim().toLowerCase());
       const loanEntry = { id: uid(), amount: data.amount, date: data.date, medium: data.medium, note: data.note };
+      var nl;
       if(idx >= 0){
         const copy = list.slice();
         copy[idx] = Object.assign({}, copy[idx], { loans: [loanEntry, ...copy[idx].loans] });
-        return copy;
+        nl = copy;
+      } else {
+        nl = [{ id: uid(), name: data.name, mobile: data.mobile, loans:[loanEntry], payments:[] }, ...list];
       }
-      return [{ id: uid(), name: data.name, mobile: data.mobile, loans:[loanEntry], payments:[] }, ...list];
+      try{ saveLSImmediate(storageKey, nl); }catch(_){}
+      return nl;
     });
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
   }
   function updatePerson(kind, updated){
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
-    setPeople(list => list.map(p => p.id===updated.id ? updated : p));
+    const storageKey = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
+    setPeople(list => {
+      var nl = list.map(p => p.id===updated.id ? updated : p);
+      try{ saveLSImmediate(storageKey, nl); }catch(_){}
+      return nl;
+    });
   }
   function deletePerson(kind, id){
     const list = kind==='given' ? peopleGiven : peopleTaken;
     const person = list.find(p=>p.id===id);
     if(person){
       const trashItem = {trashId: (typeof uid==='function'?uid():Date.now()+''+Math.random()), kind: kind, person: person, deletedAt: new Date().toISOString(), name: person.name};
-      setPeopleTrash(prev=> [trashItem, ...prev]);
+      setPeopleTrash(prev=> { var nl= [trashItem, ...prev]; try{ saveLSImmediate('lifestyle_people_trash', nl); }catch(_){} return nl; });
     }
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
-    setPeople(list => list.filter(p=>p.id!==id));
+    const storageKey = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
+    setPeople(list => {
+      var nl = list.filter(p=>p.id!==id);
+      try{ saveLSImmediate(storageKey, nl); }catch(_){}
+      return nl;
+    });
     customSetPage(kind);
     setOpenPersonId(null);
   }
@@ -3619,11 +3737,14 @@ setTimeout(()=>{
     const item = peopleTrash.find(t=>t.trashId===trashId);
     if(!item) return;
     const setPeople = item.kind==='given' ? setPeopleGiven : setPeopleTaken;
+    const storageKey = item.kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
     setPeople(prev=> {
       if(prev.some(p=>p.id===item.person.id)) return prev;
-      return [item.person, ...prev];
+      var nl = [item.person, ...prev];
+      try{ saveLSImmediate(storageKey, nl); }catch(_){}
+      return nl;
     });
-    setPeopleTrash(prev=> prev.filter(t=>t.trashId!==trashId));
+    setPeopleTrash(prev=> { var nl= prev.filter(t=>t.trashId!==trashId); try{ saveLSImmediate('lifestyle_people_trash', nl); }catch(_){} return nl; });
   }
   function permanentDeletePerson(trashId){
     if(!confirm('এটা স্থায়ীভাবে মুছে যাবে, ফিরে পাবেন না। নিশ্চিত?')) return;
@@ -3638,12 +3759,14 @@ setTimeout(()=>{
   function saveBankLoan(loan){
     setBankLoans(list=>{
       const exists = list.some(x=>x.id===loan.id);
-      return exists ? list.map(x=>x.id===loan.id?loan:x) : [loan, ...list];
+      var nl = exists ? list.map(x=>x.id===loan.id?loan:x) : [loan, ...list];
+      try{ saveLSImmediate('lifestyle_bank_loans', nl); }catch(_){}
+      return nl;
     });
     setAddType(null); setEditingBankLoan(null);
   }
   function deleteBankLoan(id){
-    setBankLoans(list=>list.filter(x=>x.id!==id));
+    setBankLoans(list=>{ var nl=list.filter(x=>x.id!==id); try{ saveLSImmediate('lifestyle_bank_loans', nl); }catch(_){} return nl; });
     setConfirmDelBank(null);
   }
   function handleHistoryEdit(x){
@@ -3672,20 +3795,30 @@ setTimeout(()=>{
   function saveEditedHistoryLoan(updated){
     const kind = editingHistoryLoan.kind;
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
-    setPeople(list=> list.map(p=>{
-      if(p.id!==editingHistoryLoan.personId) return p;
-      return Object.assign({}, p, {loans: p.loans.map(l=> l.id===updated.id ? updated : l)});
-    }));
+    const storageKey = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
+    setPeople(list=> {
+      var nl = list.map(p=>{
+        if(p.id!==editingHistoryLoan.personId) return p;
+        return Object.assign({}, p, {loans: p.loans.map(l=> l.id===updated.id ? updated : l)});
+      });
+      try{ saveLSImmediate(storageKey, nl); }catch(_){}
+      return nl;
+    });
     setEditingHistoryLoan(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
   }
   function saveEditedHistoryPayment(updated){
     const kind = editingHistoryPayment.kind;
     const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
-    setPeople(list=> list.map(p=>{
-      if(p.id!==editingHistoryPayment.personId) return p;
-      return Object.assign({}, p, {payments: p.payments.map(pay=> pay.id===updated.id ? updated : pay)});
-    }));
+    const storageKey = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
+    setPeople(list=> {
+      var nl = list.map(p=>{
+        if(p.id!==editingHistoryPayment.personId) return p;
+        return Object.assign({}, p, {payments: p.payments.map(pay=> pay.id===updated.id ? updated : pay)});
+      });
+      try{ saveLSImmediate(storageKey, nl); }catch(_){}
+      return nl;
+    });
     setEditingHistoryPayment(null);
     setToast(lang==='en'?'Saved':'সংরক্ষিত হয়েছে');
   }
@@ -3696,27 +3829,25 @@ setTimeout(()=>{
         const toDel = list.find(t=>t.id===x.id);
         toDeleteRef = toDel;
         if(toDel && toDel.shopItemId){
-          setshopList(blist => blist.map(b=> b.id===toDel.shopItemId ? {...b, bought:false} : b));
+          setshopList(blist => { var nb=blist.map(b=> b.id===toDel.shopItemId ? {...b, bought:false} : b); try{ saveLSImmediate('lifestyle_shop_list', nb); }catch(_){} return nb; });
         }
-        return list.filter(t=>t.id!==x.id);
+        var nl = list.filter(t=>t.id!==x.id);
+        try{ saveLSImmediate('lifestyle_transactions', nl); }catch(_){}
+        return nl;
       });
       try{ if(window._shopChannel) window._shopChannel.postMessage({type:'tx_deleted', id: x.id, shopItemId: toDeleteRef?toDeleteRef.shopItemId:null}); }catch(e){}
     } else if(x.type==='bank_loan'){
-      setBankLoans(list=>list.filter(b=>b.id!==x.id));
+      setBankLoans(list=>{ var nl=list.filter(b=>b.id!==x.id); try{ saveLSImmediate('lifestyle_bank_loans', nl); }catch(_){} return nl; });
     } else if(x.type==='loan_given' || x.type==='loan_taken'){
       const kind = x.personKind;
       const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
-      setPeople(list=> list.map(p=>{
-        if(p.id!==x.personId) return p;
-        return Object.assign({}, p, {loans: p.loans.filter(l=>l.id!==x.id)});
-      }));
+      const storageKey = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
+      setPeople(list=> { var nl=list.map(p=>{ if(p.id!==x.personId) return p; return Object.assign({}, p, {loans: p.loans.filter(l=>l.id!==x.id)}); }); try{ saveLSImmediate(storageKey, nl); }catch(_){} return nl; });
     } else if(x.type==='return_received' || x.type==='repayment'){
       const kind = x.personKind;
       const setPeople = kind==='given' ? setPeopleGiven : setPeopleTaken;
-      setPeople(list=> list.map(p=>{
-        if(p.id!==x.personId) return p;
-        return Object.assign({}, p, {payments: p.payments.filter(pay=>pay.id!==x.id)});
-      }));
+      const storageKey = kind==='given' ? 'lifestyle_people_given' : 'lifestyle_people_taken';
+      setPeople(list=> { var nl=list.map(p=>{ if(p.id!==x.personId) return p; return Object.assign({}, p, {payments: p.payments.filter(pay=>pay.id!==x.id)}); }); try{ saveLSImmediate(storageKey, nl); }catch(_){} return nl; });
     }
     setConfirmDelTx(null);
     setConfirmDelBank(null);
@@ -4486,6 +4617,7 @@ setTimeout(()=>{
         )
       ),
       toast ? h('div', {className:'fixed top-20 left-1/2 -translate-x-1/2 z-[80] bg-[#2D2A26] text-white text-[12px] font-bold px-4 py-2 rounded-full'}, toast) : null,
+      expensePopup ? h('div', {className:'expense-top-popup bg-[#DC2626] text-white text-[13px] font-bold px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(220,38,38,0.4)] border-2 border-white expense-popup-anim flex items-center gap-2'}, [h('span', {className:'text-[16px]'}, '💸'), 'ব্যয় যোগ হয়েছে: ' + expensePopup]) : null,
 
             h('div', {className:'px-5 sm:px-6 md:px-8'}, pageContent),
 
