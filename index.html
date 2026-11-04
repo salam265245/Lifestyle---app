@@ -5274,17 +5274,15 @@ function App(){
       const db = firebase.firestore();
       const now = new Date().toISOString();
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
-      // FIX V23 FINAL: State is truth, instant sync, no resurrect
-      let latestBazar = Array.isArray(bazarList) ? bazarList : [];
-      let latestTx = Array.isArray(transactions) ? transactions : [];
-      let latestDailyTasks = Array.isArray(dailyTasks) ? dailyTasks : [];
-      let latestDeletedIds = Array.isArray(bazarDeletedIds) ? bazarDeletedIds : [];
-      try{
-        var lsDel = JSON.parse(localStorage.getItem('lifestyle_bazar_deleted_ids')||'null');
-        if(Array.isArray(lsDel)) latestDeletedIds = Array.from(new Set([].concat(latestDeletedIds, lsDel)));
-        var lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null');
-        if(Array.isArray(lsBazar) && lsBazar.length < latestBazar.length) latestBazar = lsBazar;
-      }catch(e){}
+      // FIX V23 FINAL: State is truth, instant sync, no resurrect from LS unconditionally - fixes Delete returning + Instant Update
+      let latestBazar = bazarList;
+      try{ const lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null'); if(Array.isArray(lsBazar)) latestBazar = lsBazar; }catch(e){}
+      let latestTx = transactions;
+      try{ const lsTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); if(Array.isArray(lsTx)) latestTx = lsTx; }catch(e){}
+      let latestDailyTasks = dailyTasks;
+      try{ const lsDaily = JSON.parse(localStorage.getItem('lifestyle_daily_tasks')||'null'); if(Array.isArray(lsDaily)) latestDailyTasks = lsDaily; }catch(e){}
+      let latestDeletedIds = bazarDeletedIds;
+      try{ const lsDel = JSON.parse(localStorage.getItem('lifestyle_bazar_deleted_ids')||'null'); if(Array.isArray(lsDel)) latestDeletedIds = lsDel; }catch(e){}
       // Ensure deleted ids are filtered from bazarList before upload
       try{ if(Array.isArray(latestBazar) && Array.isArray(latestDeletedIds)) latestBazar = latestBazar.filter(x=> !latestDeletedIds.includes(x.id)); }catch(e){}
       let latestTxDel = [];
@@ -5316,15 +5314,17 @@ function App(){
         const localDeviceId = localStorage.getItem('lifestyle_device_id') || '';
         const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId && !isFirstLoad;
         try{
-          // FIX: Removed blocking guard - let cloud always merge
-          // Old guard caused 4-5 min delay, other phone never got updates
+          var localTxLen = (typeof transactions!=='undefined' && transactions ? transactions.length : 0) + (typeof peopleGiven!=='undefined' && peopleGiven ? peopleGiven.reduce((a,p)=>a+p.loans.length+p.payments.length,0) : 0) + (typeof peopleTaken!=='undefined' && peopleTaken ? peopleTaken.reduce((a,p)=>a+p.loans.length+p.payments.length,0) : 0);
+          var cloudTxLen = (d.transactions?d.transactions.length:0) + (d.peopleGiven?d.peopleGiven.reduce((a,p)=>a+(p.loans?p.loans.length:0)+(p.payments?p.payments.length:0),0):0) + (d.peopleTaken?d.peopleTaken.reduce((a,p)=>a+(p.loans?p.loans.length:0)+(p.payments?p.payments.length:0),0):0);
+          if(!isFirstLoad && localTxLen > cloudTxLen){ lastCloudDataRef.current = d; saveLS('lifestyle_last_sync', Date.now()); cloudLoadedRef.current = true; return; }
         }catch(_){}
-        // If it's our own write, just update refs, don't re-apply
+        // FIX V24: Removed own-write block - always merge for true multi-device sync
+        // Even if deviceId matches, we still want to keep refs but don't block
         if(isOwnWrite){
           lastCloudDataRef.current = d;
           saveLS('lifestyle_last_sync', Date.now());
-          cloudLoadedRef.current = true;
-          return;
+          // Don't return, continue to merge so UI updates
+          // cloudLoadedRef.current = true; return;
         }
         // V19: Always replace from cloud if not own write - fixes intermittent sync
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
@@ -5337,21 +5337,19 @@ function App(){
             setTransactions(prev => {
               try{
                 const fixed = fixDates(d.transactions) || [];
-                // FIX V23: Real-time sync - union of cloud + local, cloud wins for same ID, deleted filtered
+                if(!fixed || fixed.length===0) return prev;
+                // Merge by ID to keep local new bazar expenses
                 const map = new Map();
-                // First add all local (to keep unsynced local)
-                (prev||[]).forEach(function(t){ if(t&&t.id) map.set(t.id, t); });
-                // Then cloud overwrites same IDs (so other phone's edits propagate instantly)
-                (fixed||[]).forEach(function(t){ if(t&&t.id) map.set(t.id, t); });
-                // Remove deleted
+                (prev||[]).forEach(t=>{ if(t&&t.id) map.set(t.id, t); });
+                (fixed||[]).forEach(t=>{ if(t&&t.id) map.set(t.id, t); });
+                // Remove deleted transactions
                 let txDel = [];
-                try{ var ls = JSON.parse(localStorage.getItem('lifestyle_tx_deleted_ids')||'[]'); if(Array.isArray(ls)) txDel=ls; }catch(e){}
-                var allDel = [].concat(d.bazarDeletedIds||[], txDel, d.txDeletedIds||[], d.bazarDeletedIds||[]);
-                allDel.forEach(function(id){ map.delete(id); });
-                var bazarDelSet = new Set([].concat(d.bazarDeletedIds||[], bazarDeletedIds||[]));
-                for(var _it of map){ var _id=_it[0], _t=_it[1]; if(_t && _t.bazarItemId && bazarDelSet.has(_t.bazarItemId)) map.delete(_id); }
-                var merged = Array.from(map.values());
-                try{ localStorage.setItem('lifestyle_transactions', JSON.stringify(merged)); }catch(e){}
+                try{ const ls = JSON.parse(localStorage.getItem('lifestyle_tx_deleted_ids')||'[]'); if(Array.isArray(ls)) txDel=ls; }catch(e){}
+                const allDel = [...(d.bazarDeletedIds||[]), ...txDel, ...(d.txDeletedIds||[]), ...(d.bazarDeletedIds||[])];
+                allDel.forEach(id=> map.delete(id));
+                const bazarDelSet = new Set(d.bazarDeletedIds||bazarDeletedIds||[]);
+                for(const [id, t] of map){ if(t && t.bazarItemId && bazarDelSet.has(t.bazarItemId)) map.delete(id); }
+                const merged = Array.from(map.values());
                 return merged;
               }catch(e){ return fixDates(d.transactions) || []; }
             });
@@ -5402,9 +5400,7 @@ function App(){
     if(!googleUser || !googleUser.uid) return;
     if(!cloudLoadedRef.current) return;
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
-    syncDebounceRef.current = setTimeout(()=>{ 
-      syncToCloud(googleUser);
-    }, 300); // FIX: 600->300ms for faster cross-phone sync
+    syncDebounceRef.current = setTimeout(()=>{ syncToCloud(googleUser); }, 150);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
   }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, bazarDeletedIds, dailyTasks, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
@@ -5835,9 +5831,12 @@ setTimeout(()=>{
       !isOnline ? h('div', {className:'bg-[#FFEBEE] border border-[#FFCDD2] rounded-[12px] p-2.5 flex items-center gap-2'}, h('span', {className:'text-[14px]'}, '📴'), h('div', {className:'flex-1'}, h('p', {className:'text-[11px] font-bold text-[#B71C1C]'}, lang==='en'?'Offline Mode - Data saved locally':'অফলাইন - ডাটা লোকালি সেভ হচ্ছে'), h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en'?'Will auto sync when online':'অনলাইনে এলে অটো সিঙ্ক হবে')), h('span', {className:'w-2 h-2 rounded-full bg-[#B71C1C] animate-pulse'})) : offlineQueue ? h('div', {className:'bg-[#FFF8E1] border border-[#FFE082] rounded-[12px] p-2.5 flex items-center gap-2'}, h('span', {className:'text-[14px]'}, '⏳'), h('div', {className:'flex-1'}, h('p', {className:'text-[11px] font-bold text-[#8B7355]'}, lang==='en'?'Pending sync':'পেন্ডিং সিঙ্ক'), h('p', {className:'text-[10px] text-[#8B7355]'}, lang==='en'?'Data will sync automatically':'অটো সিঙ্ক হবে')), h('button', {onClick:()=>{ if(googleUser) { syncToCloud(googleUser); setToast('Syncing...'); } }, className:'px-2.5 py-1 rounded-full bg-[#2D2A26] text-white text-[10px] font-bold'}, 'Sync Now')) : null,
       googleUser ? h('div', {className:'bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
         null,
-        h('div', {className:'flex gap-2'},
-          h('button', {onClick:()=>{ setToast('Syncing...'); syncFromCloud(googleUser); }, className:'px-3 py-1.5 bg-[#E3F2FD] border border-[#BBDEFB] rounded-full text-[11px] font-bold text-[#1A4D8F]'}, '🔄 Sync Now'),
-          h('button', {onClick:()=>{ syncToCloud(googleUser); setToast('Uploading...'); }, className:'px-3 py-1.5 bg-[#FFF8E1] border border-[#FFE082] rounded-full text-[11px] font-bold text-[#8B7355]'}, '☁️ Upload')
+        h('div', {className:'flex gap-2 items-center'},
+          h('div', {className:'px-3 py-1.5 bg-[#E8F5E9] border border-[#A5D6A7] rounded-full text-[11px] font-bold text-[#2E7D32] flex items-center gap-1'}, 
+            h('span', {className:'w-2 h-2 bg-[#4CAF50] rounded-full animate-pulse inline-block'}, ''),
+            ' Auto Sync • Live'
+          ),
+          h('div', {className:'px-3 py-1.5 bg-[#F3E8D3] rounded-full text-[10px] text-[#8B7355]'}, 'No button needed')
         ),
         lastSyncTime ? h('p', {className:'text-[11px] text-[#8B7355]'}, lastSyncTime) : null
       ) : null,
