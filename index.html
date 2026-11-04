@@ -4674,7 +4674,7 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
       bought: true
     };
     if(!amt || amt<=0){ if(typeof setToast==='function') setToast('দাম 0 - Yes করা যাবে না, দাম দিন'); return; }
-    try{ var existingTxs = JSON.parse(localStorage.getItem('lifestyle_transactions')||'[]'); var dup = existingTxs.find(function(tt){ return tt.bazarItemId===itemId && tt.amount===amt && Math.abs(Date.now() - new Date(tt.date||Date.now()).getTime()) < 500; }); if(dup){ if(typeof setToast==='function') setToast('আগেই যোগ হয়েছে'); return; } }catch(e){}
+    try{ const existingTxs = JSON.parse(localStorage.getItem('lifestyle_transactions')||'[]'); const dup = existingTxs.find(tt=> tt.bazarItemId===itemId && tt.amount===amt && (Date.now() - new Date(tt.date).getTime() < 3000)); if(dup){ if(typeof setToast==='function') setToast('আগেই যোগ হয়েছে'); return; } }catch(e){}
     setPopupItem(null);
     setBazarList(prev => {
       const updatedList = prev.map(x=> x.id===itemId ? updated : x);
@@ -4716,25 +4716,13 @@ function BazarManager({ bazarList, setBazarList, transactions, setTransactions, 
 
   function markNo(item){
     if(item.bought){
-      try{
-        var curTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'[]');
-        var linked = (Array.isArray(curTx)?curTx:[]).filter(function(tt){return tt.bazarItemId===item.id;}).map(function(tt){return tt.id;});
-        var curDel = JSON.parse(localStorage.getItem('lifestyle_tx_deleted_ids')||'[]');
-        var newDel = Array.from(new Set([].concat(Array.isArray(curDel)?curDel:[], linked)));
-        localStorage.setItem('lifestyle_tx_deleted_ids', JSON.stringify(newDel));
-        var curBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'[]');
-        var newBazar = (Array.isArray(curBazar)?curBazar:[]).map(function(x){ return x.id===item.id ? Object.assign({}, x, {bought:false, amount:0}) : x; });
-        localStorage.setItem('lifestyle_bazar_list', JSON.stringify(newBazar));
-        var newTx = (Array.isArray(curTx)?curTx:[]).filter(function(tt){ return tt.bazarItemId !== item.id; });
-        localStorage.setItem('lifestyle_transactions', JSON.stringify(newTx));
-      }catch(e){}
-      setBazarList(function(prev) {
-        var updatedList = prev.map(function(x){ return x.id===item.id ? Object.assign({}, x, {bought:false, amount:0}) : x; });
+      setBazarList(prev => {
+        const updatedList = prev.map(x=> x.id===item.id ? {...x, bought:false, amount:0} : x);
         try{ localStorage.setItem('lifestyle_bazar_list', JSON.stringify(updatedList)); }catch(e){}
         return updatedList;
       });
-      setTransactions(function(prev) {
-        var updatedList = prev.filter(function(tt){ return tt.bazarItemId !== item.id; });
+      setTransactions(prev => {
+        const updatedList = prev.filter(tt => tt.bazarItemId !== item.id);
         try{ localStorage.setItem('lifestyle_transactions', JSON.stringify(updatedList)); }catch(e){}
         return updatedList;
       });
@@ -5286,15 +5274,15 @@ function App(){
       const db = firebase.firestore();
       const now = new Date().toISOString();
       const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
-      // FIX V22 FINAL: State is truth, LS only for sync deletes
+      // FIX V23 FINAL: State is truth, instant sync, no resurrect
       let latestBazar = Array.isArray(bazarList) ? bazarList : [];
       let latestTx = Array.isArray(transactions) ? transactions : [];
       let latestDailyTasks = Array.isArray(dailyTasks) ? dailyTasks : [];
       let latestDeletedIds = Array.isArray(bazarDeletedIds) ? bazarDeletedIds : [];
       try{
-        var lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null');
         var lsDel = JSON.parse(localStorage.getItem('lifestyle_bazar_deleted_ids')||'null');
         if(Array.isArray(lsDel)) latestDeletedIds = Array.from(new Set([].concat(latestDeletedIds, lsDel)));
+        var lsBazar = JSON.parse(localStorage.getItem('lifestyle_bazar_list')||'null');
         if(Array.isArray(lsBazar) && lsBazar.length < latestBazar.length) latestBazar = lsBazar;
       }catch(e){}
       // Ensure deleted ids are filtered from bazarList before upload
@@ -5328,9 +5316,8 @@ function App(){
         const localDeviceId = localStorage.getItem('lifestyle_device_id') || '';
         const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId && !isFirstLoad;
         try{
-          var localTxLen = (typeof transactions!=='undefined' && transactions ? transactions.length : 0) + (typeof peopleGiven!=='undefined' && peopleGiven ? peopleGiven.reduce((a,p)=>a+p.loans.length+p.payments.length,0) : 0) + (typeof peopleTaken!=='undefined' && peopleTaken ? peopleTaken.reduce((a,p)=>a+p.loans.length+p.payments.length,0) : 0);
-          var cloudTxLen = (d.transactions?d.transactions.length:0) + (d.peopleGiven?d.peopleGiven.reduce((a,p)=>a+(p.loans?p.loans.length:0)+(p.payments?p.payments.length:0),0):0) + (d.peopleTaken?d.peopleTaken.reduce((a,p)=>a+(p.loans?p.loans.length:0)+(p.payments?p.payments.length:0),0):0);
-          if(!isFirstLoad && localTxLen > cloudTxLen){ lastCloudDataRef.current = d; saveLS('lifestyle_last_sync', Date.now()); cloudLoadedRef.current = true; return; }
+          // FIX: Removed blocking guard - let cloud always merge
+          // Old guard caused 4-5 min delay, other phone never got updates
         }catch(_){}
         // If it's our own write, just update refs, don't re-apply
         if(isOwnWrite){
@@ -5350,19 +5337,21 @@ function App(){
             setTransactions(prev => {
               try{
                 const fixed = fixDates(d.transactions) || [];
-                if(!fixed || fixed.length===0) return prev;
-                // Merge by ID to keep local new bazar expenses
+                // FIX V23: Real-time sync - union of cloud + local, cloud wins for same ID, deleted filtered
                 const map = new Map();
-                (fixed||[]).forEach(t=>{ if(t&&t.id) map.set(t.id, t); });
-                (prev||[]).forEach(t=>{ if(t&&t.id) map.set(t.id, t); });
-                // Remove deleted transactions
+                // First add all local (to keep unsynced local)
+                (prev||[]).forEach(function(t){ if(t&&t.id) map.set(t.id, t); });
+                // Then cloud overwrites same IDs (so other phone's edits propagate instantly)
+                (fixed||[]).forEach(function(t){ if(t&&t.id) map.set(t.id, t); });
+                // Remove deleted
                 let txDel = [];
-                try{ const ls = JSON.parse(localStorage.getItem('lifestyle_tx_deleted_ids')||'[]'); if(Array.isArray(ls)) txDel=ls; }catch(e){}
-                const allDel = [...(d.bazarDeletedIds||[]), ...txDel, ...(d.txDeletedIds||[]), ...(d.bazarDeletedIds||[])];
-                allDel.forEach(id=> map.delete(id));
-                const bazarDelSet = new Set(d.bazarDeletedIds||bazarDeletedIds||[]);
-                for(const [id, t] of map){ if(t && t.bazarItemId && bazarDelSet.has(t.bazarItemId)) map.delete(id); }
-                const merged = Array.from(map.values());
+                try{ var ls = JSON.parse(localStorage.getItem('lifestyle_tx_deleted_ids')||'[]'); if(Array.isArray(ls)) txDel=ls; }catch(e){}
+                var allDel = [].concat(d.bazarDeletedIds||[], txDel, d.txDeletedIds||[], d.bazarDeletedIds||[]);
+                allDel.forEach(function(id){ map.delete(id); });
+                var bazarDelSet = new Set([].concat(d.bazarDeletedIds||[], bazarDeletedIds||[]));
+                for(var _it of map){ var _id=_it[0], _t=_it[1]; if(_t && _t.bazarItemId && bazarDelSet.has(_t.bazarItemId)) map.delete(_id); }
+                var merged = Array.from(map.values());
+                try{ localStorage.setItem('lifestyle_transactions', JSON.stringify(merged)); }catch(e){}
                 return merged;
               }catch(e){ return fixDates(d.transactions) || []; }
             });
@@ -5415,7 +5404,7 @@ function App(){
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     syncDebounceRef.current = setTimeout(()=>{ 
       syncToCloud(googleUser);
-    }, 600);
+    }, 300); // FIX: 600->300ms for faster cross-phone sync
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
   }, [transactions, peopleGiven, peopleTaken, bankLoans, bazarList, bazarDeletedIds, dailyTasks, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
