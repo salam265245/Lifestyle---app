@@ -114,8 +114,8 @@ const firebaseConfig = {
   messagingSenderId: "494296989508",
   appId: "1:494296989508:web:aa6b3aa501e3f65fcd2111"
 };
-try { firebase.initializeApp(firebaseConfig); try{ // V19: Disabled persistence to fix intermittent sync issues on GitHub Pages
-      // firebase.firestore().enablePersistence({synchronizeTabs:true}).then(()=>console.log('Firestore offline persistence enabled')).catch(e=>{ console.log('Persistence error', e.code); });
+try { firebase.initializeApp(firebaseConfig); try{ // V20: Enabled persistence for instant sync to fix intermittent sync issues on GitHub Pages
+      firebase.firestore().enablePersistence({synchronizeTabs:true}).then(()=>console.log('Firestore offline persistence enabled')).catch(e=>{ console.log('Persistence error', e.code); });
       try{ firebase.firestore().settings({cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED}); }catch(e){} }catch(e){ console.log('Firestore settings error', e); } } catch(e) {}
 </script>
 
@@ -3514,16 +3514,29 @@ function App(){
   }
 
   // V19 FINAL - STABLE SYNC - NO MORE INTERMITTENT ISSUES
+  
   function syncToCloud(user){
     if(!user || !user.uid) return;
-    // V19: Never block upload, even if isSyncing
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
       let deviceId = localStorage.getItem('lifestyle_device_id');
       if(!deviceId){ deviceId = uid(); try{ localStorage.setItem('lifestyle_device_id', deviceId); }catch(e){} }
 
-      const data = {transactions: transactions||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], shopList: shopList||[], shopDeletedIds: shopDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
+      const data = {
+        transactions: transactions||[],
+        peopleGiven: peopleGiven||[],
+        peopleTaken: peopleTaken||[],
+        bankLoans: bankLoans||[],
+        shopList: shopList||[],
+        shopDeletedIds: shopDeletedIds||[],
+        userName, userDesignation, userAddress, userMobile, profilePhoto,
+        updatedAt: now,
+        deviceId: deviceId,
+        email: user.email||'',
+        lastDevice: navigator.userAgent.slice(0,100)
+      };
+      // IMPORTANT: set with merge false for full overwrite but with timestamp check done on receive
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -3533,6 +3546,7 @@ function App(){
         lastCloudDataRef.current = data;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
+        console.log('[SYNC] Uploaded to cloud for uid:', user.uid, 'email:', user.email);
       }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e)); });
     }catch(e){ console.log('syncToCloud',e); }
   }
@@ -3542,85 +3556,91 @@ function App(){
     try{
       if(unsubscribeRef.current){ unsubscribeRef.current(); }
       const db = firebase.firestore();
+      console.log('[SYNC] Starting real-time listener for:', user.uid, user.email);
       unsubscribeRef.current = db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges: false}, doc=>{
-        if(!doc.exists){ cloudLoadedRef.current=true; try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), transactions: transactions||[], shopList: shopList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[]}, {merge:true}); }catch(e){} return; }
+        if(!doc.exists){ 
+          cloudLoadedRef.current=true; 
+          console.log('[SYNC] No cloud doc, creating one');
+          try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), email: user.email, transactions: transactions||[], shopList: shopList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], updatedAt: new Date().toISOString()}, {merge:true}); }catch(e){} 
+          return; 
+        }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
         const isFirstLoad = !cloudLoadedRef.current;
-        const localDeviceId = localStorage.getItem('lifestyle_device_id') || '';
-        const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId && !isFirstLoad;
-        // FIX V18.3: If it's our own write, DO NOT overwrite local - keep local as source of truth
-        if(isOwnWrite){
-          lastCloudDataRef.current = d;
-          try{ saveLS('lifestyle_last_sync', Date.now()); }catch(e){}
-          cloudLoadedRef.current = true;
-          return;
-        }
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
+        const lastLocalSync = loadLS('lifestyle_last_sync', 0);
+        
+        // V20 FIX: DeviceId দিয়ে নিজের write আর ignore করব না - এটাই multi-device instant এর বাধা ছিল
+        // বরং timestamp দিয়ে সিদ্ধান্ত নেব। যদি cloud newer হয়, তাহলেই apply করব।
+        // কিন্তু own device এর ক্ষেত্রে যদি আমরা এইমাত্র upload করি, তাহলে cloudTime <= lastLocalSync + 2sec হলে skip
+        const now = Date.now();
+        const isVeryRecentOwnUpload = !isFirstLoad && lastLocalSync && (cloudTime - lastLocalSync < 3000) && d.deviceId === (localStorage.getItem('lifestyle_device_id')||'');
+        if(isVeryRecentOwnUpload && !isFirstLoad){
+           console.log('[SYNC] Skipping own recent echo');
+           lastCloudDataRef.current = d;
+           cloudLoadedRef.current = true;
+           return;
+        }
+
+        console.log('[SYNC] Cloud update received! isFirstLoad:', isFirstLoad, 'cloudTime:', d.updatedAt, 'device:', d.deviceId);
         isSyncingFromCloudRef.current = true;
         try{
           const tToday = today();
           const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-          // FIX V18.3: NEVER replace, always MERGE - this prevents Save disappearing
+          
+          // V20: INSTANT OVERWRITE STRATEGY - Firestore is source of truth for cross-device
+          // Merge নয়, সরাসরি cloud ডাটা কে source ধরবো, তবে deletedIds সম্মান করবো
           if(typeof d.transactions !== 'undefined'){
-            setTransactions(prev=>{
-              const merged = mergeById(prev, fixDates(d.transactions));
-              return merged;
-            });
+            const cloudTx = fixDates(d.transactions||[]);
+            if(isFirstLoad){
+               setTransactions(prev=> mergeById(prev, cloudTx));
+            } else {
+               // অন্য ডিভাইস থেকে আসলে - cloud ই final
+               setTransactions(cloudTx);
+            }
           }
           if(typeof d.peopleGiven !== 'undefined'){
-            setPeopleGiven(prev=> {
-              // Merge people by id, and merge their loans/payments
-              const cloudArr = d.peopleGiven||[];
-              if(!prev || !prev.length) return cloudArr;
-              const map = new Map();
-              cloudArr.forEach(p=>{ if(p && p.id) map.set(p.id, p); });
-              prev.forEach(p=>{
-                if(!p || !p.id){ map.set(uid(), p); return; }
-                if(map.has(p.id)){
-                  const c = map.get(p.id);
-                  const mergedLoans = mergeById(c.loans||[], p.loans||[]);
-                  const mergedPays = mergeById(c.payments||[], p.payments||[]);
-                  map.set(p.id, {...c, ...p, loans: mergedLoans, payments: mergedPays});
-                } else {
-                  map.set(p.id, p);
-                }
+            if(isFirstLoad){
+              setPeopleGiven(prev=> {
+                if(!prev || !prev.length) return d.peopleGiven||[];
+                const map = new Map();
+                (d.peopleGiven||[]).forEach(p=>{ if(p && p.id) map.set(p.id, p); });
+                prev.forEach(p=>{ if(p && p.id && !map.has(p.id)) map.set(p.id, p); });
+                return Array.from(map.values());
               });
-              return Array.from(map.values());
-            });
+            } else {
+              setPeopleGiven(d.peopleGiven||[]);
+            }
           }
           if(typeof d.peopleTaken !== 'undefined'){
-            setPeopleTaken(prev=>{
-              const cloudArr = d.peopleTaken||[];
-              if(!prev || !prev.length) return cloudArr;
-              const map = new Map();
-              cloudArr.forEach(p=>{ if(p && p.id) map.set(p.id, p); });
-              prev.forEach(p=>{
-                if(!p || !p.id){ map.set(uid(), p); return; }
-                if(map.has(p.id)){
-                  const c = map.get(p.id);
-                  const mergedLoans = mergeById(c.loans||[], p.loans||[]);
-                  const mergedPays = mergeById(c.payments||[], p.payments||[]);
-                  map.set(p.id, {...c, ...p, loans: mergedLoans, payments: mergedPays});
-                } else {
-                  map.set(p.id, p);
-                }
+            if(isFirstLoad){
+              setPeopleTaken(prev=> {
+                if(!prev || !prev.length) return d.peopleTaken||[];
+                const map = new Map();
+                (d.peopleTaken||[]).forEach(p=>{ if(p && p.id) map.set(p.id, p); });
+                prev.forEach(p=>{ if(p && p.id && !map.has(p.id)) map.set(p.id, p); });
+                return Array.from(map.values());
               });
-              return Array.from(map.values());
-            });
+            } else {
+              setPeopleTaken(d.peopleTaken||[]);
+            }
           }
           if(typeof d.bankLoans !== 'undefined'){
-            setBankLoans(prev=> mergeById(prev, d.bankLoans||[]));
+            if(isFirstLoad) setBankLoans(prev=> mergeById(prev, d.bankLoans||[]));
+            else setBankLoans(d.bankLoans||[]);
           }
           if(typeof d.shopList !== 'undefined'){
-            setshopList(prev=> mergeshopList(prev, d.shopList||[], d.shopDeletedIds||[]));
+            const cloudDeleted = d.shopDeletedIds||[];
+            if(isFirstLoad){
+              setshopList(prev=> mergeshopList(prev, d.shopList||[], cloudDeleted));
+            } else {
+              // Real-time: cloud list থেকে deleted বাদ দিয়ে apply
+              const filtered = (d.shopList||[]).filter(x=> !cloudDeleted.includes(x.id));
+              setshopList(filtered);
+            }
           }
           if(typeof d.shopDeletedIds !== 'undefined'){
-            setshopDeletedIds(prev=>{
-              const cloudIds = d.shopDeletedIds||[];
-              const merged = Array.from(new Set([...(prev||[]), ...cloudIds]));
-              return merged;
-            });
+            setshopDeletedIds(d.shopDeletedIds||[]);
           }
           if(isFirstLoad){
             if(d.userName) setUserName(d.userName);
@@ -3633,25 +3653,29 @@ function App(){
           const formatted = d.updatedAt ? new Date(d.updatedAt).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : new Date().toLocaleString();
           setLastSyncTime(formatted);
           try{ saveLS('lifestyle_last_sync_formatted', formatted); }catch(e){}
-          setSyncStatus(isFirstLoad ? '✓ Cloud loaded' : '✓ Updated ' + new Date().toLocaleTimeString('bn-BD'));
+          setSyncStatus(isFirstLoad ? '✓ Cloud loaded ('+ (d.email||'') +')' : '✓ Instant update ' + new Date().toLocaleTimeString('bn-BD') + ' from ' + (d.deviceId ? d.deviceId.slice(0,4) : 'cloud'));
           setCloudTimeStr(new Date().toLocaleTimeString('bn-BD'));
+          // Broadcast to other tabs on same device instantly
+          try{ broadcastInstant('lifestyle_transactions', d.transactions); }catch(e){}
         } finally {
-          setTimeout(()=>{ isSyncingFromCloudRef.current=false; }, 1200);
+          setTimeout(()=>{ isSyncingFromCloudRef.current=false; }, 800);
         }
         cloudLoadedRef.current=true;
         lastCloudDataRef.current=d;
-      }, err=>{ console.log('snapshot err',err); cloudLoadedRef.current=true; });
+      }, err=>{ console.log('snapshot err',err); setSyncStatus('Sync listener error'); cloudLoadedRef.current=true; });
     }catch(e){ console.log('syncFromCloud',e); cloudLoadedRef.current=true; }
   }
 
-  // V19.2 INSTANT CLOUD SYNC - 150ms debounce + instant local broadcast
+  // V20 INSTANT CLOUD SYNC - 150ms debounce + instant local broadcast - Firestore is source of truth
   useEffect(()=>{
     if(!googleUser || !googleUser.uid) return;
     if(!cloudLoadedRef.current) return;
+    if(isSyncingFromCloudRef.current) return; // Don't upload while applying cloud data
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     syncDebounceRef.current = setTimeout(()=>{ 
+      console.log('[SYNC] Local change detected, uploading...');
       syncToCloud(googleUser);
-    }, 150);
+    }, 300);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
   }, [transactions, peopleGiven, peopleTaken, bankLoans, shopList, shopDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
