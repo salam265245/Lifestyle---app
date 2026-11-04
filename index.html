@@ -3520,7 +3520,9 @@ function App(){
     try{
       const db = firebase.firestore();
       const now = new Date().toISOString();
-      const deviceId = localStorage.getItem('lifestyle_device_id') || (localStorage.setItem('lifestyle_device_id', uid()), localStorage.getItem('lifestyle_device_id'));
+      let deviceId = localStorage.getItem('lifestyle_device_id');
+      if(!deviceId){ deviceId = uid(); try{ localStorage.setItem('lifestyle_device_id', deviceId); }catch(e){} }
+
       const data = {transactions: transactions||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], shopList: shopList||[], shopDeletedIds: shopDeletedIds||[], userName, userDesignation, userAddress, userMobile, profilePhoto, updatedAt: now, deviceId: deviceId };
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
@@ -3547,38 +3549,94 @@ function App(){
         const isFirstLoad = !cloudLoadedRef.current;
         const localDeviceId = localStorage.getItem('lifestyle_device_id') || '';
         const isOwnWrite = d.deviceId && localDeviceId && d.deviceId === localDeviceId && !isFirstLoad;
-        // If it's our own write, just update refs, don't re-apply
+        // FIX V18.3: If it's our own write, DO NOT overwrite local - keep local as source of truth
         if(isOwnWrite){
           lastCloudDataRef.current = d;
-          saveLS('lifestyle_last_sync', Date.now());
+          try{ saveLS('lifestyle_last_sync', Date.now()); }catch(e){}
           cloudLoadedRef.current = true;
           return;
         }
-        // V19: Always replace from cloud if not own write - fixes intermittent sync
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
         isSyncingFromCloudRef.current = true;
         try{
           const tToday = today();
           const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
-          if(typeof d.transactions !== 'undefined') setTransactions(fixDates(d.transactions) || []);
-          if(typeof d.peopleGiven !== 'undefined') setPeopleGiven(d.peopleGiven || []);
-          if(typeof d.peopleTaken !== 'undefined') setPeopleTaken(d.peopleTaken || []);
-          if(typeof d.bankLoans !== 'undefined') setBankLoans(d.bankLoans || []);
-          if(typeof d.shopList !== 'undefined') setshopList(d.shopList || []);
-          if(typeof d.shopDeletedIds !== 'undefined') setshopDeletedIds(d.shopDeletedIds || []);
-          if(d.userName) setUserName(d.userName);
-          if(d.userDesignation) setUserDesignation(d.userDesignation);
-          if(d.userAddress) setUserAddress(d.userAddress);
-          if(d.userMobile) setUserMobile(d.userMobile);
-          if(d.profilePhoto) setProfilePhoto(d.profilePhoto);
-          saveLS('lifestyle_last_sync', cloudTime || Date.now());
+          // FIX V18.3: NEVER replace, always MERGE - this prevents Save disappearing
+          if(typeof d.transactions !== 'undefined'){
+            setTransactions(prev=>{
+              const merged = mergeById(prev, fixDates(d.transactions));
+              return merged;
+            });
+          }
+          if(typeof d.peopleGiven !== 'undefined'){
+            setPeopleGiven(prev=> {
+              // Merge people by id, and merge their loans/payments
+              const cloudArr = d.peopleGiven||[];
+              if(!prev || !prev.length) return cloudArr;
+              const map = new Map();
+              cloudArr.forEach(p=>{ if(p && p.id) map.set(p.id, p); });
+              prev.forEach(p=>{
+                if(!p || !p.id){ map.set(uid(), p); return; }
+                if(map.has(p.id)){
+                  const c = map.get(p.id);
+                  const mergedLoans = mergeById(c.loans||[], p.loans||[]);
+                  const mergedPays = mergeById(c.payments||[], p.payments||[]);
+                  map.set(p.id, {...c, ...p, loans: mergedLoans, payments: mergedPays});
+                } else {
+                  map.set(p.id, p);
+                }
+              });
+              return Array.from(map.values());
+            });
+          }
+          if(typeof d.peopleTaken !== 'undefined'){
+            setPeopleTaken(prev=>{
+              const cloudArr = d.peopleTaken||[];
+              if(!prev || !prev.length) return cloudArr;
+              const map = new Map();
+              cloudArr.forEach(p=>{ if(p && p.id) map.set(p.id, p); });
+              prev.forEach(p=>{
+                if(!p || !p.id){ map.set(uid(), p); return; }
+                if(map.has(p.id)){
+                  const c = map.get(p.id);
+                  const mergedLoans = mergeById(c.loans||[], p.loans||[]);
+                  const mergedPays = mergeById(c.payments||[], p.payments||[]);
+                  map.set(p.id, {...c, ...p, loans: mergedLoans, payments: mergedPays});
+                } else {
+                  map.set(p.id, p);
+                }
+              });
+              return Array.from(map.values());
+            });
+          }
+          if(typeof d.bankLoans !== 'undefined'){
+            setBankLoans(prev=> mergeById(prev, d.bankLoans||[]));
+          }
+          if(typeof d.shopList !== 'undefined'){
+            setshopList(prev=> mergeshopList(prev, d.shopList||[], d.shopDeletedIds||[]));
+          }
+          if(typeof d.shopDeletedIds !== 'undefined'){
+            setshopDeletedIds(prev=>{
+              const cloudIds = d.shopDeletedIds||[];
+              const merged = Array.from(new Set([...(prev||[]), ...cloudIds]));
+              return merged;
+            });
+          }
+          if(isFirstLoad){
+            if(d.userName) setUserName(d.userName);
+            if(d.userDesignation) setUserDesignation(d.userDesignation);
+            if(d.userAddress) setUserAddress(d.userAddress);
+            if(d.userMobile) setUserMobile(d.userMobile);
+            if(d.profilePhoto) setProfilePhoto(d.profilePhoto);
+          }
+          try{ saveLS('lifestyle_last_sync', cloudTime || Date.now()); }catch(e){}
           const formatted = d.updatedAt ? new Date(d.updatedAt).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : new Date().toLocaleString();
           setLastSyncTime(formatted);
-          saveLS('lifestyle_last_sync_formatted', formatted);
+          try{ saveLS('lifestyle_last_sync_formatted', formatted); }catch(e){}
           setSyncStatus(isFirstLoad ? '✓ Cloud loaded' : '✓ Updated ' + new Date().toLocaleTimeString('bn-BD'));
           setCloudTimeStr(new Date().toLocaleTimeString('bn-BD'));
         } finally {
-          setTimeout(()=>{ isSyncingFromCloudRef.current=false; }, 800);
+          setTimeout(()=>{ isSyncingFromCloudRef.current=false; }, 1200);
         }
         cloudLoadedRef.current=true;
         lastCloudDataRef.current=d;
