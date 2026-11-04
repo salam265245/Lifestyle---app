@@ -391,9 +391,40 @@ function calcEMI(principal, ratePct, months){
 function loadLS(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; }
 }
+function broadcastInstant(key, val){
+  try{
+    // Custom event for same-tab instant
+    const map = {
+      'lifestyle_transactions': 'transactions',
+      'lifestyle_shop_list': 'shopList',
+      'lifestyle_shop_deleted_ids': 'shopDeletedIds',
+      'lifestyle_people_given': 'peopleGiven',
+      'lifestyle_people_taken': 'peopleTaken',
+      'lifestyle_bank_loans': 'bankLoans'
+    };
+    if(map[key]){
+      window.dispatchEvent(new CustomEvent('lifestyle_instant_sync', {detail:{type: map[key], list: val}}));
+    }
+    // BroadcastChannel instant
+    const ch = window._lifestyleChannel || window._shopChannel;
+    if(ch && ch.postMessage){
+      const deviceId = localStorage.getItem('lifestyle_device_id') || '';
+      if(key==='lifestyle_transactions') ch.postMessage({type:'transactions_sync', list: val, senderId: deviceId});
+      else if(key==='lifestyle_shop_list') ch.postMessage({type:'shop_list_sync', list: val, senderId: deviceId});
+      else if(key==='lifestyle_shop_deleted_ids') ch.postMessage({type:'shop_deleted_ids_sync', list: val, senderId: deviceId});
+      else if(key==='lifestyle_people_given') ch.postMessage({type:'people_given_sync', list: val, senderId: deviceId});
+      else if(key==='lifestyle_people_taken') ch.postMessage({type:'people_taken_sync', list: val, senderId: deviceId});
+      else if(key==='lifestyle_bank_loans') ch.postMessage({type:'bank_loans_sync', list: val, senderId: deviceId});
+    }
+    // Trigger storage-like force sync for APK WebView that doesn't support storage event
+    try{ localStorage.setItem('lifestyle_last_instant_update', Date.now().toString()); }catch(e){}
+  }catch(e){}
+}
 function saveLS(key, val){
   try{
     localStorage.setItem(key, JSON.stringify(val));
+    // INSTANT: broadcast right after save
+    try{ broadcastInstant(key, val); }catch(e){}
   }catch(e){
     try{
       var isQuota = e && (e.name==='QuotaExceededError' || e.code===22 || String(e).toLowerCase().indexOf('quota')!==-1);
@@ -3161,23 +3192,37 @@ function App(){
   const [transactions, setTransactions] = useState(initial.transactions);
   const [shopList, setshopList] = useState(loadLS('lifestyle_shop_list', []));
 
-  // V18.1 BroadcastChannel for instant same-device sync
+  // V18.2 INSTANT UPDATE - Full data sync across tabs + instant broadcast
   useEffect(()=>{
+    let ch = null;
     try{
       if(typeof BroadcastChannel!=='undefined'){
-        const ch = new BroadcastChannel('lifestyle_v18_sync');
-        window._shopChannel = ch;
+        ch = new BroadcastChannel('lifestyle_v18_sync');
+        window._lifestyleChannel = ch;
+        window._shopChannel = ch; // backward compat
         ch.onmessage = (ev)=>{
           const msg = ev.data||{};
+          if(!msg || !msg.type) return;
+          // Prevent self-echo if senderId matches
+          try{
+            const myId = localStorage.getItem('lifestyle_device_id');
+            if(msg.senderId && myId && msg.senderId===myId && msg.source==='self') return;
+          }catch(e){}
           if(msg.type==='shop_bought' && msg.item){
             setshopList(prev=>{
               const exists = prev.some(x=>x.id===msg.item.id);
               return exists ? prev.map(x=> x.id===msg.item.id ? msg.item : x) : [msg.item, ...prev];
             });
           }
+          if(msg.type==='shop_list_sync' && Array.isArray(msg.list)){
+            setshopList(msg.list);
+          }
           if(msg.type==='shop_deleted'){
             setshopList(prev=> prev.filter(x=> x.id!==msg.id));
             setTransactions(prev=> prev.filter(tt=> tt.shopItemId!==msg.id));
+          }
+          if(msg.type==='shop_deleted_ids_sync' && Array.isArray(msg.list)){
+            setshopDeletedIds(msg.list);
           }
           if(msg.type==='tx_saved' && msg.tx){
             setTransactions(prev=>{
@@ -3188,16 +3233,105 @@ function App(){
               setshopList(prev=> prev.map(b=> b.id===msg.tx.shopItemId ? {...b, amount: msg.tx.amount, category: msg.tx.category, categoryBn: msg.tx.categoryBn, date: msg.tx.date, bought:true} : b));
             }
           }
+          if(msg.type==='transactions_sync' && Array.isArray(msg.list)){
+            setTransactions(msg.list);
+          }
           if(msg.type==='tx_deleted'){
             setTransactions(prev=> prev.filter(x=>x.id!==msg.id));
             if(msg.shopItemId){
               setshopList(prev=> prev.map(b=> b.id===msg.shopItemId ? {...b, bought:false} : b));
             }
           }
+          if(msg.type==='people_given_sync' && Array.isArray(msg.list)){
+            setPeopleGiven(msg.list);
+          }
+          if(msg.type==='people_taken_sync' && Array.isArray(msg.list)){
+            setPeopleTaken(msg.list);
+          }
+          if(msg.type==='bank_loans_sync' && Array.isArray(msg.list)){
+            setBankLoans(msg.list);
+          }
+          if(msg.type==='full_sync' && msg.data){
+            const d = msg.data;
+            if(d.transactions) setTransactions(d.transactions);
+            if(d.shopList) setshopList(d.shopList);
+            if(d.shopDeletedIds) setshopDeletedIds(d.shopDeletedIds);
+            if(d.peopleGiven) setPeopleGiven(d.peopleGiven);
+            if(d.peopleTaken) setPeopleTaken(d.peopleTaken);
+            if(d.bankLoans) setBankLoans(d.bankLoans);
+          }
         };
-        return ()=>{ try{ ch.close(); }catch(e){} };
       }
     }catch(e){}
+    // Storage event for instant cross-tab (fallback for older WebViews)
+    function onStorage(ev){
+      if(!ev || !ev.key) return;
+      try{
+        if(ev.key==='lifestyle_transactions' && ev.newValue){
+          const arr = JSON.parse(ev.newValue);
+          if(Array.isArray(arr)) setTransactions(arr);
+        }
+        if(ev.key==='lifestyle_shop_list' && ev.newValue){
+          const arr = JSON.parse(ev.newValue);
+          if(Array.isArray(arr)) setshopList(arr);
+        }
+        if(ev.key==='lifestyle_shop_deleted_ids' && ev.newValue){
+          const arr = JSON.parse(ev.newValue);
+          if(Array.isArray(arr)) setshopDeletedIds(arr);
+        }
+        if(ev.key==='lifestyle_people_given' && ev.newValue){
+          const arr = JSON.parse(ev.newValue);
+          if(Array.isArray(arr)) setPeopleGiven(arr);
+        }
+        if(ev.key==='lifestyle_people_taken' && ev.newValue){
+          const arr = JSON.parse(ev.newValue);
+          if(Array.isArray(arr)) setPeopleTaken(arr);
+        }
+        if(ev.key==='lifestyle_bank_loans' && ev.newValue){
+          const arr = JSON.parse(ev.newValue);
+          if(Array.isArray(arr)) setBankLoans(arr);
+        }
+        if(ev.key==='lifestyle_force_sync'){
+          // force reload all from LS
+          try{
+            setTransactions(loadLS('lifestyle_transactions', []));
+            setshopList(loadLS('lifestyle_shop_list', []));
+            setshopDeletedIds(loadLS('lifestyle_shop_deleted_ids', []));
+            setPeopleGiven(loadLS('lifestyle_people_given', []));
+            setPeopleTaken(loadLS('lifestyle_people_taken', []));
+            setBankLoans(loadLS('lifestyle_bank_loans', []));
+          }catch(e){}
+        }
+      }catch(e){}
+    }
+    function onVisibility(){
+      if(document.visibilityState==='visible'){
+        // Instant refresh from LS when user returns
+        try{
+          const t = loadLS('lifestyle_transactions', null);
+          if(t) setTransactions(t);
+          const s = loadLS('lifestyle_shop_list', null);
+          if(s) setshopList(s);
+        }catch(e){}
+      }
+    }
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onVisibility);
+    // Custom instant event inside same tab (for immediate UI)
+    function onCustomSync(e){
+      const d = e.detail||{};
+      if(d.type==='transactions' && d.list) setTransactions(d.list);
+      if(d.type==='shopList' && d.list) setshopList(d.list);
+    }
+    window.addEventListener('lifestyle_instant_sync', onCustomSync);
+    return ()=>{
+      try{ if(ch) ch.close(); }catch(e){}
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onVisibility);
+      window.removeEventListener('lifestyle_instant_sync', onCustomSync);
+    };
   }, []);
 
 
@@ -3452,14 +3586,14 @@ function App(){
     }catch(e){ console.log('syncFromCloud',e); cloudLoadedRef.current=true; }
   }
 
-  // V19: ONE SINGLE SYNC EFFECT - no more double effects causing race
+  // V19.2 INSTANT CLOUD SYNC - 150ms debounce + instant local broadcast
   useEffect(()=>{
     if(!googleUser || !googleUser.uid) return;
     if(!cloudLoadedRef.current) return;
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     syncDebounceRef.current = setTimeout(()=>{ 
       syncToCloud(googleUser);
-    }, 600);
+    }, 150);
     return ()=>{ if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current); }
   }, [transactions, peopleGiven, peopleTaken, bankLoans, shopList, shopDeletedIds, userName, userDesignation, userAddress, userMobile, profilePhoto]);
 
