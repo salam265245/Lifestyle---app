@@ -1,3 +1,4 @@
+<!-- V18.6 SAVE NOT LOST - Transaction merge prevents stale device from wiping new incomes -->
 <!-- V18.6 DELETE SYNC FIX - Tombstone deletedIds prevents resurrect from Cloud -->
 <!-- V18.6 LANG FIX V2 - getAppLang now handles JSON-stringified "en" + window._currentLang sync -->
 <!-- V18.6 LANG FIX FINAL - Delete warnings now BN/EN auto via delMsg() -->
@@ -17,7 +18,7 @@ V18.4 FIXES:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V18.6 Delete Sync Fix Final</title>
+<title>Lifestyle V18.6 Save Not Lost Final</title>
 
 <link rel="icon" type="image/png" sizes="32x32" id="icon32">
 <link rel="icon" type="image/png" sizes="192x192" id="icon192">
@@ -201,7 +202,7 @@ try{ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); }catc
 
     if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v18-6-delete-sync-fix';
+        const CACHE='lifestyle-v18-6-save-not-lost';
         self.addEventListener('install', e=>{
           self.skipWaiting();
           e.waitUntil(
@@ -3587,6 +3588,62 @@ function App(){
 
   // V19 FINAL - STABLE SYNC - NO MORE INTERMITTENT ISSUES
   
+
+  // ===== STALE DEVICE OVERWRITE FIX - V18.6 SAVE NOT LOST =====
+  // Problem: Phone B (old data, app open in background) did full overwrite set() -> wiped Phone A's 2 new incomes.
+  // Fix: NEVER full-overwrite. Use Firestore transaction: read cloud first, merge by ID (union), newer updatedAt wins, deletedIds respected. Stale device can no longer delete new data.
+  function mergeByIdSmart(localArr, cloudArr){
+    var del = getDeletedIds();
+    var map = new Map();
+    var add = function(it, isLocal){
+      if(!it || !it.id) return;
+      if(del.indexOf(it.id)!==-1) return;
+      var ex = map.get(it.id);
+      if(!ex){ map.set(it.id, it); return; }
+      var ct = new Date(ex.updatedAt||0).getTime();
+      var nt = new Date(it.updatedAt||0).getTime();
+      // If timestamps equal, local wins (it is the device that just saved). If cloud newer, keep cloud.
+      if(isLocal && nt >= ct) map.set(it.id, it);
+      else if(!isLocal && nt > ct) map.set(it.id, it);
+    };
+    (cloudArr||[]).forEach(function(it){ add(it, false); });
+    (localArr||[]).forEach(function(it){ add(it, true); });
+    var out = Array.from(map.values());
+    // Keep no-id items from both (old items without id)
+    (localArr||[]).filter(function(x){return x && !x.id;}).forEach(function(x){ out.push(x); });
+    (cloudArr||[]).filter(function(x){return x && !x.id;}).forEach(function(x){ if(out.indexOf(x)===-1) out.push(x); });
+    return out;
+  }
+  function mergePeopleSmart(localArr, cloudArr){
+    var del = getDeletedIds();
+    var map = new Map();
+    (cloudArr||[]).forEach(function(p){ if(p && p.id && del.indexOf(p.id)===-1) map.set(p.id, JSON.parse(JSON.stringify(p))); });
+    (localArr||[]).forEach(function(p){
+      if(!p || !p.id || del.indexOf(p.id)===-1) return;
+      var ex = map.get(p.id);
+      if(!ex){ map.set(p.id, JSON.parse(JSON.stringify(p))); return; }
+      // Deep merge: loans + payments union by id, other fields newer wins
+      var merged = Object.assign({}, ex, p);
+      var loanMap = new Map();
+      (ex.loans||[]).forEach(function(l){ if(l && l.id && del.indexOf(l.id)===-1) loanMap.set(l.id, l); });
+      (p.loans||[]).forEach(function(l){ if(!l || !l.id || del.indexOf(l.id)===-1) return; var e2=loanMap.get(l.id); if(!e2) loanMap.set(l.id,l); else { var ct=new Date(e2.updatedAt||0).getTime(); var nt=new Date(l.updatedAt||0).getTime(); if(nt>=ct) loanMap.set(l.id,l); } });
+      merged.loans = Array.from(loanMap.values());
+      var payMap = new Map();
+      (ex.payments||[]).forEach(function(pay){ if(pay && pay.id && del.indexOf(pay.id)===-1) payMap.set(pay.id, pay); });
+      (p.payments||[]).forEach(function(pay){ if(!pay || !pay.id || del.indexOf(pay.id)===-1) return; var e3=payMap.get(pay.id); if(!e3) payMap.set(pay.id,pay); else { var ct2=new Date(e3.updatedAt||0).getTime(); var nt2=new Date(pay.updatedAt||0).getTime(); if(nt2>=ct2) payMap.set(pay.id,pay); } });
+      merged.payments = Array.from(payMap.values());
+      // If local person has newer updatedAt, keep local name/mobile, else keep cloud
+      var pCt = new Date(ex.updatedAt||0).getTime(); var pNt = new Date(p.updatedAt||0).getTime();
+      if(pNt < pCt){ merged.name = ex.name; merged.mobile = ex.mobile; }
+      map.set(p.id, merged);
+    });
+    return Array.from(map.values());
+  }
+  function unionDeletedIds(a, b){
+    var seen = {}; var out = [];
+    (a||[]).concat(b||[]).forEach(function(x){ var id = (x && x.id) ? x.id : x; var ts = (x && x.ts) ? x.ts : Date.now(); if(id && !seen[id]){ seen[id]=1; out.push({id:id, ts:ts}); } });
+    return out;
+  }
   function syncToCloud(user){
     if(!user || !user.uid) return;
     try{
@@ -3618,14 +3675,45 @@ function App(){
         email: user.email||'',
         lastDevice: 'web'
       };
-      // IMPORTANT: set with merge false for full overwrite but with timestamp check done on receive
-      db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
+      // STALE DEVICE FIX: NEVER full-overwrite. Transaction reads cloud first, merges by ID, so stale phone cannot wipe new incomes.
+      var docRef = db.collection('users').doc(user.uid);
+      var mergedDataForRef = data;
+      db.runTransaction(function(tx){
+        return tx.get(docRef).then(function(snap){
+          if(!snap.exists){ tx.set(docRef, data); mergedDataForRef = data; return; }
+          var cloud = snap.data()||{};
+          var mergedDeleted = unionDeletedIds(cloud.deletedIds||[], data.deletedIds||[]);
+          // Temporarily update local tombstone so merge helpers respect union
+          try{ localStorage.setItem('lifestyle_deleted_ids', JSON.stringify(mergedDeleted)); }catch(e){}
+          var merged = Object.assign({}, cloud, data, {
+            transactions: mergeByIdSmart(data.transactions||[], cloud.transactions||[]),
+            peopleGiven: mergePeopleSmart(data.peopleGiven||[], cloud.peopleGiven||[]),
+            peopleTaken: mergePeopleSmart(data.peopleTaken||[], cloud.peopleTaken||[]),
+            bankLoans: mergeByIdSmart(data.bankLoans||[], cloud.bankLoans||[]),
+            shopList: mergeByIdSmart(data.shopList||[], cloud.shopList||[]),
+            shopDeletedIds: Array.from(new Set([].concat(cloud.shopDeletedIds||[], data.shopDeletedIds||[]))),
+            deletedIds: mergedDeleted,
+            updatedAt: now,
+            deviceId: deviceId,
+            email: user.email||'',
+            lastDevice: 'web'
+          });
+          // Keep profile fields from local if present, else cloud
+          merged.userName = data.userName || cloud.userName;
+          merged.userDesignation = data.userDesignation || cloud.userDesignation;
+          merged.userAddress = data.userAddress || cloud.userAddress;
+          merged.userMobile = data.userMobile || cloud.userMobile;
+          merged.profilePhoto = data.profilePhoto || cloud.profilePhoto;
+          tx.set(docRef, merged);
+          mergedDataForRef = merged;
+        });
+      }).then(()=>{
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
         setLastSyncTime(timeStr);
         setSyncStatus('✓ Synced ' + new Date().toLocaleTimeString('bn-BD'));
-        lastCloudDataRef.current = data;
+        lastCloudDataRef.current = mergedDataForRef;
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
         console.log('[SYNC] Uploaded');
@@ -3643,7 +3731,7 @@ function App(){
         if(!doc.exists){ 
           cloudLoadedRef.current=true; 
           console.log('[SYNC] No cloud doc, creating one');
-          try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), email: user.email, transactions: transactions||[], shopList: shopList||[], peopleGiven: peopleGiven||[], peopleTaken: peopleTaken||[], bankLoans: bankLoans||[], updatedAt: new Date().toISOString()}, {merge:true}); }catch(e){} 
+          try{ db.collection('users').doc(user.uid).set({createdAt: new Date().toISOString(), email: user.email, transactions: filterDeleted(transactions||[]), shopList: filterDeleted(shopList||[]), peopleGiven: filterDeleted(peopleGiven||[]), peopleTaken: filterDeleted(peopleTaken||[]), bankLoans: filterDeleted(bankLoans||[]), deletedIds: getDeletedIdsFull(), updatedAt: new Date().toISOString()}, {merge:true}); }catch(e){} 
           return; 
         }
         const d = doc.data();
