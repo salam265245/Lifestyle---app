@@ -1,3 +1,4 @@
+<!-- V18.6 DELETE SYNC FIX - Tombstone deletedIds prevents resurrect from Cloud -->
 <!-- V18.6 LANG FIX V2 - getAppLang now handles JSON-stringified "en" + window._currentLang sync -->
 <!-- V18.6 LANG FIX FINAL - Delete warnings now BN/EN auto via delMsg() -->
 <!-- V18.6 DOUBLE CONFIRM FINAL - All deletes now require 2 confirmations: 1st Custom Modal + 2nd Native Confirm -->
@@ -16,7 +17,7 @@ V18.4 FIXES:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V18.6 Lang Fix V2 Final</title>
+<title>Lifestyle V18.6 Delete Sync Fix Final</title>
 
 <link rel="icon" type="image/png" sizes="32x32" id="icon32">
 <link rel="icon" type="image/png" sizes="192x192" id="icon192">
@@ -200,7 +201,7 @@ try{ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); }catc
 
     if('serviceWorker' in navigator && location.protocol!=='file:'){
       const swCode = `
-        const CACHE='lifestyle-v18-6-lang-fix-v2';
+        const CACHE='lifestyle-v18-6-delete-sync-fix';
         self.addEventListener('install', e=>{
           self.skipWaiting();
           e.waitUntil(
@@ -442,6 +443,16 @@ function getAppLang(){ try{
   return 'bn';
 }catch(e){ return 'bn'; } }
 function delMsg(bn, en){ return getAppLang()==='en' ? en : bn; }
+
+// ===== DELETE TOMBSTONE SYSTEM - V18.6 DELETE SYNC FIX =====
+// Problem: delete only removed from local state, but onSnapshot merge re-added cloud item (resurrect).
+// Fix: every delete writes id to tombstone list (localStorage + cloud). Both syncToCloud and onSnapshot filter tombstoned ids.
+function getDeletedIds(){ try{ var raw=localStorage.getItem('lifestyle_deleted_ids'); if(!raw) return []; var arr=JSON.parse(raw); if(!Array.isArray(arr)) return []; var now=Date.now(); var fresh=arr.filter(function(x){ return x && x.id && (now - (x.ts||0) < 30*24*60*60*1000); }); return fresh.map(function(x){return x.id;}); }catch(e){ return []; } }
+function getDeletedIdsFull(){ try{ var raw=localStorage.getItem('lifestyle_deleted_ids'); if(!raw) return []; var arr=JSON.parse(raw); return Array.isArray(arr)?arr:[]; }catch(e){ return []; } }
+function markDeleted(id){ if(!id) return; try{ var full=getDeletedIdsFull(); if(!full.some(function(x){return x.id===id;})){ full.push({id:id, ts:Date.now()}); localStorage.setItem('lifestyle_deleted_ids', JSON.stringify(full)); } try{ window._deletedIds = full.map(function(x){return x.id;}); }catch(e){} }catch(e){} }
+function markDeletedMany(ids){ (ids||[]).forEach(function(id){ markDeleted(id); }); }
+function isDeletedId(id){ if(!id) return false; try{ return getDeletedIds().indexOf(id)!==-1; }catch(e){ return false; } }
+function filterDeleted(arr){ if(!arr) return arr; var del=getDeletedIds(); if(!del.length) return arr; return arr.filter(function(x){ return !x || !x.id || del.indexOf(x.id)===-1; }); }
 function loadLS(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? safeJSONParse(v, fallback) : fallback; }catch(e){ return fallback; }
 }
@@ -1250,6 +1261,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
   function doDelete(){
     if(!confirmDel) return;
     if(!confirm(delMsg('আপনি নিশ্চিত? এই লোন/পেমেন্ট/ব্যক্তি স্থায়ীভাবে মুছে যাবে, আর ফিরে পাবেন না।', 'Are you sure? This loan/payment/person will be permanently deleted and cannot be recovered.'))) return;
+    try{ if(confirmDel){ if(confirmDel.id) markDeleted(confirmDel.id); if(confirmDel.loanId) markDeleted(confirmDel.loanId); if(confirmDel.paymentId) markDeleted(confirmDel.paymentId); if(confirmDel.personId) markDeleted(confirmDel.personId); } }catch(e){}
     if(confirmDel.kind === 'loan'){
       onUpdatePerson(Object.assign({}, person, {loans: person.loans.filter(l=>l.id!==confirmDel.id)}));
     } else if(confirmDel.kind === 'payment'){
@@ -3003,6 +3015,7 @@ function shopManager({ shopList, setshopList, transactions, setTransactions, set
   function deleteItem(id){
     if(!confirm(delMsg('এই আইটেমটি মুছে ফেলবেন?', 'Delete this item?'))) return;
     if(!confirm(delMsg('আপনি নিশ্চিত? বাজার আইটেম + ব্যয় থেকেও মুছে যাবে, ফিরে পাবেন না।', 'Are you sure? This shop item will also be removed from expenses and cannot be recovered.'))) return;
+    markDeleted(id);
     setshopList(list => list.filter(x=> x.id!==id));
     setTransactions(list => list.filter(tt => tt.shopItemId !== id));
     try{
@@ -3511,7 +3524,9 @@ function App(){
 
   function mergeById(localArr, cloudArr){
     if(!cloudArr) return localArr;
-    if(!localArr || !localArr.length) return cloudArr;
+    if(!localArr || !localArr.length) return filterDeleted(cloudArr);
+    cloudArr = filterDeleted(cloudArr);
+    localArr = filterDeleted(localArr);
     const map = new Map();
     (cloudArr||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
     (localArr||[]).forEach(it=>{ if(it && it.id) map.set(it.id, it); });
@@ -3580,13 +3595,23 @@ function App(){
       let deviceId = localStorage.getItem('lifestyle_device_id');
       if(!deviceId){ deviceId = uid(); try{ localStorage.setItem('lifestyle_device_id', deviceId); }catch(e){} }
 
+      // DELETE SYNC FIX: use FRESH localStorage (not stale closure) - stale closure re-uploaded deleted item
+      var freshTx = null, freshGiven=null, freshTaken=null, freshBank=null, freshShop=null;
+      try{ freshTx = JSON.parse(localStorage.getItem('lifestyle_transactions')||'null'); }catch(e){}
+      try{ freshGiven = JSON.parse(localStorage.getItem('lifestyle_people_given')||'null'); }catch(e){}
+      try{ freshTaken = JSON.parse(localStorage.getItem('lifestyle_people_taken')||'null'); }catch(e){}
+      try{ freshBank = JSON.parse(localStorage.getItem('lifestyle_bank_loans')||'null'); }catch(e){}
+      try{ freshShop = JSON.parse(localStorage.getItem('lifestyle_shop_list')||'null'); }catch(e){}
+      var delIds = getDeletedIds();
+      var delFull = getDeletedIdsFull();
       const data = {
-        transactions: transactions||[],
-        peopleGiven: peopleGiven||[],
-        peopleTaken: peopleTaken||[],
-        bankLoans: bankLoans||[],
-        shopList: shopList||[],
+        transactions: filterDeleted(Array.isArray(freshTx)?freshTx:(transactions||[])),
+        peopleGiven: filterDeleted(Array.isArray(freshGiven)?freshGiven:(peopleGiven||[])),
+        peopleTaken: filterDeleted(Array.isArray(freshTaken)?freshTaken:(peopleTaken||[])),
+        bankLoans: filterDeleted(Array.isArray(freshBank)?freshBank:(bankLoans||[])),
+        shopList: filterDeleted(Array.isArray(freshShop)?freshShop:(shopList||[])),
         shopDeletedIds: shopDeletedIds||[],
+        deletedIds: delFull,
         userName, userDesignation, userAddress, userMobile, profilePhoto: (profilePhoto && profilePhoto.length > 80000 ? '' : profilePhoto),
         updatedAt: now,
         deviceId: deviceId,
@@ -3623,6 +3648,19 @@ function App(){
         }
         const d = doc.data();
         if(!d){ cloudLoadedRef.current=true; return; }
+        // DELETE SYNC FIX: merge cloud tombstones + strip deleted ids BEFORE any merge (prevents resurrect)
+        try{
+          var cloudDel = Array.isArray(d.deletedIds) ? d.deletedIds : [];
+          if(cloudDel.length){ var localFull = getDeletedIdsFull(); var seen = {}; localFull.forEach(function(x){ seen[x.id]=1; }); cloudDel.forEach(function(x){ var id = (x && x.id) ? x.id : x; if(id && !seen[id]){ localFull.push({id:id, ts:(x && x.ts)||Date.now()}); seen[id]=1; } }); localStorage.setItem('lifestyle_deleted_ids', JSON.stringify(localFull)); }
+          var delSet = {}; getDeletedIds().forEach(function(id){ delSet[id]=1; });
+          if(Array.isArray(d.transactions)) d.transactions = d.transactions.filter(function(x){ return !x || !x.id || !delSet[x.id]; });
+          if(Array.isArray(d.peopleGiven)) d.peopleGiven = d.peopleGiven.filter(function(p){ return !p || !p.id || !delSet[p.id]; });
+          if(Array.isArray(d.peopleTaken)) d.peopleTaken = d.peopleTaken.filter(function(p){ return !p || !p.id || !delSet[p.id]; });
+          if(Array.isArray(d.bankLoans)) d.bankLoans = d.bankLoans.filter(function(b){ return !b || !b.id || !delSet[b.id]; });
+          if(Array.isArray(d.shopList)) d.shopList = d.shopList.filter(function(x){ return !x || !x.id || !delSet[x.id]; });
+          // Also strip deleted loan/payment ids inside people
+          [d.peopleGiven, d.peopleTaken].forEach(function(arr){ (arr||[]).forEach(function(p){ if(p && Array.isArray(p.loans)) p.loans = p.loans.filter(function(l){ return !l || !l.id || !delSet[l.id]; }); if(p && Array.isArray(p.payments)) p.payments = p.payments.filter(function(pay){ return !pay || !pay.id || !delSet[pay.id]; }); }); });
+        }catch(e){ console.log('[DELETE SYNC] strip err', e); }
         const isFirstLoad = !cloudLoadedRef.current;
         const cloudTime = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
         const lastLocalSync = loadLS('lifestyle_last_sync', 0);
@@ -3926,6 +3964,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
   }
   function deleteTransaction(id){
     if(!confirm(delMsg('আপনি নিশ্চিত? এই আয়/ব্যয় স্থায়ীভাবে মুছে যাবে, আর ফিরে পাবেন না।', 'Are you sure? This income/expense will be permanently deleted and cannot be recovered.'))) return;
+    markDeleted(id);
     let toDeleteRef = null;
     setTransactions(list=>{
       const toDelete = list.find(x=>x.id===id);
@@ -3961,6 +4000,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
   function deletePerson(kind, id){
     if(!confirm(delMsg('এই ব্যক্তি + সব রেকর্ড Recycle Bin এ যাবে, নিশ্চিত?', 'This person + all records will go to Recycle Bin, sure?'))) return;
     if(!confirm(delMsg('আপনি একদম নিশ্চিত? Recycle Bin থেকে Restore করা যাবে, কিন্তু এখন মুছে যাবে।', 'Are you absolutely sure? You can restore from Recycle Bin, but it will be deleted now.'))) return;
+    // NOTE: Trash is NOT permanent - do NOT tombstone here, else Restore would be blocked
     const list = kind==='given' ? peopleGiven : peopleTaken;
     const person = list.find(p=>p.id===id);
     if(person){
@@ -3985,12 +4025,14 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
   function permanentDeletePerson(trashId){
     if(!confirm(delMsg('এটা স্থায়ীভাবে মুছে যাবে, ফিরে পাবেন না। নিশ্চিত?', 'This will be permanently deleted and cannot be recovered. Sure?'))) return;
     if(!confirm(delMsg('শেষবার নিশ্চিত করুন - এই ব্যক্তির সব ডাটা চিরতরে মুছে যাবে!', 'Final confirmation - all data of this person will be deleted forever!'))) return;
+    markDeleted(trashId); try{ var _t=(peopleTrash||[]).find(function(t){return t.trashId===trashId;}); if(_t && _t.person){ markDeleted(_t.person.id); (_t.person.loans||[]).forEach(function(l){markDeleted(l.id);}); (_t.person.payments||[]).forEach(function(p){markDeleted(p.id);}); } }catch(e){}
     setPeopleTrash(prev=> prev.filter(t=>t.trashId!==trashId));
   }
   function emptyTrash(){
     if(peopleTrash.length===0) return;
     if(!confirm(delMsg('সব Recycle Bin খালি করবেন?', 'Empty all Recycle Bin?'))) return;
     if(!confirm(delMsg('আপনি নিশ্চিত? সব Recycle Bin ডাটা চিরতরে মুছে যাবে!', 'Are you sure? All Recycle Bin data will be deleted forever!'))) return;
+    try{ (peopleTrash||[]).forEach(function(t){ markDeleted(t.trashId); if(t.person){ markDeleted(t.person.id); (t.person.loans||[]).forEach(function(l){markDeleted(l.id);}); (t.person.payments||[]).forEach(function(p){markDeleted(p.id);}); } }); }catch(e){}
     setPeopleTrash([]);
   }
 
@@ -4003,6 +4045,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
   }
   function deleteBankLoan(id){
     if(!confirm(delMsg('আপনি নিশ্চিত? এই ব্যাংক লোন স্থায়ীভাবে মুছে যাবে, আর ফিরে পাবেন না।', 'Are you sure? This bank loan will be permanently deleted and cannot be recovered.'))) return;
+    markDeleted(id);
     setBankLoans(list=>list.filter(x=>x.id!==id));
     setConfirmDelBank(null);
   }
@@ -4051,6 +4094,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
   }
   function deleteHistoryEntry(x){
     if(!confirm(delMsg('আপনি নিশ্চিত? এই হিস্ট্রি এন্ট্রি স্থায়ীভাবে মুছে যাবে, আর ফিরে পাবেন না।', 'Are you sure? This history entry will be permanently deleted and cannot be recovered.'))) return;
+    markDeleted(x.id);
     if(x.type==='income' || x.type==='expense'){
       let toDeleteRef = null;
       setTransactions(list=>{
