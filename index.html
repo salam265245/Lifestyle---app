@@ -1,3 +1,4 @@
+<!-- V18.7 NO-OVERWRITE FIX - Video bug: Save -> Stale device (mw3v) overwrote new Salary/Freelance/Expense. Fix: save stamps + sync write, state-first upload, merge-only everywhere, no raw-cloud broadcast, stale-cloud guard -->
 <!-- V18.6 FULL SYNC - Travel + Market + Profile Instant + Trash + Categories all in users doc -->
 <!-- V18.6 DAILY CLOUD SYNC - dailyTasks in users doc, merge by id, deletion tombstone, auto-sync trigger -->
 <!-- V18.6 + V21 3 PARTS MERGED - DailyRoutine + MarketSurvey + TravelManager + PDF copied exact, images cards kept -->
@@ -5282,9 +5283,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
               return exists ? prev.map(x=> x.id===msg.item.id ? msg.item : x) : [msg.item, ...prev];
             });
           }
-          if(msg.type==='shop_list_sync' && Array.isArray(msg.list)){
-            setshopList(msg.list);
-          }
+          if(msg.type==='shop_list_sync' && Array.isArray(msg.list)){ setshopList(function(prev){ return mergeshopList(prev, msg.list); }); }
           if(msg.type==='shop_deleted'){
             setshopList(prev=> prev.filter(x=> x.id!==msg.id));
             setTransactions(prev=> prev.filter(tt=> tt.shopItemId!==msg.id));
@@ -5301,41 +5300,35 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
               setshopList(prev=> prev.map(b=> b.id===msg.tx.shopItemId ? {...b, amount: msg.tx.amount, category: msg.tx.category, categoryBn: msg.tx.categoryBn, date: msg.tx.date, bought:true} : b));
             }
           }
-          if(msg.type==='transactions_sync' && Array.isArray(msg.list)){
-            setTransactions(msg.list);
-          }
+          if(msg.type==='transactions_sync' && Array.isArray(msg.list)){ setTransactions(function(prev){ return mergeById(prev, msg.list); }); }
           if(msg.type==='tx_deleted'){
             setTransactions(prev=> prev.filter(x=>x.id!==msg.id));
             if(msg.shopItemId){
               setshopList(prev=> prev.map(b=> b.id===msg.shopItemId ? {...b, bought:false} : b));
             }
           }
-          if(msg.type==='people_given_sync' && Array.isArray(msg.list)){
-            setPeopleGiven(msg.list);
-          }
-          if(msg.type==='people_taken_sync' && Array.isArray(msg.list)){
-            setPeopleTaken(msg.list);
-          }
+          if(msg.type==='people_given_sync' && Array.isArray(msg.list)){ setPeopleGiven(function(prev){ return mergeById(prev, msg.list); }); }
+          if(msg.type==='people_taken_sync' && Array.isArray(msg.list)){ setPeopleTaken(function(prev){ return mergeById(prev, msg.list); }); }
           if(msg.type==='bank_loans_sync' && Array.isArray(msg.list)){
-           if(msg.type==='daily_tasks_sync' && Array.isArray(msg.list)){ setDailyTasks(msg.list); }
+           if(msg.type==='daily_tasks_sync' && Array.isArray(msg.list)){ setDailyTasks(function(prev){ return mergeById(prev, msg.list); }); }
            if(msg.type==='travel_list_sync' && Array.isArray(msg.list)){ try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(msg.list)); }catch(e){} }
            if(msg.type==='travel_note_sync' && typeof msg.note==='string'){ try{ localStorage.setItem('travel_others_note', msg.note); }catch(e){} }
            if(msg.type==='market_list_sync' && Array.isArray(msg.list)){ try{ localStorage.setItem('market_surveys_list', JSON.stringify(msg.list)); }catch(e){} }
            if(msg.type==='market_form_sync' && msg.form){ try{ localStorage.setItem('market_survey_form', JSON.stringify(msg.form)); }catch(e){} }
-           if(msg.type==='people_trash_sync' && Array.isArray(msg.list)){ setPeopleTrash(msg.list); }
+           if(msg.type==='people_trash_sync' && Array.isArray(msg.list)){ setPeopleTrash(function(prev){ return mergeById(prev, msg.list); }); }
            if(msg.type==='expense_categories_sync' && Array.isArray(msg.list)){ try{ localStorage.setItem('lifestyle_expense_categories_v18', JSON.stringify(msg.list)); }catch(e){} }
-            setBankLoans(msg.list);
+            setBankLoans(function(prev){ return mergeById(prev, msg.list); });
           }
           if(msg.type==='full_sync' && msg.data){
             const d = msg.data;
-            if(d.transactions) setTransactions(d.transactions);
-            if(d.shopList) setshopList(d.shopList);
+            if(d.transactions) setTransactions(function(prev){ return mergeById(prev, d.transactions); });
+            if(d.shopList) setshopList(function(prev){ return mergeshopList(prev, d.shopList); });
             if(d.shopDeletedIds) setshopDeletedIds(d.shopDeletedIds);
-            if(d.peopleGiven) setPeopleGiven(d.peopleGiven);
-            if(d.peopleTaken) setPeopleTaken(d.peopleTaken);
-            if(d.bankLoans) setBankLoans(d.bankLoans);
-             if(d.dailyTasks) setDailyTasks(d.dailyTasks);
-             if(d.peopleTrash) setPeopleTrash(d.peopleTrash);
+            if(d.peopleGiven) setPeopleGiven(function(prev){ return mergeById(prev, d.peopleGiven); });
+            if(d.peopleTaken) setPeopleTaken(function(prev){ return mergeById(prev, d.peopleTaken); });
+            if(d.bankLoans) setBankLoans(function(prev){ return mergeById(prev, d.bankLoans); });
+             if(d.dailyTasks) setDailyTasks(function(prev){ return mergeById(prev, d.dailyTasks); });
+             if(d.peopleTrash) setPeopleTrash(function(prev){ return mergeById(prev, d.peopleTrash); });
              if(d.travelList) { try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(d.travelList)); }catch(e){} }
              if(typeof d.travelOthersNote==='string'){ try{ localStorage.setItem('travel_others_note', d.travelOthersNote); }catch(e){} }
              if(d.marketSurveysList) { try{ localStorage.setItem('market_surveys_list', JSON.stringify(d.marketSurveysList)); }catch(e){} }
@@ -5356,11 +5349,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
       try{
         if(ev.key==='lifestyle_transactions' && ev.newValue){
           const arr = safeJSONParse(ev.newValue, []);
-          if(Array.isArray(arr)) setTransactions(arr);
+          if(Array.isArray(arr)) setTransactions(function(prev){ return mergeById(prev, arr); });
         }
         if(ev.key==='lifestyle_shop_list' && ev.newValue){
           const arr = safeJSONParse(ev.newValue, []);
-          if(Array.isArray(arr)) setshopList(arr);
+          if(Array.isArray(arr)) setshopList(function(prev){ return mergeshopList(prev, arr); });
         }
         if(ev.key==='lifestyle_shop_deleted_ids' && ev.newValue){
           const arr = safeJSONParse(ev.newValue, []);
@@ -5368,18 +5361,18 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
         }
         if(ev.key==='lifestyle_people_given' && ev.newValue){
           const arr = safeJSONParse(ev.newValue, []);
-          if(Array.isArray(arr)) setPeopleGiven(arr);
+          if(Array.isArray(arr)) setPeopleGiven(function(prev){ return mergeById(prev, arr); });
         }
         if(ev.key==='lifestyle_people_taken' && ev.newValue){
           const arr = safeJSONParse(ev.newValue, []);
-          if(Array.isArray(arr)) setPeopleTaken(arr);
+          if(Array.isArray(arr)) setPeopleTaken(function(prev){ return mergeById(prev, arr); });
         }
         if(ev.key==='lifestyle_bank_loans' && ev.newValue){
           const arr = safeJSONParse(ev.newValue, []);
-          if(Array.isArray(arr)) setBankLoans(arr);
+          if(Array.isArray(arr)) setBankLoans(function(prev){ return mergeById(prev, arr); });
         }
-        if(ev.key==='lifestyle_daily_tasks' && ev.newValue){ const arr = safeJSONParse(ev.newValue, []); if(Array.isArray(arr)) setDailyTasks(arr); }
-        if(ev.key==='lifestyle_people_trash' && ev.newValue){ const arr = safeJSONParse(ev.newValue, []); if(Array.isArray(arr)) setPeopleTrash(arr); }
+        if(ev.key==='lifestyle_daily_tasks' && ev.newValue){ const arr = safeJSONParse(ev.newValue, []); if(Array.isArray(arr)) setDailyTasks(function(prev){ return mergeById(prev, arr); }); }
+        if(ev.key==='lifestyle_people_trash' && ev.newValue){ const arr = safeJSONParse(ev.newValue, []); if(Array.isArray(arr)) setPeopleTrash(function(prev){ return mergeById(prev, arr); }); }
         if(ev.key==='lifestyle_travel_list' && ev.newValue){ try{ localStorage.setItem('lifestyle_travel_list', ev.newValue); }catch(e){} }
         if(ev.key==='travel_others_note' && ev.newValue!==null){ try{ localStorage.setItem('travel_others_note', ev.newValue); }catch(e){} }
         if(ev.key==='market_surveys_list' && ev.newValue){ try{ localStorage.setItem('market_surveys_list', ev.newValue); }catch(e){} }
@@ -5674,11 +5667,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 var delIds = getDeletedIds();
       var delFull = getDeletedIdsFull();
       const data = {
-        transactions: filterDeleted(Array.isArray(freshTx)?freshTx:(transactions||[])),
-        peopleGiven: filterDeleted(Array.isArray(freshGiven)?freshGiven:(peopleGiven||[])),
-        peopleTaken: filterDeleted(Array.isArray(freshTaken)?freshTaken:(peopleTaken||[])),
-        bankLoans: filterDeleted(Array.isArray(freshBank)?freshBank:(bankLoans||[])),
-        shopList: filterDeleted(Array.isArray(freshShop)?freshShop:(shopList||[])),
+        transactions: filterDeleted(mergeById(Array.isArray(freshTx)?freshTx:[], (transactions||[]))),
+        peopleGiven: filterDeleted(mergeById(Array.isArray(freshGiven)?freshGiven:[], (peopleGiven||[]))),
+        peopleTaken: filterDeleted(mergeById(Array.isArray(freshTaken)?freshTaken:[], (peopleTaken||[]))),
+        bankLoans: filterDeleted(mergeById(Array.isArray(freshBank)?freshBank:[], (bankLoans||[]))),
+        shopList: filterDeleted(mergeshopList((shopList||[]), Array.isArray(freshShop)?freshShop:[])),
         dailyTasks: (Array.isArray(freshDaily)?freshDaily:(dailyTasks||[])).filter(function(x){ return !x || !x.id || !getDeletedIds().includes(x.id); }),
         travelList: (Array.isArray(freshTravel)?freshTravel:[]).filter(function(x){ return !x || !x.id || !getDeletedIds().includes(x.id); }),
         travelOthersNote: (typeof freshTravelNote==='string' ? freshTravelNote : ''),
@@ -5758,6 +5751,7 @@ var delIds = getDeletedIds();
         }
 
         console.log('[SYNC] Cloud update received! isFirstLoad:', isFirstLoad, 'cloudTime:', d.updatedAt, 'device:', d.deviceId);
+         var _isStaleCloud = false; try{ var _lw = window._lastLocalWriteAt||0; if(cloudTime && _lw && cloudTime < _lw - 1000 && d.deviceId !== (localStorage.getItem('lifestyle_device_id')||'')){ _isStaleCloud = true; console.log('[SYNC] STALE cloud snapshot (other device old data) - merge-only, never delete local'); } }catch(e){}
         isSyncingFromCloudRef.current = true;
         try{
           const tToday = today();
@@ -5782,7 +5776,7 @@ var delIds = getDeletedIds();
                    else {
                      const cTime = new Date(it.updatedAt||0).getTime();
                      const lTime = new Date(existing.updatedAt||0).getTime();
-                     if(cTime >= lTime) map.set(it.id, it);
+                     if(!_isStaleCloud && cTime >= lTime) map.set(it.id, it);
                    }
                  });
                  // Also include cloud items not in local
@@ -5815,7 +5809,7 @@ var delIds = getDeletedIds();
                   else {
                     const ct = new Date(p.updatedAt||0).getTime();
                     const lt = new Date(ex.updatedAt||0).getTime();
-                    if(ct >= lt) map.set(p.id, p);
+                    if(!_isStaleCloud && ct >= lt) map.set(p.id, p);
                   }
                 });
                 return Array.from(map.values());
@@ -5842,7 +5836,7 @@ var delIds = getDeletedIds();
                   else {
                     const ct = new Date(p.updatedAt||0).getTime();
                     const lt = new Date(ex.updatedAt||0).getTime();
-                    if(ct >= lt) map.set(p.id, p);
+                    if(!_isStaleCloud && ct >= lt) map.set(p.id, p);
                   }
                 });
                 return Array.from(map.values());
@@ -5863,7 +5857,7 @@ var delIds = getDeletedIds();
                   else {
                     const ct = new Date(b.updatedAt||0).getTime();
                     const lt = new Date(ex.updatedAt||0).getTime();
-                    if(ct >= lt) map.set(b.id, b);
+                    if(!_isStaleCloud && ct >= lt) map.set(b.id, b);
                   }
                 });
                 return Array.from(map.values());
@@ -5896,7 +5890,7 @@ var delIds = getDeletedIds();
                   else {
                     var ct = new Date(it.updatedAt||it.date||0).getTime();
                     var lt = new Date(ex.updatedAt||ex.date||0).getTime();
-                    if(ct >= lt) map.set(it.id, it);
+                    if(!_isStaleCloud && ct >= lt) map.set(it.id, it);
                   }
                 });
                 try{
@@ -5995,9 +5989,7 @@ if(typeof d.shopDeletedIds !== 'undefined'){
           try{ saveLS('lifestyle_last_sync_formatted', formatted); }catch(e){}
           setSyncStatus(isFirstLoad ? '✓ Cloud loaded ('+ (d.email||'') +')' : '✓ Instant update ' + new Date().toLocaleTimeString('bn-BD') + ' from ' + (d.deviceId ? d.deviceId.slice(0,4) : 'cloud'));
           setCloudTimeStr(new Date().toLocaleTimeString('bn-BD'));
-          // Broadcast to other tabs on same device instantly
-          try{ broadcastInstant('lifestyle_transactions', d.transactions); }catch(e){}
-           try{ broadcastInstant('lifestyle_daily_tasks', d.dailyTasks); }catch(e){}
+          // VIDEO FIX: DO NOT broadcast raw cloud list - it overwrites other tabs with OLD data. onSnapshot on each tab already handles merge.
            try{ broadcastInstant('lifestyle_people_trash', d.peopleTrash); }catch(e){}
            try{ broadcastInstant('lifestyle_travel_list', d.travelList); }catch(e){}
            try{ broadcastInstant('travel_others_note', d.travelOthersNote); }catch(e){}
@@ -6161,6 +6153,14 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
       tx.date = today();
     }
     if(!tx.amount || isNaN(tx.amount)) tx.amount = 0;
+    try{ tx.updatedAt = new Date().toISOString(); }catch(e){}
+    try{ window._lastLocalWriteAt = Date.now(); }catch(e){}
+    try{
+      var _cur = []; try{ _cur = JSON.parse(localStorage.getItem('lifestyle_transactions')||'[]'); }catch(e){}
+      var _ex = _cur.findIndex(function(x){ return x && x.id===tx.id; });
+      if(_ex>=0) _cur[_ex]=tx; else _cur = [tx].concat(_cur);
+      localStorage.setItem('lifestyle_transactions', JSON.stringify(_cur));
+    }catch(e){}
     if(tx.shopItemId){
       setshopList(blist => blist.map(b => {
         if(b.id===tx.shopItemId){
@@ -6178,6 +6178,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
     try{ if(window._shopChannel) window._shopChannel.postMessage({type:'tx_saved', tx}); }catch(e){}
   }
   function deleteTransaction(id){
+    try{ window._lastLocalWriteAt = Date.now(); }catch(e){}
     if(!confirm(delMsg('আপনি নিশ্চিত? এই আয়/ব্যয় স্থায়ীভাবে মুছে যাবে, আর ফিরে পাবেন না।', 'Are you sure? This income/expense will be permanently deleted and cannot be recovered.'))) return;
     markDeleted(id);
     let toDeleteRef = null;
