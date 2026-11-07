@@ -461,6 +461,65 @@ function markDeleted(id){ if(!id) return; try{ var full=getDeletedIdsFull(); if(
 function markDeletedMany(ids){ (ids||[]).forEach(function(id){ markDeleted(id); }); }
 function isDeletedId(id){ if(!id) return false; try{ return getDeletedIds().indexOf(id)!==-1; }catch(e){ return false; } }
 function filterDeleted(arr){ if(!arr) return arr; var del=getDeletedIds(); if(!del.length) return arr; return arr.filter(function(x){ return !x || !x.id || del.indexOf(x.id)===-1; }); }
+
+// ===== SYNC FIX (Nov 2026): per-item last-write-wins helpers =====
+function _stampKey(x){ return x && (x.id||x.trashId); }
+function _stampChanged(prev,next){
+  if(!Array.isArray(next)) return next;
+  var pm={}; (Array.isArray(prev)?prev:[]).forEach(function(x){ var k=_stampKey(x); if(k) pm[k]=x; });
+  var now=new Date().toISOString(), changed=false;
+  var out=next.map(function(x){
+    var k=_stampKey(x);
+    if(!k || typeof x!=='object') return x;
+    var p=pm[k];
+    if(p===x) return x;
+    if(p){
+      try{ var a=Object.assign({},p), b=Object.assign({},x); delete a.updatedAt; delete b.updatedAt; if(JSON.stringify(a)===JSON.stringify(b)) return x; }catch(e){}
+      changed=true; return Object.assign({},x,{updatedAt:now});
+    }
+    if(x.updatedAt) return x;
+    changed=true; return Object.assign({},x,{updatedAt:now});
+  });
+  return changed?out:next;
+}
+function _makeStamped(raw){
+  return function(v){
+    if(window._applyingCloud) return raw(v);
+    try{ window._lastLocalWriteAt=Date.now(); }catch(e){}
+    return raw(function(prev){ var next=(typeof v==='function')?v(prev):v; return _stampChanged(prev,next); });
+  };
+}
+function _mergePerson(ex,p){
+  var ct=new Date(p.updatedAt||0).getTime(), lt=new Date(ex.updatedAt||0).getTime();
+  var pick=(ct>lt)?p:ex, other=(pick===p)?ex:p;
+  var res=Object.assign({},pick);
+  ['loans','payments'].forEach(function(f){
+    var map=new Map();
+    (other[f]||[]).forEach(function(x){ if(x && x.id && !isDeletedId(x.id)) map.set(x.id,x); });
+    (pick[f]||[]).forEach(function(x){ if(x && x.id) map.set(x.id,x); });
+    var noId=(pick[f]||[]).filter(function(x){ return x && !x.id; });
+    res[f]=Array.from(map.values()).concat(noId);
+  });
+  return res;
+}
+function _cloudMissingLocal(d){
+  try{
+    var pairs=[['lifestyle_transactions',d.transactions],['lifestyle_people_given',d.peopleGiven],['lifestyle_people_taken',d.peopleTaken],['lifestyle_bank_loans',d.bankLoans],['lifestyle_shop_list',d.shopList]];
+    for(var i=0;i<pairs.length;i++){
+      var local=[]; try{ local=JSON.parse(localStorage.getItem(pairs[i][0])||'[]')||[]; }catch(e){}
+      var cloud=Array.isArray(pairs[i][1])?pairs[i][1]:[];
+      var cm={}; cloud.forEach(function(x){ if(x && x.id) cm[x.id]=x; });
+      var shopDel=(pairs[i][0]==='lifestyle_shop_list' && Array.isArray(d.shopDeletedIds))?d.shopDeletedIds:[];
+      for(var j=0;j<local.length;j++){
+        var it=local[j]; if(!it||!it.id||isDeletedId(it.id)||shopDel.indexOf(it.id)!==-1) continue;
+        var c=cm[it.id];
+        if(!c) return true;
+        if(it.updatedAt && new Date(it.updatedAt).getTime() > new Date(c.updatedAt||0).getTime()) return true;
+      }
+    }
+  }catch(e){}
+  return false;
+}
 function loadLS(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? safeJSONParse(v, fallback) : fallback; }catch(e){ return fallback; }
 }
@@ -5257,9 +5316,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
   const [addType, setAddType] = useState(loadLS('lifestyle_last_addType', null));
 
   const [transactions, setTransactions] = useState(initial.transactions);
-   const [dailyTasks, setDailyTasks] = useState(loadLS('lifestyle_daily_tasks', []));
+   const [dailyTasks, _setDailyTasksRaw] = useState(loadLS('lifestyle_daily_tasks', []));
+  const setDailyTasks = React.useMemo(function(){ return _makeStamped(_setDailyTasksRaw); }, []);
    useEffect(()=>{ try{ saveLS('lifestyle_daily_tasks', dailyTasks); }catch(e){} }, [dailyTasks]);
-  const [shopList, setshopList] = useState(loadLS('lifestyle_shop_list', []));
+  const [shopList, _setshopListRaw] = useState(loadLS('lifestyle_shop_list', []));
+  const setshopList = React.useMemo(function(){ return _makeStamped(_setshopListRaw); }, []);
 
   // V18.2 INSTANT UPDATE - Full data sync across tabs + instant broadcast
   useEffect(()=>{
@@ -5428,10 +5489,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
 
   const [shopDeletedIds, setshopDeletedIds] = useState(loadLS('lifestyle_shop_deleted_ids', []));
-  const [peopleGiven, setPeopleGiven] = useState(initial.peopleGiven);
-  const [peopleTaken, setPeopleTaken] = useState(initial.peopleTaken);
-  const [peopleTrash, setPeopleTrash] = useState(loadLS('lifestyle_people_trash', []));
-  const [bankLoans, setBankLoans] = useState(initial.bankLoans);
+  const [peopleGiven, _setPeopleGivenRaw] = useState(initial.peopleGiven);
+  const setPeopleGiven = React.useMemo(function(){ return _makeStamped(_setPeopleGivenRaw); }, []);
+  const [peopleTaken, _setPeopleTakenRaw] = useState(initial.peopleTaken);
+  const setPeopleTaken = React.useMemo(function(){ return _makeStamped(_setPeopleTakenRaw); }, []);
+  const [peopleTrash, _setPeopleTrashRaw] = useState(loadLS('lifestyle_people_trash', []));
+  const setPeopleTrash = React.useMemo(function(){ return _makeStamped(_setPeopleTrashRaw); }, []);
+  const [bankLoans, _setBankLoansRaw] = useState(initial.bankLoans);
+  const setBankLoans = React.useMemo(function(){ return _makeStamped(_setBankLoansRaw); }, []);
 
   const [userName, setUserName] = useState(loadLS('lifestyle_user_name', ''));
   const [userDesignation, setUserDesignation] = useState(loadLS('lifestyle_user_designation', ''));
@@ -5688,7 +5753,13 @@ var delIds = getDeletedIds();
         lastDevice: 'web'
       };
       // IMPORTANT: set with merge false for full overwrite but with timestamp check done on receive
+      try{
+        var _sz = new Blob([JSON.stringify(data)]).size;
+        if(_sz > 900000 && data.profilePhoto){ data.profilePhoto = ''; _sz = new Blob([JSON.stringify(data)]).size; }
+        if(_sz > 1000000){ setToast(lang==='en' ? '⚠️ Data is over the 1 MB cloud limit' : '⚠️ ডেটা ক্লাউডের ১ MB সীমা ছাড়িয়েছে'); }
+      }catch(_e){}
       db.collection('users').doc(user.uid).set(data, {merge:true}).then(()=>{
+        window._syncFailCount = 0;
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
@@ -5698,7 +5769,18 @@ var delIds = getDeletedIds();
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
         console.log('[SYNC] Uploaded');
-      }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e)); });
+      }).catch(e=>{
+        console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e));
+        try{
+          var _n = (window._syncFailCount = (window._syncFailCount||0) + 1);
+          if(!window._syncFailToastAt || Date.now()-window._syncFailToastAt > 20000){
+            window._syncFailToastAt = Date.now();
+            setToast((lang==='en' ? '⚠️ Cloud save failed: ' : '⚠️ ক্লাউডে সেভ হয়নি: ') + ((e && e.code) ? e.code : ((e && e.message) || 'error')));
+          }
+          if(window._syncRetryTimer) clearTimeout(window._syncRetryTimer);
+          window._syncRetryTimer = setTimeout(function(){ try{ syncToCloud(user); }catch(_x){} }, Math.min(60000, 5000*_n));
+        }catch(_e){}
+      });
     }catch(e){ console.log('syncToCloud',e); }
   }
 
@@ -5753,6 +5835,7 @@ var delIds = getDeletedIds();
         console.log('[SYNC] Cloud update received! isFirstLoad:', isFirstLoad, 'cloudTime:', d.updatedAt, 'device:', d.deviceId);
          var _isStaleCloud = false; try{ var _lw = window._lastLocalWriteAt||0; if(cloudTime && _lw && cloudTime < _lw - 1000 && d.deviceId !== (localStorage.getItem('lifestyle_device_id')||'')){ _isStaleCloud = true; console.log('[SYNC] STALE cloud snapshot (other device old data) - merge-only, never delete local'); } }catch(e){}
         isSyncingFromCloudRef.current = true;
+        window._applyingCloud = true;
         try{
           const tToday = today();
           const fixDates = (arr)=> (arr||[]).map(x=> !x.date ? Object.assign({}, x, {date: tToday}) : x);
@@ -5776,7 +5859,7 @@ var delIds = getDeletedIds();
                    else {
                      const cTime = new Date(it.updatedAt||0).getTime();
                      const lTime = new Date(existing.updatedAt||0).getTime();
-                     if(!_isStaleCloud && cTime >= lTime) map.set(it.id, it);
+                     if(cTime > lTime) map.set(it.id, it);
                    }
                  });
                  // Also include cloud items not in local
@@ -5809,7 +5892,7 @@ var delIds = getDeletedIds();
                   else {
                     const ct = new Date(p.updatedAt||0).getTime();
                     const lt = new Date(ex.updatedAt||0).getTime();
-                    if(!_isStaleCloud && ct >= lt) map.set(p.id, p);
+                    map.set(p.id, _mergePerson(ex, p));
                   }
                 });
                 return Array.from(map.values());
@@ -5836,7 +5919,7 @@ var delIds = getDeletedIds();
                   else {
                     const ct = new Date(p.updatedAt||0).getTime();
                     const lt = new Date(ex.updatedAt||0).getTime();
-                    if(!_isStaleCloud && ct >= lt) map.set(p.id, p);
+                    map.set(p.id, _mergePerson(ex, p));
                   }
                 });
                 return Array.from(map.values());
@@ -5857,7 +5940,7 @@ var delIds = getDeletedIds();
                   else {
                     const ct = new Date(b.updatedAt||0).getTime();
                     const lt = new Date(ex.updatedAt||0).getTime();
-                    if(!_isStaleCloud && ct >= lt) map.set(b.id, b);
+                    if(ct > lt) map.set(b.id, b);
                   }
                 });
                 return Array.from(map.values());
@@ -5870,8 +5953,22 @@ var delIds = getDeletedIds();
               setshopList(prev=> mergeshopList(prev, d.shopList||[], cloudDeleted));
             } else {
               // Real-time: cloud list থেকে deleted বাদ দিয়ে apply
-              const filtered = (d.shopList||[]).filter(x=> !cloudDeleted.includes(x.id));
-              setshopList(filtered);
+              const filtered = (d.shopList||[]).filter(x=> x && !cloudDeleted.includes(x.id) && !isDeletedId(x.id));
+              setshopList(function(prev){
+                const map = new Map();
+                (prev||[]).forEach(function(x){ if(x && x.id && cloudDeleted.indexOf(x.id)===-1 && !isDeletedId(x.id)) map.set(x.id, x); });
+                filtered.forEach(function(it){
+                  if(!it || !it.id) return;
+                  const ex = map.get(it.id);
+                  if(!ex){ map.set(it.id, it); return; }
+                  const ct = new Date(it.updatedAt||0).getTime();
+                  const lt = new Date(ex.updatedAt||0).getTime();
+                  if(ct > lt) map.set(it.id, it);
+                });
+                const arr = Array.from(map.values());
+                if(prev && arr.length===prev.length && arr.every(function(x,i){ return x===prev[i]; })) return prev;
+                return arr;
+              });
             }
           }
                     // DAILY CLOUD SYNC: merge Daily Tasks by id (cloud wins if newer), same pattern as transactions
@@ -5890,7 +5987,7 @@ var delIds = getDeletedIds();
                   else {
                     var ct = new Date(it.updatedAt||it.date||0).getTime();
                     var lt = new Date(ex.updatedAt||ex.date||0).getTime();
-                    if(!_isStaleCloud && ct >= lt) map.set(it.id, it);
+                    if(ct > lt) map.set(it.id, it);
                   }
                 });
                 try{
@@ -5956,7 +6053,7 @@ var delIds = getDeletedIds();
               setPeopleTrash(function(prev){
                 var map=new Map();
                 (prev||[]).forEach(function(it){ if(it && (it.id||it.trashId)) map.set(it.id||it.trashId, it); });
-                (cloudTrash||[]).forEach(function(it){ if(!it || !(it.id||it.trashId)) return; var k=it.id||it.trashId; if(!map.has(k)) map.set(k, it); else { var ex=map.get(k); var ct=new Date(it.updatedAt||0).getTime(); var lt=new Date(ex.updatedAt||0).getTime(); if(ct>=lt) map.set(k, it); } });
+                (cloudTrash||[]).forEach(function(it){ if(!it || !(it.id||it.trashId)) return; var k=it.id||it.trashId; if(!map.has(k)) map.set(k, it); else { var ex=map.get(k); var ct=new Date(it.updatedAt||0).getTime(); var lt=new Date(ex.updatedAt||0).getTime(); if(ct>lt) map.set(k, it); } });
                 return Array.from(map.values());
               });
             }
@@ -5965,7 +6062,7 @@ var delIds = getDeletedIds();
             try{ localStorage.setItem('lifestyle_expense_categories_v18', JSON.stringify(d.expenseCategories)); try{ broadcastInstant('lifestyle_expense_categories_v18', d.expenseCategories); }catch(e){} }catch(e){}
           }
 if(typeof d.shopDeletedIds !== 'undefined'){
-            setshopDeletedIds(d.shopDeletedIds||[]);
+            setshopDeletedIds(function(prev){ var cur=Array.isArray(prev)?prev:[]; var add=(d.shopDeletedIds||[]).filter(function(id){ return cur.indexOf(id)===-1; }); return add.length? cur.concat(add) : cur; });
           }
                      // FULL SYNC: Profile now instant, not only on first load
            {
@@ -5998,6 +6095,7 @@ if(typeof d.shopDeletedIds !== 'undefined'){
            try{ broadcastInstant('lifestyle_expense_categories_v18', d.expenseCategories); }catch(e){}
           try{ broadcastInstant('lifestyle_daily_tasks', d.dailyTasks); }catch(e){}
         } finally {
+          window._applyingCloud = false;
           setTimeout(()=>{ 
             isSyncingFromCloudRef.current=false; 
             // FIXED: If any change was queued while applying cloud, now upload it
@@ -6005,6 +6103,14 @@ if(typeof d.shopDeletedIds !== 'undefined'){
               pendingSyncRef.current = false;
               console.log('[SYNC] Processing queued upload');
               if(googleUser) syncToCloud(googleUser);
+            } else {
+              try{
+                if(googleUser && _cloudMissingLocal(d) && Date.now()-(window._lastReuploadAt||0) > 4000){
+                  window._lastReuploadAt = Date.now();
+                  console.log('[SYNC] Cloud is missing newer local data - re-uploading');
+                  syncToCloud(googleUser);
+                }
+              }catch(e){}
             }
           }, 150);
         }
