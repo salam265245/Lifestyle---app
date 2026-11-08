@@ -1,3 +1,15 @@
+<!-- V24.0 FINAL BUILD - last deep audit -->
+<!-- V24 FIXES: (1) EMI schedule rows used raw new Date()+setMonth+toISOString - Jan 31 EMI became Mar 3, Feb skipped + UTC shift; now reuses fixed addMonths() (2) getMonthKey + week-range toStr used toISOString - month/week totals shifted at month boundary in US timezones; now local components (3) filterByDateRange/filterByMonth/filterByYear now normDate() - DD/MM/YYYY expenses never counted in totals before -->
+<!-- V23.0 FIXED BUILD -->
+<!-- V23 FIXES: (1) REGRESSION from V21 fixed - a // comment swallowed "|| window.AndroidInterface || typeof Android" so AppsGeyser WebView was NEVER detected; restored (2) NEW normDate(): report date-range + date sorting now normalize DD/MM/YYYY and YYYY/MM/DD to ISO - legacy-format entries were silently dropped / wrongly included in reports and sorted wrong -->
+<!-- V22.0 FIXED BUILD -->
+<!-- V22 FIXES: (1) addMonths: Jan 31 + 1mo was Mar 3 - now clamps to Feb 28/29; date parsed as LOCAL components (new Date YYYY-MM-DD is UTC midnight, shifted a day in US timezones) and output local, NOT toISOString (2) onSnapshot error message friendly BN + toast (3) Toast: long errors 6s, short 2s (4) Sync failed friendly BN -->
+<!-- V21.0 FIXED BUILD -->
+<!-- V21 FIXES: (1) last 2 bare localStorage.setItem wrapped in try/catch - QuotaExceeded no longer breaks login/sync (2) WebView detection fixed: regex was tested against literal "web" so always false, now tests navigator.userAgent (3) alert() replaced with non-blocking toast (alert fallback) - no more UI-blocking dialogs in WebView (4) VERIFIED SAFE, left untouched: innerHTML interpolations are only pages.length (number) + locally-created blob/data URLs, never user text, so no XSS -->
+<!-- V20.0 FIXED BUILD -->
+<!-- V20 FIXES: blob tracker deduped, old PDF URLs revoked on new viewer, window.open blob URL revoked after 60s, 1s full re-render fixed, 5s cloud poll to 30s, delete localStorage wrapped in try/catch. Duplicate functions left as-is: some copies live in different scopes, deleting them broke syntax in testing. -->
+<!-- V19.0 FIXED BUILD -->
+<!-- V19 FIXES: (1) bottom-nav CSS no longer hijacks every fixed div/modal/toast (2) removed scroll-forcer + 3s setInterval CPU/battery leak (3) blob URLs tracked for revoke - PDF memory leak (4) pre/code display:none removed (5) JSON.parse already wrapped in safeJSONParse/try-catch - verified, left intact (6) NOTE: Firebase apiKey is a public client identifier, NOT a secret - real security is Firestore Rules in Firebase Console, set to auth != null + owner-only (7) NOTE: many functions are defined twice with DIFFERENT bodies (PDF builders etc) - later definition wins in JS, so I did NOT delete them; deleting either copy would change behaviour -->
 <!-- V18.6 SAVE NOT LOST - Transaction merge prevents stale device from wiping new incomes -->
 <!-- V18.6 DELETE SYNC FIX - Tombstone deletedIds prevents resurrect from Cloud -->
 <!-- V18.6 LANG FIX V2 - getAppLang now handles JSON-stringified "en" + window._currentLang sync -->
@@ -18,7 +30,7 @@ V18.4 FIXES:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifestyle V18.6 Fixed Sync</title>
+<title>Lifestyle V24 Final</title>
 
 <link rel="icon" type="image/png" sizes="32x32" id="icon32">
 <link rel="icon" type="image/png" sizes="192x192" id="icon192">
@@ -188,7 +200,7 @@ try{ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); }catc
       ]
     };
     const blob = new Blob([JSON.stringify(manifest)], {type: "application/manifest+json"});
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
     let link = document.getElementById('pwa-manifest-link');
     if(link) link.href = url;
 
@@ -402,7 +414,8 @@ function nowTimeStr(){
   return new Date().toLocaleTimeString('bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 }
 
-function addMonths(dateStr, n){ const d = new Date(dateStr); d.setMonth(d.getMonth()+n); return d.toISOString().slice(0,10); }
+function addMonths(dateStr, n){ var m0 = String(dateStr||'').match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m0) return dateStr||''; var d = new Date(+m0[1], +m0[2]-1, +m0[3]); if(isNaN(d.getTime())) return dateStr||''; var day = d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); var lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); d.setDate(Math.min(day, lastDay)); var y=d.getFullYear(), mm=('0'+(d.getMonth()+1)).slice(-2), dd=('0'+d.getDate()).slice(-2); return y+'-'+mm+'-'+dd; } // FIXED V22: (a) Jan 31 + 1mo was Mar 3 - now clamps to Feb 28/29 (b) date parsed as local components, NOT new Date('YYYY-MM-DD') which is UTC midnight and shifts a day in US timezones; output also local, NOT toISOString
+function normDate(d){ try{ if(!d) return ''; d=String(d).trim(); var m=d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2); m=d.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/); if(m) return m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2); return d.slice(0,10); }catch(e){ return ''; } } // FIXED V23: normalizes DD/MM/YYYY and YYYY/MM/DD to YYYY-MM-DD so report range + sorting work for legacy-format dates
 function fmtMoney(n){ n = Math.round(n||0); return '\u09F3 ' + n.toLocaleString('en-US'); }
 function formatDateForPdf(d){
   if(!d) return '';
@@ -450,7 +463,7 @@ function delMsg(bn, en){ return getAppLang()==='en' ? en : bn; }
 // Fix: every delete writes id to tombstone list (localStorage + cloud). Both syncToCloud and onSnapshot filter tombstoned ids.
 function getDeletedIds(){ try{ var raw=localStorage.getItem('lifestyle_deleted_ids'); if(!raw) return []; var arr=JSON.parse(raw); if(!Array.isArray(arr)) return []; var now=Date.now(); var fresh=arr.filter(function(x){ return x && x.id && (now - (x.ts||0) < 30*24*60*60*1000); }); return fresh.map(function(x){return x.id;}); }catch(e){ return []; } }
 function getDeletedIdsFull(){ try{ var raw=localStorage.getItem('lifestyle_deleted_ids'); if(!raw) return []; var arr=JSON.parse(raw); return Array.isArray(arr)?arr:[]; }catch(e){ return []; } }
-function markDeleted(id){ if(!id) return; try{ var full=getDeletedIdsFull(); if(!full.some(function(x){return x.id===id;})){ full.push({id:id, ts:Date.now()}); localStorage.setItem('lifestyle_deleted_ids', JSON.stringify(full)); } try{ window._deletedIds = full.map(function(x){return x.id;}); }catch(e){} }catch(e){} }
+function markDeleted(id){ if(!id) return; try{ var full=getDeletedIdsFull(); if(!full.some(function(x){return x.id===id;})){ full.push({id:id, ts:Date.now()}); try{ localStorage.setItem('lifestyle_deleted_ids', JSON.stringify(full)); }catch(e){} } try{ window._deletedIds = full.map(function(x){return x.id;}); }catch(e){} }catch(e){} }
 function markDeletedMany(ids){ (ids||[]).forEach(function(id){ markDeleted(id); }); }
 function isDeletedId(id){ if(!id) return false; try{ return getDeletedIds().indexOf(id)!==-1; }catch(e){ return false; } }
 function filterDeleted(arr){ if(!arr) return arr; var del=getDeletedIds(); if(!del.length) return arr; return arr.filter(function(x){ return !x || !x.id || del.indexOf(x.id)===-1; }); }
@@ -1131,9 +1144,7 @@ function BankLoanForm({ t, lang, initial, onSave }){
   const n = parseInt(term)||24;
   const rows = [];
   for(let i=0;i<n;i++){
-    const d = new Date(emiStartDate);
-    d.setMonth(d.getMonth()+i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = addMonths(emiStartDate, i); // FIXED V24: was new Date()+setMonth+toISOString - Jan 31 EMI became Mar 3 (Feb skipped) + UTC shift. addMonths() already fixes both.
     rows.push({ idx:i, date: ds, paid: !!(paidEmis[i]) });
   }
   return h('div', {className:'-mx-5 -mt-1.5'},
@@ -1280,7 +1291,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
   const [editMobile, setEditMobile] = useState(person.mobile||'');
   function savePersonEdit(){
     const nm = (editName||'').trim();
-    if(!nm){ alert(t.newPersonName||'Name required'); return; }
+    if(!nm){ (typeof setToast==='function'?setToast:alert)(t.newPersonName||'Name required'); return; }
     onUpdatePerson(Object.assign({}, person, {name:nm, mobile:(editMobile||'').trim()}));
     setEditingPerson(false);
   }
@@ -1313,7 +1324,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             if(!blob) throw new Error('blob null');
             if(typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
             else if(typeof shareOrDownloadPdf==='function') shareOrDownloadPdf(blob, (person.name||'person') + '-loan-history.pdf', (person.name||'person')+' History');
-          }catch(e){ console.error('PDF Error', e); try{ alert('PDF তৈরি করতে সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
+          }catch(e){ console.error('PDF Error', e); try{ (typeof setToast==='function'?setToast:alert)('PDF তৈরি করতে সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
         }, className:'py-2.5 rounded-full bg-white text-[#2D2A26] text-[11px] font-bold'}, '📄 PDF'),
         h('button', {onClick: ()=>{
           try{
@@ -1331,7 +1342,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             var blob = (typeof buildPersonLoanPdfBlob==='function' ? buildPersonLoanPdfBlob(opts) : null);
             if(blob && typeof viewPdfBlob==='function') viewPdfBlob(blob);
             else if(blob && typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
-          }catch(e){ console.error('PDF View Error', e); try{ alert('PDF View সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
+          }catch(e){ console.error('PDF View Error', e); try{ (typeof setToast==='function'?setToast:alert)('PDF View সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
         }, className:'py-2.5 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[11px] font-bold'}, '👁️ View'),
         h('button', {onClick: async ()=>{
           try{
@@ -1343,7 +1354,7 @@ function PersonDetail({ t, lang, kind, person, onBack, onUpdatePerson, onDeleteP
             if(!blob) throw new Error('blob null');
             if(typeof shareOrDownloadPdf==='function') await shareOrDownloadPdf(blob, (person.name||'person') + '-loan-history.pdf', (person.name||'person') + ' History');
             else if(typeof downloadPdfBlob==='function') downloadPdfBlob(blob, (person.name||'person') + '-loan-history.pdf');
-          }catch(e){ console.error('PDF Share Error', e); try{ alert('Share সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
+          }catch(e){ console.error('PDF Share Error', e); try{ (typeof setToast==='function'?setToast:alert)('Share সমস্যা: '+(e&&e.message||'')); }catch(e2){} }
         }, className:'py-2.5 rounded-full bg-[#2D2A26] text-white text-[11px] font-bold'}, '📤 Share')
       )
     ),
@@ -1668,7 +1679,7 @@ function renderReportPages(o){
     }
   }
   function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
-  function inRange(d){ return d && d >= from && d <= to; }
+  function inRange(d){ var nd = normDate(d); return nd && nd >= normDate(from) && nd <= normDate(to); } // FIXED V23: was raw string compare - DD/MM/YYYY dates silently dropped / wrongly included in reports
   function mediumLabel(id){
     if(!id) return '';
     const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
@@ -1709,7 +1720,7 @@ function renderReportPages(o){
     const d=b.loanDate||b.disbursementDate||'';
     if(inRange(d)) all.push({date:d, person:'', category:b.bankName, cat:b.bankName, personName:'', note:(b.termMonths||'')+'mo '+(b.interestRate||'')+'%', fromChannel:'Bank', toChannel:'', medium:'Bank', amount:b.amount, type:'bank'});
   });
-  all.sort((a,b)=>a.date.localeCompare(b.date));
+  all.sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date)));
   if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
     heading(t.reportHeading||'Report');
     drawTableHeader({hidePerson:false, hideCategory:false, singleChannel:false});
@@ -2035,7 +2046,7 @@ function renderPersonLoanPages(o){
       ctx.textAlign='left';
       y+=mergedH+8;
       drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
-      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
+      person.loans.slice().sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date))).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+38);
@@ -2057,7 +2068,7 @@ function renderPersonLoanPages(o){
       ctx.textAlign='left';
       y+=mergedH+8;
       drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
-      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
+      person.payments.slice().sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date))).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
       ensure(70); const thP=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+38);
@@ -2078,7 +2089,7 @@ function renderPersonLoanPages(o){
       ctx.textAlign='left';
       y+=mergedH+8;
       drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false}); tableHeaderActive=true;
-      person.loans.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
+      person.loans.slice().sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date))).forEach(l=>{ rowData({date:l.date, amount:l.amount, note:l.note, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium, toChannel:l.toChannel||l.toMedium||'', medium:l.medium, method:l.method, media:l.media, personName:person.name}, false); });
       ensure(70); const thL=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thL, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thL, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Loan', cDate.x+15, y+38);
@@ -2097,7 +2108,7 @@ function renderPersonLoanPages(o){
       ctx.textAlign='left';
       y+=mergedH+8;
       drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false});
-      person.payments.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
+      person.payments.slice().sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date))).forEach(p=>{ rowData({date:p.date, amount:p.amount, note:p.note, fromChannel:p.fromChannel||p.fromMedium||p.channel||p.method||p.medium, toChannel:p.toChannel||p.toMedium||'', medium:p.method, method:p.method, media:p.method, personName:person.name}, true); });
       ensure(70); const thP=60; const first4W = cAmount.x - cDate.x;
       drawCellRect(cDate.x, first4W, thP, '#FFF8E1'); drawCellRect(cAmount.x, cAmount.w, thP, '#FFF8E1');
       font(32,true); ctx.fillStyle='#000000'; ctx.textAlign='left'; ctx.fillText('Total Payment', cDate.x+15, y+38);
@@ -2343,7 +2354,7 @@ function renderAllLoansPages(o){
   }
   newPage();
   if(from||to){ ensure(60); font(32,true); ctx.fillStyle='#8B7355'; const fDisp=from?formatDateForPdf(from):'...'; const tDisp=to?formatDateForPdf(to):'...'; var _pl2 = (lang==='en' ? 'Statement Period: ' : 'স্টেটমেন্ট সময়কাল: '); ctx.fillText(_pl2 + fDisp + ' → ' + tDisp, M, y); y+=60; }
-  let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, category:'', cat:'', personName:p.name, type:'loan', amount:l.amount, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||l.method||l.media||'', toChannel:l.toChannel||l.toMedium||'', medium:l.medium||l.method||l.media||'', method:l.medium||l.method||l.media||'', media:l.medium||l.method||l.media||'', note:l.note||''})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, category:'', cat:'', personName:p.name, type:'payment', amount:pay.amount, fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||pay.medium||pay.media||'', toChannel:pay.toChannel||pay.toMedium||'', medium:pay.method||pay.medium||pay.media||'', method:pay.method||pay.medium||pay.media||'', media:pay.method||pay.medium||pay.media||'', note:pay.note||''})); }); all.sort((a,b)=>a.date.localeCompare(b.date));
+  let all=[]; people.forEach(p=>{ p.loans.forEach(l=>all.push({date:l.date, person:p.name, category:'', cat:'', personName:p.name, type:'loan', amount:l.amount, fromChannel:l.fromChannel||l.fromMedium||l.channel||l.medium||l.method||l.media||'', toChannel:l.toChannel||l.toMedium||'', medium:l.medium||l.method||l.media||'', method:l.medium||l.method||l.media||'', media:l.medium||l.method||l.media||'', note:l.note||''})); p.payments.forEach(pay=>all.push({date:pay.date, person:p.name, category:'', cat:'', personName:p.name, type:'payment', amount:pay.amount, fromChannel:pay.fromChannel||pay.fromMedium||pay.channel||pay.method||pay.medium||pay.media||'', toChannel:pay.toChannel||pay.toMedium||'', medium:pay.method||pay.medium||pay.media||'', method:pay.method||pay.medium||pay.media||'', media:pay.method||pay.medium||pay.media||'', note:pay.note||''})); }); all.sort((a,b)=>normDate(a.date).localeCompare(normDate(b.date)));
   if(!all.length){ ensure(60); font(26,false); ctx.fillStyle='#8B7355'; ctx.fillText(t.noData, M, y); y+=50; } else {
     heading((lang==='en'?'All '+(kind==='given'?'Given':'Taken')+' History - '+all.length+' records':'সব '+(kind==='given'?'প্রদান':'গ্রহণ')+' - '+all.length+' রেকর্ড'), '#2D2A26');
     drawTableHeader({hidePerson:false, hideCategory:true, singleChannel:false});
@@ -2587,7 +2598,7 @@ function renderHistoryPages(o){
     return {from:f, to:t2};
   }
   // SORT ASCENDING: oldest on top, newest at bottom (Excel style)
-  try{ list = (list||[]).slice().sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); }); }catch(e){}
+  try{ list = (list||[]).slice().sort(function(a,b){ return (normDate(a.date||'')).localeCompare(normDate(b.date||'')); }); }catch(e){}
   var _fromDate = '', _toDate = '';
   try{
     if(list.length){
@@ -2680,16 +2691,17 @@ function buildHistoryPdfBlob(o){
 function downloadPdfBlob(blob, filename){
 
   try{
-    const url=URL.createObjectURL(blob);
+    const url=URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
     const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click();
     setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 4000);
-  }catch(e){ window.open(URL.createObjectURL(blob), '_blank'); }
+  }catch(e){ try{ var __u=URL.createObjectURL(blob); window.__trackPdfBlobUrl(__u); window.open(__u,'_blank'); setTimeout(function(){ try{ URL.revokeObjectURL(__u); }catch(e2){} },60000); }catch(e2){} }
 }
 
 function showPdfPreviewFromCanvases(pages){
   try{
     var oldEl=document.getElementById('pdfViewModal');
     if(oldEl) oldEl.remove();
+    try{ window.__revokePdfBlobUrls(); }catch(e){}
     var modal=document.createElement('div');
     modal.id='pdfViewModal';
     modal.style.cssText='position:fixed;inset:0;z-index:99999;background:#0f0f0f;display:flex;flex-direction:column;';
@@ -2717,7 +2729,8 @@ function viewPdfBlob(blob){
   try{
     var oldEl=document.getElementById('pdfViewModal');
     if(oldEl) oldEl.remove();
-    var url=URL.createObjectURL(blob);
+    try{ window.__revokePdfBlobUrls(); }catch(e){}
+    var url=URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
     var modal=document.createElement('div');
     modal.id='pdfViewModal';
     modal.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;';
@@ -2757,11 +2770,12 @@ async function shareOrDownloadPdf(blob, filename, title){
   }catch(e){}
   
   // 2. Try to convert to dataURL for WebView (AppsGeyser fix)
-  const isWebView = /wv|WebView|Android.*Version/.test('web') || window.AndroidInterface || typeof Android !== 'undefined';
+  // FIXED V23: V21 regression - a // comment here swallowed the AndroidInterface check below, so AppsGeyser WebView was never detected
+  const isWebView = /wv|WebView|Android.*Version/.test(navigator.userAgent||'') || window.AndroidInterface || typeof Android !== 'undefined';
   
   try{
     // For WebView: open blob url in external browser
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
     if(isWebView){
       // Try Android interface or open in system browser
       window.open(url, '_blank');
@@ -2796,7 +2810,7 @@ async function shareOrDownloadPdf(blob, filename, title){
       const dataUrl = await new Promise((res,rej)=>{ reader.onload=()=>res(reader.result); reader.onerror=rej; reader.readAsDataURL(blob); });
       window.location.href = dataUrl;
       return 'downloaded';
-    }catch(e2){ alert('PDF তৈরি হয়েছে, কিন্তু ডাউনলোড ব্লক হয়েছে। Chrome ব্রাউজারে লিংক দিয়ে খুলুন।'); }
+    }catch(e2){ (typeof setToast==='function'?setToast:alert)('PDF তৈরি হয়েছে, কিন্তু ডাউনলোড ব্লক হয়েছে। Chrome ব্রাউজারে লিংক দিয়ে খুলুন।'); }
   }
   return 'downloaded';
 }
@@ -2809,11 +2823,11 @@ function EmailAuthForm({t, onAuth}){
   const [isSignup, setIsSignup] = React.useState(false);
   function handleForgot(){
     const e = (email||'').trim();
-    if(!e){ alert('আগে উপরে Email লিখুন'); return; }
+    if(!e){ (typeof setToast==='function'?setToast:alert)('আগে উপরে Email লিখুন'); return; }
     firebase.auth().sendPasswordResetEmail(e).then(()=>{
-      alert('Password Reset লিংক পাঠানো হয়েছে: '+e+' - Inbox/Spam চেক করুন');
+      (typeof setToast==='function'?setToast:alert)('Password Reset লিংক পাঠানো হয়েছে: '+e+' - Inbox/Spam চেক করুন');
     }).catch(err=>{
-      alert(err.message);
+      (typeof setToast==='function'?setToast:alert)(err.message);
     });
   }
   return React.createElement('div', {className:'bg-[#FFFBF7] border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
@@ -3431,7 +3445,7 @@ function App(){
   function handlePhotoChange(e){
     const file = e.target.files && e.target.files[0];
     if(!file) return;
-    if(file.size > 10*1024*1024){ alert('ছবি 10MB এর বেশি'); return; }
+    if(file.size > 10*1024*1024){ (typeof setToast==='function'?setToast:alert)('ছবি 10MB এর বেশি'); return; }
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -3504,7 +3518,7 @@ function App(){
       if(res && res.user){
         const u = {email: res.user.email, name: res.user.displayName, photo: res.user.photoURL, uid: res.user.uid};
         // App scope এ set করতে পরে useEffect handle করবে, তাই LS এ save
-        localStorage.setItem('lifestyle_google_user', JSON.stringify(u));
+        try{ localStorage.setItem('lifestyle_google_user', JSON.stringify(u)); }catch(e){} // FIXED V21: QuotaExceeded no longer breaks Google login redirect
       }
     });
   }catch(e){}
@@ -3558,7 +3572,7 @@ function App(){
       }
     });
     const arr = Array.from(map.values());
-    arr.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+    arr.sort((a,b)=> (normDate(b.date||'')).localeCompare(normDate(a.date||'')));
     return arr;
   }
   function mergePeople(localPeople, cloudPeople){
@@ -3614,23 +3628,25 @@ function App(){
     (cloudArr||[]).filter(function(x){return x && !x.id;}).forEach(function(x){ if(out.indexOf(x)===-1) out.push(x); });
     return out;
   }
-  function mergePeopleSmart(localArr, cloudArr){
+  function mergePeopleSmart(localArr, cloudArr, preferCloud){
     var del = getDeletedIds();
     var map = new Map();
     (cloudArr||[]).forEach(function(p){ if(p && p.id && del.indexOf(p.id)===-1) map.set(p.id, JSON.parse(JSON.stringify(p))); });
     (localArr||[]).forEach(function(p){
-      if(!p || !p.id || del.indexOf(p.id)===-1) return;
+      if(!p || !p.id || del.indexOf(p.id)!==-1) return;
       var ex = map.get(p.id);
       if(!ex){ map.set(p.id, JSON.parse(JSON.stringify(p))); return; }
       // Deep merge: loans + payments union by id, other fields newer wins
-      var merged = Object.assign({}, ex, p);
+      var pCt0 = new Date(ex.updatedAt||0).getTime(), pNt0 = new Date(p.updatedAt||0).getTime();
+      var localFieldsWin = preferCloud ? (pNt0 > pCt0) : (pNt0 >= pCt0);
+      var merged = localFieldsWin ? Object.assign({}, ex, p) : Object.assign({}, p, ex);
       var loanMap = new Map();
       (ex.loans||[]).forEach(function(l){ if(l && l.id && del.indexOf(l.id)===-1) loanMap.set(l.id, l); });
-      (p.loans||[]).forEach(function(l){ if(!l || !l.id || del.indexOf(l.id)===-1) return; var e2=loanMap.get(l.id); if(!e2) loanMap.set(l.id,l); else { var ct=new Date(e2.updatedAt||0).getTime(); var nt=new Date(l.updatedAt||0).getTime(); if(nt>=ct) loanMap.set(l.id,l); } });
+      (p.loans||[]).forEach(function(l){ if(!l || !l.id || del.indexOf(l.id)!==-1) return; var e2=loanMap.get(l.id); if(!e2) loanMap.set(l.id,l); else { var ct=new Date(e2.updatedAt||0).getTime(); var nt=new Date(l.updatedAt||0).getTime(); if(preferCloud ? nt>ct : nt>=ct) loanMap.set(l.id,l); } });
       merged.loans = Array.from(loanMap.values());
       var payMap = new Map();
       (ex.payments||[]).forEach(function(pay){ if(pay && pay.id && del.indexOf(pay.id)===-1) payMap.set(pay.id, pay); });
-      (p.payments||[]).forEach(function(pay){ if(!pay || !pay.id || del.indexOf(pay.id)===-1) return; var e3=payMap.get(pay.id); if(!e3) payMap.set(pay.id,pay); else { var ct2=new Date(e3.updatedAt||0).getTime(); var nt2=new Date(pay.updatedAt||0).getTime(); if(nt2>=ct2) payMap.set(pay.id,pay); } });
+      (p.payments||[]).forEach(function(pay){ if(!pay || !pay.id || del.indexOf(pay.id)!==-1) return; var e3=payMap.get(pay.id); if(!e3) payMap.set(pay.id,pay); else { var ct2=new Date(e3.updatedAt||0).getTime(); var nt2=new Date(pay.updatedAt||0).getTime(); if(preferCloud ? nt2>ct2 : nt2>=ct2) payMap.set(pay.id,pay); } });
       merged.payments = Array.from(payMap.values());
       // If local person has newer updatedAt, keep local name/mobile, else keep cloud
       var pCt = new Date(ex.updatedAt||0).getTime(); var pNt = new Date(p.updatedAt||0).getTime();
@@ -3678,6 +3694,7 @@ function App(){
       // STALE DEVICE FIX: NEVER full-overwrite. Transaction reads cloud first, merges by ID, so stale phone cannot wipe new incomes.
       var docRef = db.collection('users').doc(user.uid);
       var mergedDataForRef = data;
+      var uploadStartedAt = Date.now();
       db.runTransaction(function(tx){
         return tx.get(docRef).then(function(snap){
           if(!snap.exists){ tx.set(docRef, data); mergedDataForRef = data; return; }
@@ -3704,10 +3721,16 @@ function App(){
           merged.userAddress = data.userAddress || cloud.userAddress;
           merged.userMobile = data.userMobile || cloud.userMobile;
           merged.profilePhoto = data.profilePhoto || cloud.profilePhoto;
+          try{
+            var approxSize = new Blob([JSON.stringify(merged)]).size;
+            if(approxSize > 1040000){ throw new Error('Cloud data limit (1MB) exceeded - old data মুছুন বা Backup নিন'); }
+            if(approxSize > 800000 && !window.__sizeWarned){ window.__sizeWarned = true; setToast('Warning: Cloud data 80% full (1MB limit)'); }
+          }catch(sizeErr){ if(sizeErr && /limit/.test(sizeErr.message||'')) throw sizeErr; }
           tx.set(docRef, merged);
           mergedDataForRef = merged;
         });
       }).then(()=>{
+        if(localDirtyRef.current && localDirtyRef.current <= uploadStartedAt) localDirtyRef.current = 0;
         saveLS('lifestyle_last_sync', Date.now());
         const timeStr = new Date(now).toLocaleString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'});
         saveLS('lifestyle_last_sync_formatted', timeStr);
@@ -3717,7 +3740,7 @@ function App(){
         saveLS('lifestyle_offline_pending','false');
         setOfflineQueue(false);
         console.log('[SYNC] Uploaded');
-      }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus('Sync failed: '+(e.message||e)); });
+      }).catch(e=>{ console.log('syncToCloud err',e); setSyncStatus((e&&e.code==='permission-denied') ? 'Sync বন্ধ - Firestore Rules চেক করুন' : (e&&e.code==='unavailable' ? 'Sync বন্ধ - নেট নেই' : 'Sync failed - আবার চেষ্টা করুন')); });
     }catch(e){ console.log('syncToCloud',e); }
   }
 
@@ -3739,7 +3762,7 @@ function App(){
         // DELETE SYNC FIX: merge cloud tombstones + strip deleted ids BEFORE any merge (prevents resurrect)
         try{
           var cloudDel = Array.isArray(d.deletedIds) ? d.deletedIds : [];
-          if(cloudDel.length){ var localFull = getDeletedIdsFull(); var seen = {}; localFull.forEach(function(x){ seen[x.id]=1; }); cloudDel.forEach(function(x){ var id = (x && x.id) ? x.id : x; if(id && !seen[id]){ localFull.push({id:id, ts:(x && x.ts)||Date.now()}); seen[id]=1; } }); localStorage.setItem('lifestyle_deleted_ids', JSON.stringify(localFull)); }
+          if(cloudDel.length){ var localFull = getDeletedIdsFull(); var seen = {}; localFull.forEach(function(x){ seen[x.id]=1; }); cloudDel.forEach(function(x){ var id = (x && x.id) ? x.id : x; if(id && !seen[id]){ localFull.push({id:id, ts:(x && x.ts)||Date.now()}); seen[id]=1; } }); try{ localStorage.setItem('lifestyle_deleted_ids', JSON.stringify(localFull)); }catch(e){} } // FIXED V21: QuotaExceeded no longer breaks cloud sync merge
           var delSet = {}; getDeletedIds().forEach(function(id){ delSet[id]=1; });
           if(Array.isArray(d.transactions)) d.transactions = d.transactions.filter(function(x){ return !x || !x.id || !delSet[x.id]; });
           if(Array.isArray(d.peopleGiven)) d.peopleGiven = d.peopleGiven.filter(function(p){ return !p || !p.id || !delSet[p.id]; });
@@ -3803,59 +3826,10 @@ function App(){
             }
           }
           if(typeof d.peopleGiven !== 'undefined'){
-            if(isFirstLoad){
-              setPeopleGiven(prev=> {
-                if(!prev || !prev.length) return d.peopleGiven||[];
-                const map = new Map();
-                (d.peopleGiven||[]).forEach(p=>{ if(p && p.id) map.set(p.id, p); });
-                prev.forEach(p=>{ if(p && p.id && !map.has(p.id)) map.set(p.id, p); });
-                return Array.from(map.values());
-              });
-            } else {
-              // FIXED: Merge not overwrite
-              setPeopleGiven(prev=> {
-                const map = new Map();
-                (prev||[]).forEach(p=>{ if(p && p.id) map.set(p.id, p); });
-                (d.peopleGiven||[]).forEach(p=>{
-                  if(!p || !p.id) return;
-                  const ex = map.get(p.id);
-                  if(!ex) map.set(p.id, p);
-                  else {
-                    const ct = new Date(p.updatedAt||0).getTime();
-                    const lt = new Date(ex.updatedAt||0).getTime();
-                    if(ct >= lt) map.set(p.id, p);
-                  }
-                });
-                return Array.from(map.values());
-              });
-            }
+            setPeopleGiven(prev=> mergePeopleSmart(prev||[], d.peopleGiven||[], true));
           }
           if(typeof d.peopleTaken !== 'undefined'){
-            if(isFirstLoad){
-              setPeopleTaken(prev=> {
-                if(!prev || !prev.length) return d.peopleTaken||[];
-                const map = new Map();
-                (d.peopleTaken||[]).forEach(p=>{ if(p && p.id) map.set(p.id, p); });
-                prev.forEach(p=>{ if(p && p.id && !map.has(p.id)) map.set(p.id, p); });
-                return Array.from(map.values());
-              });
-            } else {
-              setPeopleTaken(prev=> {
-                const map = new Map();
-                (prev||[]).forEach(p=>{ if(p && p.id) map.set(p.id, p); });
-                (d.peopleTaken||[]).forEach(p=>{
-                  if(!p || !p.id) return;
-                  const ex = map.get(p.id);
-                  if(!ex) map.set(p.id, p);
-                  else {
-                    const ct = new Date(p.updatedAt||0).getTime();
-                    const lt = new Date(ex.updatedAt||0).getTime();
-                    if(ct >= lt) map.set(p.id, p);
-                  }
-                });
-                return Array.from(map.values());
-              });
-            }
+            setPeopleTaken(prev=> mergePeopleSmart(prev||[], d.peopleTaken||[], true));
           }
           if(typeof d.bankLoans !== 'undefined'){
             if(isFirstLoad) setBankLoans(prev=> mergeById(prev, d.bankLoans||[]));
@@ -3885,7 +3859,7 @@ function App(){
             } else {
               // Real-time: cloud list থেকে deleted বাদ দিয়ে apply
               const filtered = (d.shopList||[]).filter(x=> !cloudDeleted.includes(x.id));
-              setshopList(filtered);
+              if(!localDirtyRef.current) setshopList(filtered);
             }
           }
           if(typeof d.shopDeletedIds !== 'undefined'){
@@ -3919,12 +3893,13 @@ function App(){
         }
         cloudLoadedRef.current=true;
         lastCloudDataRef.current=d;
-      }, err=>{ console.log('snapshot err',err); setSyncStatus('Sync listener error'); cloudLoadedRef.current=true; });
+      }, err=>{ console.log('snapshot err',err); setSyncStatus((err&&err.code==='permission-denied') ? 'Sync বন্ধ - Firestore Rules চেক করুন' : 'Sync বন্ধ - নেট চেক করুন'); try{ if(typeof setToast==='function') setToast((err&&err.code==='permission-denied') ? 'Cloud Sync বন্ধ - Firestore Rules চেক করুন' : 'Cloud Sync বন্ধ - নেট চেক করুন'); }catch(e){} cloudLoadedRef.current=true; } /* FIXED V22: listener error now friendly BN + toast */);
     }catch(e){ console.log('syncFromCloud',e); cloudLoadedRef.current=true; }
   }
 
   // V18.4 FIXED: Instant sync with safe queue - fixes disappearing data
   const pendingSyncRef = React.useRef(false);
+  const localDirtyRef = React.useRef(0);
   useEffect(()=>{
     if(!googleUser || !googleUser.uid) return;
     if(!cloudLoadedRef.current) return;
@@ -3935,6 +3910,7 @@ function App(){
       return;
     }
     if(syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+    localDirtyRef.current = Date.now();
     syncDebounceRef.current = setTimeout(()=>{ 
       console.log('[SYNC] Local change detected, uploading...');
       syncToCloud(googleUser);
@@ -3951,7 +3927,7 @@ function App(){
       document.addEventListener('visibilitychange', onVis);
       window.addEventListener('focus', onFoc);
       window.addEventListener('online', onOnl);
-      var poll = setInterval(()=>{ if(googleUser && document.visibilityState==='visible'){ try{ syncFromCloud(googleUser); }catch(e){} } }, 5000);
+      var poll = setInterval(()=>{ if(googleUser && document.visibilityState==='visible'){ try{ syncFromCloud(googleUser); }catch(e){} } }, 30000);
       return ()=>{ clearInterval(poll); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('focus', onFoc); window.removeEventListener('online', onOnl); if(unsubscribeRef.current) unsubscribeRef.current(); };
     }
     else { if(unsubscribeRef.current){ unsubscribeRef.current(); unsubscribeRef.current=null; } cloudLoadedRef.current=false; }
@@ -4001,7 +3977,7 @@ function App(){
   useEffect(()=>{ saveLS('lifestyle_user_address', userAddress); }, [userAddress]);
   useEffect(()=>{ saveLS('lifestyle_user_mobile', userMobile); }, [userMobile]);
   useEffect(()=>{ if(profilePhoto) saveLS('lifestyle_profile_photo', profilePhoto); else try{ localStorage.removeItem('lifestyle_profile_photo'); }catch(e){} }, [profilePhoto]);
-  useEffect(()=>{ if(toast){ const tm = setTimeout(()=>setToast(null), 2000); return ()=>clearTimeout(tm); } }, [toast]);
+  useEffect(()=>{ if(toast){ var dur = (String(toast).length > 80) ? 6000 : 2000; var tm = setTimeout(()=>setToast(null), dur); return ()=>clearTimeout(tm); } }, [toast]); // FIXED V22: long error messages now stay 6s instead of vanishing in 2s
   
 // FIXED V18.4: Removed auto-clear of pending sync - was causing data loss
 const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? navigator.onLine : true);
@@ -4020,7 +3996,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
   const [tick, setTick] = useState(0);
   const [liveNow, setLiveNow] = useState(new Date());
   useEffect(()=>{ const id=setInterval(()=>setTick(t=>t+1), 60000); return ()=>clearInterval(id); }, []);
-  useEffect(()=>{ const id=setInterval(()=>setLiveNow(new Date()), 1000); return ()=>clearInterval(id); }, []);
+  useEffect(()=>{ const id=setInterval(()=>{ setLiveNow(function(prev){ var n=new Date(); return (prev && Math.floor(prev.getTime()/60000)===Math.floor(n.getTime()/60000)) ? prev : n; }); }, 10000); return ()=>clearInterval(id); }, []);
   const liveTimeStr = useMemo(()=>{ try{ return liveNow.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true}); }catch(e){ return ''; } }, [liveNow]);
   const liveDateStr = useMemo(()=>{ try{ return liveNow.toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'}); }catch(e){ return ''; } }, [liveNow]);
   const liveDayStr = useMemo(()=>{ try{ return liveNow.toLocaleDateString(lang==='en'?'en-US':'bn-BD', {weekday:'long'}); }catch(e){ return ''; } }, [liveNow, lang]);
@@ -4310,7 +4286,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
     if(historyFilter==='income' && historyIncomeCategory){
       list = list.filter(x => x.category===historyIncomeCategory || x.categoryBn===historyIncomeCategory);
     }
-    return list.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+    return list.slice().sort((a,b)=> (normDate(b.date||'')).localeCompare(normDate(a.date||'')));
   }, [transactions, peopleGiven, peopleTaken, bankLoans, historyFilter, search, historyFrom, historyTo, historyExpenseCategory, historyIncomeCategory]);
 
   /* ---- render pages ---- */
@@ -4604,7 +4580,7 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
       onDeletePerson: (id)=>deletePerson(openPersonKind, id)
     });
   } else if(page === 'categoryDetail' && openCategoryName){
-    const _allCatTransactions = transactions.filter(function(tx){ return tx.type===openCategoryKind && (tx.category===openCategoryName || tx.categoryBn===openCategoryName); }).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    const _allCatTransactions = transactions.filter(function(tx){ return tx.type===openCategoryKind && (tx.category===openCategoryName || tx.categoryBn===openCategoryName); }).slice().sort(function(a,b){ return (normDate(b.date||'')).localeCompare(normDate(a.date||'')); });
     const catTransactions = _allCatTransactions.filter(function(tx){ if(categoryDetailFromDate && tx.date < categoryDetailFromDate) return false; if(categoryDetailToDate && tx.date > categoryDetailToDate) return false; return true; });
     const catTotal = catTransactions.reduce(function(s,x){ return s+x.amount; },0);
     const catCount = catTransactions.length;
@@ -4702,12 +4678,12 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
       const day = now.getDay();
       const start = new Date(now); start.setDate(now.getDate() - day);
       const end = new Date(start); end.setDate(start.getDate()+6);
-      const toStr = d=>d.toISOString().split('T')[0];
+      const toStr = d=>d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); // FIXED V24: was toISOString - UTC shift moved week boundaries a day in US timezones
       return {start: toStr(start), end: toStr(end)};
     };
     const getMonthKey = (offset=0)=>{
       const d = new Date(); d.setMonth(d.getMonth()+offset);
-      return d.toISOString().slice(0,7);
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); // FIXED V24: was toISOString().slice(0,7) - Mar 1 00:30 local = Feb 28 UTC, so March totals went into February
     };
     const getYearKey = (offset=0)=>{
       const d = new Date(); d.setFullYear(d.getFullYear()+offset);
@@ -4720,9 +4696,9 @@ const [isOnline, setIsOnline] = useState(typeof navigator!=='undefined' ? naviga
     const curYearKey = getYearKey(0);
     const lastYearKey = getYearKey(-1);
 
-    const filterByDateRange = (txs, s, e)=>txs.filter(x=>x.type==='expense' && x.date>=s && x.date<=e);
-    const filterByMonth = (txs, key)=>txs.filter(x=>x.type==='expense' && x.date && x.date.startsWith(key));
-    const filterByYear = (txs, key)=>txs.filter(x=>x.type==='expense' && x.date && x.date.startsWith(key));
+    const filterByDateRange = (txs, s, e)=>txs.filter(x=>x.type==='expense' && normDate(x.date)>=s && normDate(x.date)<=e); // FIXED V24: DD/MM/YYYY expenses never matched the range
+    const filterByMonth = (txs, key)=>txs.filter(x=>x.type==='expense' && x.date && normDate(x.date).startsWith(key)); // FIXED V24: DD/MM/YYYY expenses never counted in monthly totals
+    const filterByYear = (txs, key)=>txs.filter(x=>x.type==='expense' && x.date && normDate(x.date).startsWith(key)); // FIXED V24: DD/MM/YYYY fix
 
     const weekTx = filterByDateRange(transactions, curWeek.start, curWeek.end);
     const lastWeekTx = filterByDateRange(transactions, lastWeek.start, lastWeek.end);
@@ -5173,18 +5149,18 @@ function downloadPdfBlob(blob, filename){
           }catch(e){ console.error(e); }
         };
         reader.readAsDataURL(blob);
-        url = URL.createObjectURL(blob);
+        url = URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
         try{ window.open(url, '_blank'); }catch(e){}
         setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(e){} }, 10000);
         return;
       }catch(e){ console.error(e); }
     }
-    url = URL.createObjectURL(blob);
+    url = URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
     a = document.createElement('a'); a.href = url; a.download = filename || 'file.pdf';
     document.body.appendChild(a); a.click();
   }catch(e){
     console.error('downloadPdfBlob error', e);
-    try{ if(!url) url = URL.createObjectURL(blob); window.open(url, '_blank'); }catch(e2){}
+    try{ if(!url) url = URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){}; window.open(url, '_blank'); }catch(e2){}
   }finally{
     setTimeout(function(){ try{ if(url) URL.revokeObjectURL(url); }catch(e){} try{ if(a) a.remove(); }catch(e){} }, 4000);
   }
@@ -5218,6 +5194,7 @@ function viewPdfBlob(blob){
   try{
     var oldEl=document.getElementById('pdfViewModal');
     if(oldEl) oldEl.remove();
+    try{ window.__revokePdfBlobUrls(); }catch(e){}
     var modal=document.createElement('div');
     modal.id='pdfViewModal';
     modal.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;';
@@ -5239,7 +5216,7 @@ function viewPdfBlob(blob){
         return;
       }catch(e){}
     }
-    url=URL.createObjectURL(blob);
+    url=URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
     container.innerHTML='<iframe style="flex:1;width:100%;height:100%;border:none;background:#fff;" src="'+url+'"></iframe>';
     setTimeout(function(){ try{ URL.revokeObjectURL(url); url=null; }catch(e){} }, 600000);
   }catch(e){ console.error('viewPdfBlob', e); }
@@ -5255,7 +5232,7 @@ async function shareOrDownloadPdf(blob, filename, title){
   }catch(e){}
   try{
     if(isWV){
-      var url = URL.createObjectURL(blob);
+      var url = URL.createObjectURL(blob); try{ window.__trackPdfBlobUrl(url); }catch(e){};
       try{ window.open(url, '_blank'); }catch(e){}
       var reader = new FileReader();
       reader.onload = function(){
@@ -5349,38 +5326,27 @@ async function handleReportPdf(mode){
 }
 
 
+window.__pdfBlobUrls = [];
+window.__trackPdfBlobUrl = function(u){ try{ if(u && window.__pdfBlobUrls.indexOf(u)===-1) window.__pdfBlobUrls.push(u); }catch(e){} return u; };
+window.__revokePdfBlobUrls = function(){ try{ window.__pdfBlobUrls.forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(e){} }); window.__pdfBlobUrls = []; }catch(e){} };
 ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 
 </script>
 
 
 <style>
-/* FIXED BOTTOM NAV - NEVER HIDE */
-.bottom-nav, .bottom-nav-bar, nav.bottom, [class*="bottom-nav"], [class*="BottomNav"], 
-div[style*="position: fixed"][style*="bottom"] {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 9999 !important;
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  transform: none !important;
+/* FIXED V19: Bottom nav scoped ONLY to .bottom-nav. Old rule matched EVERY div[style*="position: fixed"]
+   which forced modals / PDF viewer / toasts / dialogs to stay visible & broke their layout. */
+.bottom-nav, .bottom-nav-bar, nav.bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
 }
-/* Prevent content hiding nav */
-body {
-  padding-bottom: 90px !important;
-}
-#root {
-  padding-bottom: 90px !important;
-}
-/* Hide any leaked code text */
-pre, code {
-  display: none !important;
-}
-/* Ensure no raw JS shows */
-
+body { padding-bottom: 90px; }
+#root { padding-bottom: 90px; }
 </style>
 <script>
 // === MEMORY FIX: Canvas cleanup to prevent RAM leak ===
@@ -5409,20 +5375,8 @@ function cleanupPdfCanvases(){
     }
   }
   setTimeout(patch, 1000);
-  setInterval(patch, 3000);
-  
-  // Ensure bottom nav never hides on scroll
-  let lastScrollY = window.scrollY;
-  window.addEventListener('scroll', function(){
-    const navs = document.querySelectorAll('[class*="bottom"], [class*="Bottom"], nav');
-    navs.forEach(n=>{
-      if(n) {
-        n.style.display = 'flex';
-        n.style.visibility = 'visible';
-        n.style.transform = 'none';
-      }
-    });
-  }, {passive:true});
+  // FIXED V19: removed setInterval(patch,3000) - it re-ran every 3s forever (battery/CPU leak).
+  // FIXED V19: removed scroll listener that forced display:flex on EVERY nav/[class*=bottom] on each scroll.
 })();
 </script>
 
