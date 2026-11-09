@@ -6,24 +6,24 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="theme-color" content="#2D2A26">
+  <meta name="theme-color" content="#E3F2FD">
 <title>Lifestyle</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
   body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
   .card{background:#fff;border:1px solid #F3E8D3;border-radius:16px;}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} #formSheet:not(.hidden){display:flex;flex-direction:column;overflow:hidden;height:92vh;} #formSheet .formSheetBody{overflow-y:auto;flex:1;min-height:0;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
-  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#2D2A26;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:100;white-space:nowrap;}
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#E3F2FD;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:100;white-space:nowrap;}
   .hidden{display:none;}
   input,select,textarea{outline:none;}
   .cat-btn{border:1.5px solid #F3E8D3;border-radius:12px;padding:10px 6px;font-size:13px;font-weight:700;background:#fff;text-align:center;cursor:pointer;}
-  .cat-btn.sel{background:#2D2A26;color:#fff;border-color:#2D2A26;}
+  .cat-btn.sel{background:#E3F2FD;border-color:#E3F2FD;}
   .grp-btn{border:1.5px solid #F3E8D3;border-radius:12px;padding:10px 6px;font-size:13px;font-weight:700;background:#fff;text-align:center;cursor:pointer;}
-  .grp-btn.sel{background:#2D2A26;color:#fff;border-color:#2D2A26;}
+  .grp-btn.sel{background:#E3F2FD;border-color:#E3F2FD;}
   .nav-btn{flex:1;text-align:center;font-size:11px;font-weight:700;color:#8B7355;padding:8px 0 6px;cursor:pointer;}
-  .nav-btn.active{color:#2D2A26;}
+  .nav-btn.active{color:#8B5E3C;}
   .nav-btn.active .nav-ico{color:#C9A86A;}
   #pdfPreviewBody{overflow-x:hidden;}
   .stmt-table{table-layout:fixed;width:100%;}
@@ -39,7 +39,7 @@
   <div class="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex items-end relative">
     <div id="navHome" class="nav-btn active" onclick="navGo('home')"><div class="nav-ico text-[20px]">🏠</div><span data-t="home">HOME</span></div>
     <div id="navHistory" class="nav-btn" onclick="navGo('history')"><div class="nav-ico text-[20px]">🕘</div><span data-t="history">History</span></div>
-    <div class="flex-1 flex justify-center"><button onclick="openAddSheet()" class="w-14 h-14 -mt-6 rounded-full bg-[#2D2A26] text-white text-[28px] font-bold shadow-lg">+</button></div>
+    <div class="flex-1 flex justify-center"><button onclick="openAddSheet()" class="w-14 h-14 -mt-6 rounded-full bg-[#E3F2FD] text-[28px] font-bold shadow-lg">+</button></div>
     <div id="navReports" class="nav-btn" onclick="navGo('reports')"><div class="nav-ico text-[20px]">📊</div><span data-t="reports">Reports</span></div>
     <div id="navProfile" class="nav-btn" onclick="navGo('profile')"><div class="nav-ico text-[20px]">👤</div><span data-t="profile">Profile</span></div>
   </div>
@@ -61,25 +61,25 @@
 <!-- Add Income / Expense form sheet -->
 <div id="formOverlay" class="overlay hidden" onclick="closeForm()"></div>
 <div id="formSheet" class="sheet hidden">
-  <div class="sticky top-0 z-10 bg-white px-5 pt-5 pb-3">
+  <div class="bg-white px-5 pt-5 pb-3 shrink-0">
     <div class="flex justify-between items-center mb-4"><h2 id="formTitle" class="text-[17px] font-extrabold">Add Income</h2><button onclick="closeForm()" class="text-xl px-2">✕</button></div>
     <div id="selCatBox" class="hidden mb-3 p-3 rounded-xl bg-[#FFFBF7] border border-[#F3E8D3] flex justify-between items-center"><div><div class="text-[11px] text-[#8B7355]" data-t="selectedCat">Selected Category</div><div id="selCatLabel" class="font-bold text-[14px]"></div></div><button onclick="clearCat()" class="px-2 text-[#8B7355]">✕</button></div>
     <div class="flex gap-2 mb-4">
-      <button id="saveBtn" onclick="saveForm()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
+      <button id="saveBtn" onclick="saveForm()" class="flex-1 py-3 rounded-full bg-[#E3F2FD] font-bold text-[14px]">Save</button>
       <button onclick="closeForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
     <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
     <input id="fAmount" oninput="updateSaveBtn()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1">
-  </div>
-  <div class="px-5 pb-5">
     <div class="flex items-center gap-2 mt-1 mb-2">
       <label class="text-[12px] font-bold text-[#8B7355] shrink-0" data-t="category">Category</label>
       <div class="flex-1 flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-1.5">
         <span class="text-[13px]">🔍</span>
         <input id="catSearch" type="text" placeholder="" oninput="setCatSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0">
-        <button id="catSearchClear" onclick="clearCatSearch()" class="hidden text-[#8B7355] text-[14px] px-1">✕</button>
+        <button id="catSearchClear" onclick="clearCatSearch()" class="text-[#8B7355] text-[14px] px-1" style="visibility:hidden">✕</button>
       </div>
     </div>
+  </div>
+  <div class="formSheetBody px-5 pb-5">
     <div id="catArea" class="mt-1 mb-3"></div>
     <div class="flex gap-3 mb-3">
       <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="date">Date</label><input id="fDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1"></div>
@@ -95,13 +95,13 @@
   <div class="p-5">
     <div class="flex justify-between items-center mb-4"><h2 class="text-[17px] font-extrabold" data-t="bazarTitle">Bazar</h2><button onclick="closeBazar()" class="text-xl px-2">✕</button></div>
     <div class="flex gap-2 mb-3">
-      <button id="bzTabAll" onclick="setBazarFilter('all')" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#2D2A26] text-white" data-t="allLbl">All</button>
+      <button id="bzTabAll" onclick="setBazarFilter('all')" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-[#E3F2FD]" data-t="allLbl">All</button>
       <button id="bzTabBought" onclick="setBazarFilter('bought')" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-white border border-[#F3E8D3]" data-t="bought">Bought</button>
       <button id="bzTabPending" onclick="setBazarFilter('pending')" class="px-3 py-1.5 rounded-full text-[12px] font-bold bg-white border border-[#F3E8D3]" data-t="notBought">Not Bought</button>
     </div>
     <div class="flex gap-2 mb-4">
       <textarea id="bzNoteInput" rows="2" maxlength="500" class="flex-1 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px]" style="min-width:0"></textarea>
-      <button onclick="addBazarNote()" class="px-4 py-3 rounded-[14px] bg-[#2D2A26] text-white font-bold text-[14px] shrink-0" data-t="addNote">Add Note</button>
+      <button onclick="addBazarNote()" class="px-4 py-3 rounded-[14px] bg-[#E3F2FD] font-bold text-[14px] shrink-0" data-t="addNote">Add Note</button>
     </div>
     <div id="bazarList"></div>
   </div>
@@ -130,7 +130,7 @@
     <label class="text-[12px] font-bold text-[#8B7355]" data-t="date">Date</label>
     <input id="bzDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
     <div class="flex gap-2">
-      <button onclick="saveBazarForm()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
+      <button onclick="saveBazarForm()" class="flex-1 py-3 rounded-full bg-[#E3F2FD] font-bold text-[14px]">Save</button>
       <button onclick="closeBazarForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
   </div>
@@ -139,16 +139,18 @@
 <!-- History: PDF Preview -->
 <div id="pdfOverlay" class="overlay hidden" onclick="closePdfPreview()"></div>
 <div id="pdfPreviewSheet" class="sheet hidden">
-  <div class="p-5">
+  <div class="sticky top-0 z-10 bg-white px-5 pt-5 pb-3">
     <div class="flex justify-between items-center mb-3"><h2 class="text-[17px] font-extrabold">PDF Preview</h2><button onclick="closePdfPreview()" class="text-xl px-2">✕</button></div>
-    <div id="pdfPreviewBody"></div>
-    <div class="flex gap-2 mt-4">
-      <button onclick="downloadPdfFile()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]" data-t="printPdf">Print / Save PDF</button>
-      <button onclick="sharePdf()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="shareBtn">Share</button>
+    <div class="flex items-center justify-center gap-2">
+      <button onclick="pdfZoomOut()" class="w-9 h-9 rounded-full border-2 border-[#F3E8D3] font-bold text-[16px]">−</button>
+      <span id="pdfZoomLabel" class="text-[13px] font-bold w-12 text-center">100%</span>
+      <button onclick="pdfZoomIn()" class="w-9 h-9 rounded-full border-2 border-[#F3E8D3] font-bold text-[16px]">+</button>
+      <button onclick="pdfZoomReset()" class="px-3 h-9 rounded-full border-2 border-[#F3E8D3] font-bold text-[13px]">Fit</button>
     </div>
-    <div class="flex gap-2 mt-2">
-      <button onclick="exportCsv()" class="flex-1 py-3 rounded-full bg-[#2D8A4E] text-white font-bold text-[14px]" data-t="excelBtn">⬇ Excel (CSV)</button>
-    </div>
+  </div>
+  <div class="px-5 pb-5">
+    <div id="pdfPreviewBody" style="overflow-x:auto;touch-action:pan-x pan-y"></div>
+    <!-- View = preview only: no Print / Share / Excel buttons here (those live on the main page) -->
   </div>
 </div>
 
@@ -158,11 +160,11 @@
   <div class="p-5">
     <div class="flex justify-between items-center mb-4"><h2 id="leTitle" class="text-[17px] font-extrabold">Edit Loan Entry</h2><button onclick="closeLoanEntryForm()" class="text-xl px-2">✕</button></div>
     <div id="leBankTop" class="hidden flex gap-2 mb-3">
-      <button id="leBankSaveBtn" onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]" data-t="saveLoan">Save Loan</button>
+      <button id="leBankSaveBtn" onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#E3F2FD] font-bold text-[14px]" data-t="saveLoan">Save Loan</button>
       <button onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
     <div id="lePersonTop" class="hidden flex gap-2 mb-3">
-      <button id="lePersonSaveBtn" onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#9E9E9E] text-white font-bold text-[14px]" disabled>Save Loan</button>
+      <button id="lePersonSaveBtn" onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#9E9E9E] font-bold text-[14px]" disabled>Save Loan</button>
       <button onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
     <div id="lePersonFields">
@@ -221,7 +223,7 @@
       <div id="leEmiSheet" class="border border-[#F3E8D3] rounded-[14px] overflow-hidden mb-3"></div>
     </div>
     <div id="leBottomBtns" class="hidden flex gap-2">
-      <button onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
+      <button onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#E3F2FD] font-bold text-[14px]">Save</button>
       <button onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
   </div>
@@ -230,10 +232,10 @@
 <!-- Bank Loan: EMI Checklist -->
 <div id="emiOverlay" class="overlay hidden" onclick="closeEmiChecklist()"></div>
 <div id="emiSheet" class="sheet hidden">
-  <div class="p-5">
+  <div class="sticky top-0 z-10 bg-white px-5 pt-5 pb-3">
     <div class="flex justify-between items-center mb-4"><h2 id="emiTitle" class="text-[17px] font-extrabold">EMI Checklist</h2><button onclick="closeEmiChecklist()" class="text-xl px-2">✕</button></div>
     <div class="flex gap-2 mb-4">
-      <button id="emiSaveBtn" onclick="saveEmiChecklist()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]" data-t="save">Save</button>
+      <button id="emiSaveBtn" onclick="saveEmiChecklist()" class="flex-1 py-3 rounded-full bg-[#E3F2FD] font-bold text-[14px]" data-t="save">Save</button>
       <button onclick="closeEmiChecklist()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
     <div id="emiSummary"></div>
@@ -241,6 +243,8 @@
       <span class="text-[14px] font-bold">EMI Sheet</span>
       <span id="emiPaidCount" class="text-[12px] text-[#8B7355]">0/0 Paid</span>
     </div>
+  </div>
+  <div class="px-5 pb-5">
     <div id="emiList" class="border border-[#F3E8D3] rounded-[14px] overflow-hidden"></div>
   </div>
 </div>
@@ -255,7 +259,7 @@
     <label class="text-[12px] font-bold text-[#8B7355]" data-t="mobileNo">Mobile number</label>
     <input id="psMobile" type="tel" maxlength="20" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
     <div class="flex gap-2">
-      <button onclick="savePerson()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
+      <button onclick="savePerson()" class="flex-1 py-3 rounded-full bg-[#E3F2FD] font-bold text-[14px]">Save</button>
       <button onclick="closeAddPerson()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
   </div>
@@ -828,7 +832,7 @@ function reportRows(){
 function reportPdfHtml(){
   const rows = reportRows();
   const r = repRange();
-  return statementHeaderHtml('Reports', rows.length, statementPeriod(r.from, r.to, rows)) + statementEntriesTable(rows);
+  return statementHeaderHtml('Reports', rows.length, statementPeriod(r.from, r.to, rows)) + statementEntriesTable(rows, 'noPerson');
 }
 function reportViewPdf(){ pdfMode = 'reports'; showStatementPreview(reportPdfHtml()); }
 function reportDownloadPdf(){ pdfMode = 'reports'; downloadPdfFile(); }
@@ -848,9 +852,9 @@ function pageHeaderHtml(){
       '<div class="flex-1">' +
         '<div class="font-extrabold text-[20px] leading-tight">' + t('appName') + '</div>' +
         (authEmail() && name ? '<div class="text-[13px] font-bold text-[#8B7355]">' + escA(name) + '</div>' : '') +
-        '<div class="text-[13px] text-black mt-1" id="clockTime">' + t('time') + ': ' + timeStr + '</div>' +
-        '<div class="text-[13px] text-black" id="clockDate">' + t('date') + ': ' + dateStr + '</div>' +
-        '<div class="text-[13px] text-black" id="clockDay">' + t('day') + ': ' + dayStr + '</div>' +
+        '<div class="text-[13px] text-black font-bold mt-1" id="clockTime">' + t('time') + ': ' + timeStr + '</div>' +
+        '<div class="text-[13px] text-black font-bold" id="clockDate">' + t('date') + ': ' + dateStr + '</div>' +
+        '<div class="text-[13px] text-black font-bold" id="clockDay">' + t('day') + ': ' + dayStr + '</div>' +
       '</div>' +
       '<div class="flex border border-[#F3E8D3] rounded-full overflow-hidden text-[13px] font-bold">' +
         '<button onclick="setLang(\'en\')" class="px-3 py-1.5 ' + (lang === 'en' ? 'bg-[#2D2A26] text-white' : '') + '">EN</button>' +
@@ -873,7 +877,7 @@ function renderProfileView(){
     h += '<div class="bg-white rounded-[18px] border border-[#F3E8D3] p-4 mb-4">' +
       '<input id="authEmail" type="email" placeholder="' + t('emailPh') + '" class="w-full bg-white border border-[#F3E8D3] rounded-[10px] px-4 py-3 text-[14px] mb-3">' +
       '<div class="relative"><input id="authPass" type="password" placeholder="' + t('passPh') + '" class="w-full bg-white border border-[#F3E8D3] rounded-[10px] px-4 py-3 text-[14px] pr-11"><button onclick="toggleAuthPass()" class="absolute right-3 top-1/2 -translate-y-1/2 text-[18px]">👁️</button></div>' +
-      '<div class="flex gap-2 mt-3"><button onclick="authWithEmail(\'login\')" class="flex-1 py-3 rounded-[10px] bg-[#2D2A26] text-white font-bold text-[14px]">' + t('loginBtn') + '</button><button onclick="authWithEmail(\'signup\')" class="flex-1 py-3 rounded-[10px] border border-[#2D2A26] font-bold text-[14px]">' + t('signupBtn') + '</button></div>' +
+      '<div class="flex gap-2 mt-3"><button onclick="authWithEmail(\'login\')" class="flex-1 py-3 rounded-[10px] bg-[#E3F2FD] font-bold text-[14px]">' + t('loginBtn') + '</button><button onclick="authWithEmail(\'signup\')" class="flex-1 py-3 rounded-[10px] border border-[#E3F2FD] font-bold text-[14px]">' + t('signupBtn') + '</button></div>' +
       '<button onclick="authForgot()" class="w-full text-center underline text-[#C9A86A] font-bold text-[13px] mt-3">' + t('forgotLink') + '</button>' +
       '<p class="text-center text-[12px] text-[#8B7355] mt-2">' + t('forgotNote') + '</p>' +
     '</div>';
@@ -883,7 +887,7 @@ function renderProfileView(){
     '<label class="text-[12px] font-bold text-[#8B7355]">' + t('designation') + '</label><input id="pDes" type="text" value="' + escA(profile.designation || '') + '" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">' +
     '<label class="text-[12px] font-bold text-[#8B7355]">' + t('addressLbl') + '</label><input id="pAddr" type="text" value="' + escA(profile.address || '') + '" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">' +
     '<label class="text-[12px] font-bold text-[#8B7355]">' + t('mobileLbl') + '</label><input id="pMob" type="tel" value="' + escA(profile.mobile || '') + '" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">' +
-    '<button onclick="saveProfile()" class="w-full py-3.5 rounded-full bg-[#2D2A26] text-white font-bold text-[15px] mt-1">' + t('saveProfileBtn') + '</button>' +
+    '<button onclick="saveProfile()" class="w-full py-3.5 rounded-full bg-[#E3F2FD] font-bold text-[15px] mt-1">' + t('saveProfileBtn') + '</button>' +
     '</div>';
   h += developerCardHtml();
   h += '</div>';
@@ -906,7 +910,7 @@ function renderReportsView(){
   h += '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-3">' + t('categoryWise') + '</h3>';
   if(!d.list.length){ h += '<p class="text-[13px] text-[#8B7355]">' + t('noExpense') + '</p>'; }
   d.list.forEach(it => {
-    h += '<div class="flex items-center gap-2 py-1.5"><div class="flex-1 min-w-0 truncate text-[13px] font-bold">' + escA(it.name) + '</div><div class="w-24 h-2.5 bg-[#F3E8D3] rounded-full overflow-hidden"><div class="h-full bg-[#2D2A26] rounded-full" style="width:' + it.pct + '%"></div></div><div class="w-10 text-right text-[12px] font-bold">' + it.pct + '%</div><div class="w-16 text-right text-[13px] font-bold">' + fmt(it.amt) + '</div></div>';
+    h += '<div class="flex items-center gap-2 py-1.5"><div class="flex-1 min-w-0 truncate text-[13px] font-bold">' + escA(it.name) + '</div><div class="w-24 h-2.5 bg-[#F3E8D3] rounded-full overflow-hidden"><div class="h-full bg-[#E3F2FD] rounded-full" style="width:' + it.pct + '%"></div></div><div class="w-10 text-right text-[12px] font-bold">' + it.pct + '%</div><div class="w-16 text-right text-[13px] font-bold">' + fmt(it.amt) + '</div></div>';
   });
   h += '</div>';
   h += '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-4 mb-4"><h3 class="font-extrabold text-[15px]">' + t('expenseTrend') + '</h3><p class="text-[11px] text-[#8B7355] mb-3">' + t('trendNote') + '</p>';
@@ -914,7 +918,7 @@ function renderReportsView(){
     h += '<div class="border border-[#F3E8D3] rounded-[16px] p-3 mb-2"><div class="flex justify-between items-center mb-2"><span class="font-bold text-[14px]">' + escA(it.name) + '</span><span class="font-extrabold text-[13px]">' + fmt(it.amt) + ' (' + it.pct + '%)</span></div><div class="grid grid-cols-3 gap-1.5">' + trendBox(t('vsLastWeek'), it.week) + trendBox(t('vsLastMonth'), it.month) + trendBox(t('vsLastYear'), it.year) + '</div></div>';
   });
   h += '</div>';
-  h += '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-3">' + t('pdfReport') + '</h3><div class="grid grid-cols-2 gap-2 mb-3"><div><label class="text-[12px] font-bold text-[#8B7355]">' + t('repFrom') + '</label><input type="date" value="' + d.from + '" onchange="setRepFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] mt-1"></div><div><label class="text-[12px] font-bold text-[#8B7355]">' + t('repTo') + '</label><input type="date" value="' + d.to + '" onchange="setRepTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] mt-1"></div></div><div class="grid grid-cols-3 gap-2"><button onclick="reportDownloadPdf()" class="py-3 rounded-[10px] bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('downloadPdf') + '</button><button onclick="reportViewPdf()" class="py-3 rounded-[10px] border border-[#F3E8D3] font-bold text-[13px]">👁️ ' + t('repView') + '</button><button onclick="reportSharePdf()" class="py-3 rounded-[10px] bg-[#C9A86A] text-white font-bold text-[13px]">📤 ' + t('repShare') + '</button></div></div>';
+  h += '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-3">' + t('pdfReport') + '</h3><div class="grid grid-cols-2 gap-2 mb-3"><div><label class="text-[12px] font-bold text-[#8B7355]">' + t('repFrom') + '</label><input type="date" value="' + d.from + '" onchange="setRepFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] mt-1"></div><div><label class="text-[12px] font-bold text-[#8B7355]">' + t('repTo') + '</label><input type="date" value="' + d.to + '" onchange="setRepTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[13px] mt-1"></div></div><div class="grid grid-cols-3 gap-2"><button onclick="reportDownloadPdf()" class="py-3 rounded-[10px] bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('downloadPdf') + '</button><button onclick="reportViewPdf()" class="py-3 rounded-[10px] border border-[#F3E8D3] font-bold text-[13px]">👁️ ' + t('repView') + '</button><button onclick="reportSharePdf()" class="py-3 rounded-[10px] bg-[#EAF7EA] font-bold text-[13px]">📤 ' + t('repShare') + '</button></div></div>';
   h += '<div class="bg-white rounded-[22px] border border-[#FDE8E8] p-4"><h3 class="font-extrabold text-[15px] mb-1">♻️ ' + t('recycleBin') + ' <span class="text-[11px] font-bold text-[#C0392B] bg-[#FDE8E8] px-2 py-0.5 rounded-full">' + recycle.length + ' ' + t('recycleItems') + '</span></h3>';
   if(!recycle.length){ h += '<p class="text-[12px] text-[#8B7355] mt-2">' + t('recycleEmpty') + '</p>'; }
   recycle.forEach(p => {
@@ -955,8 +959,7 @@ function restoreViewState(){
   let r = null;
   try{ r = JSON.parse(localStorage.getItem(VIEW_STATE_KEY) || 'null'); }catch(e){ r = null; }
   if(!r || typeof r !== 'object') return;
-  const views = ['home','history','catdetail','loans','person','profile','reports'];
-  if(views.includes(r.v)) currentView = r.v;
+  // App entry always starts on Home; the last page is never restored.
   if(['given','taken','bank'].includes(r.lk)) loansKind = r.lk;
   if(['given','taken'].includes(r.pk)) personKind = r.pk;
   if(typeof r.pi === 'number' && r.pi >= 0) personIdx = Math.floor(r.pi);
@@ -1024,9 +1027,9 @@ function render(){
         (pDes ? '<div class="text-[13px] font-bold text-[#8B7355]">' + pDes + '</div>' : '') +
         (pAddr ? '<div class="text-[13px] text-[#8B7355]">' + pAddr + '</div>' : '') +
         (pMob ? '<div class="text-[13px] text-[#8B7355]">' + pMob + '</div>' : '') +
-        '<div class="text-[13px] text-black mt-1" id="clockTime">' + t('time') + ': ' + timeStr + '</div>' +
-        '<div class="text-[13px] text-black" id="clockDate">' + t('date') + ': ' + dateStr + '</div>' +
-        '<div class="text-[13px] text-black" id="clockDay">' + t('day') + ': ' + dayStr + '</div></div>' +
+        '<div class="text-[13px] text-black font-bold mt-1" id="clockTime">' + t('time') + ': ' + timeStr + '</div>' +
+        '<div class="text-[13px] text-black font-bold" id="clockDate">' + t('date') + ': ' + dateStr + '</div>' +
+        '<div class="text-[13px] text-black font-bold" id="clockDay">' + t('day') + ': ' + dayStr + '</div></div>' +
         '<div class="flex flex-col items-end gap-2 shrink-0" onclick="event.stopPropagation()">' +
           '<div class="flex gap-2">' +
             '<button onclick="setLang(\'en\')" class="px-3 py-1.5 rounded-full text-[12px] font-bold ' + (lang==='en' ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">EN</button>' +
@@ -1119,6 +1122,26 @@ function closeForm(){
 /* ---------- Profile ---------- */
 
 
+/* Green Saved feedback (same pattern as Income/Expense saveForm): turn the Save button green, show "✓ Saved", then reset it and run done() after 500ms. */
+function flashSaved(btn, done){
+  if(!btn){ done(); return; }
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '\u2713 Saved';
+  btn.style.background = '#1E9E4F';
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = orig;
+    btn.style.background = '';
+    done();
+  }, 500);
+}
+/* The currently visible Save button of the loan-entry form (bank form vs person form). */
+function loanEntrySaveBtn(){
+  const b = document.getElementById('leBankSaveBtn');
+  if(b && b.offsetParent) return b;
+  return document.querySelector('#leBottomBtns button[onclick="saveLoanEntry()"]');
+}
 function saveProfile(){
   profile = Object.assign({}, profile, {
     name: ((document.getElementById('pName') || {}).value || '').trim(),
@@ -1129,13 +1152,21 @@ function saveProfile(){
   persist();
   render();
   showToast(t('profileSaved'));
+  const btn = document.querySelector('button[onclick="saveProfile()"]');
+  if(btn){
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '\u2713 Saved';
+    btn.style.background = '#1E9E4F';
+    setTimeout(() => { btn.disabled = false; btn.textContent = t('saveProfileBtn'); btn.style.background = ''; }, 900);
+  }
 }
 function clearCat(){ selCat = null; selSub = null; document.getElementById('selCatBox').classList.add('hidden'); renderCats(); }
 
 function setCatSearch(v){
   catSearch = (v || '').trim();
   const clr = document.getElementById('catSearchClear');
-  if(clr) clr.classList.toggle('hidden', !catSearch);
+  if(clr) clr.style.visibility = catSearch ? 'visible' : 'hidden';
   renderCats();
 }
 function clearCatSearch(){
@@ -1143,24 +1174,33 @@ function clearCatSearch(){
   const inp = document.getElementById('catSearch');
   if(inp) inp.value = '';
   const clr = document.getElementById('catSearchClear');
-  if(clr) clr.classList.add('hidden');
+  if(clr) clr.style.visibility = 'hidden';
   renderCats();
 }
+function catNorm(x){ return (x || '').toLowerCase().normalize('NFC'); }
 function catMatches(en, bn){
   if(!catSearch) return true;
-  const q = catSearch.toLowerCase();
-  return (en || '').toLowerCase().includes(q) || (bn || '').includes(catSearch);
+  const q = catNorm(catSearch);
+  return catNorm(en).includes(q) || catNorm(bn).includes(q);
+}
+function catScore(en, bn){
+  if(!catSearch) return 0;
+  const q = catNorm(catSearch);
+  const e = catNorm(en), b = catNorm(bn);
+  if(e === q || b === q) return 0;
+  if(e.startsWith(q) || b.startsWith(q)) return 1;
+  return 2;
 }
 function renderCats(){
   const area = document.getElementById('catArea');
   if(formType === 'income'){
-    const incList = INCOME_CATEGORIES.map((c,i) => ({ c: c, i: i })).filter(x => catMatches(x.c.en, x.c.bn));
+    const incList = INCOME_CATEGORIES.map((c,i) => ({ c: c, i: i })).filter(x => catMatches(x.c.en, x.c.bn)).sort((a,b) => catScore(a.c.en, a.c.bn) - catScore(b.c.en, b.c.bn));
     area.innerHTML = incList.length ? '<div class="grid grid-cols-3 gap-2">' + incList.map(x =>
       '<div class="cat-btn ' + (selCat === x.i ? 'sel' : '') + '" onclick="pickIncome(' + x.i + ')">' + x.c.icon + ' ' + (lang === 'en' ? x.c.en : x.c.bn) + '</div>').join('') + '</div>'
       : '<div class="text-center text-[13px] text-[#8B7355] py-3">' + t('noMatch') + '</div>';
   } else {
     /* FLAT: all expense items directly, no group screen, no group label */
-    const expList = EXPENSE_FLAT.map((it,j) => ({ it: it, j: j })).filter(x => catMatches(x.it.en, x.it.bn));
+    const expList = EXPENSE_FLAT.map((it,j) => ({ it: it, j: j })).filter(x => catMatches(x.it.en, x.it.bn)).sort((a,b) => catScore(a.it.en, a.it.bn) - catScore(b.it.en, b.it.bn));
     area.innerHTML = expList.length ? '<div class="grid grid-cols-2 gap-2">' + expList.map(x =>
       '<div class="cat-btn ' + (selSub === x.j ? 'sel' : '') + '" onclick="pickSub(' + x.j + ')">' + x.it.icon + ' ' + (lang === 'en' ? x.it.en : x.it.bn) + '</div>').join('') + '</div>'
       : '<div class="text-center text-[13px] text-[#8B7355] py-3">' + t('noMatch') + '</div>';
@@ -1246,7 +1286,7 @@ function updateBazarTabs(){
     const el = document.getElementById(tabs[k]);
     if(!el) return;
     const on = (k === bazarFilter);
-    el.className = 'px-3 py-1.5 rounded-full text-[12px] font-bold ' + (on ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]');
+    el.className = 'px-3 py-1.5 rounded-full text-[12px] font-bold ' + (on ? 'bg-[#E3F2FD]' : 'bg-white border border-[#F3E8D3]');
   });
 }
 /* Smart split: comma/newline ALWAYS split. Space splits ONLY when EVERY word is a known
@@ -1422,8 +1462,7 @@ function saveBazarForm(){
       it.text = text; it.price = price; it.catIdx = bzCatIdx; it.date = date;
       it.updatedAt = new Date().toISOString();
       saveBazar();
-      closeBazarForm();
-      showToast(t('saved'));
+      flashSaved(document.querySelector('button[onclick="saveBazarForm()"]'), () => { closeBazarForm(); showToast(t('saved')); });
       return;
     }
     const tx = {
@@ -1436,8 +1475,7 @@ function saveBazarForm(){
     it.text = text; it.price = price; it.catIdx = bzCatIdx; it.date = date;
     it.updatedAt = new Date().toISOString();
     saveBazar();
-    closeBazarForm();
-    showToast(t('addedToExpense'));
+    flashSaved(document.querySelector('button[onclick="saveBazarForm()"]'), () => { closeBazarForm(); showToast(t('addedToExpense')); });
   } else {
     /* Edit: changes only the bazar item. A bought item's expense entry stays as recorded. */
     it.text = text;
@@ -1446,8 +1484,7 @@ function saveBazarForm(){
     it.date = date;
     it.updatedAt = new Date().toISOString();
     saveBazar();
-    closeBazarForm();
-    showToast(t('saved'));
+    flashSaved(document.querySelector('button[onclick="saveBazarForm()"]'), () => { closeBazarForm(); showToast(t('saved')); });
   }
 }
 function bazarNo(id){
@@ -1548,12 +1585,12 @@ function renderHistoryView(){
       '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span>' +
       '<input type="text" value="' + escA(histSearch) + '" placeholder="' + escA(t('histSearchPh')) + '" oninput="histSetSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
       '<div class="grid grid-cols-4 gap-2 mb-3">' + tabs.map(x =>
-        '<button onclick="histSetFilter(\'' + x[0] + '\')" class="px-1 py-2 rounded-full text-[12px] font-bold text-center leading-tight ' + (histFilter === x[0] ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">' + t(x[1]) + '</button>').join('') + '</div>' +
+        '<button onclick="histSetFilter(\'' + x[0] + '\')" class="px-1 py-2 rounded-full text-[12px] font-bold text-center leading-tight ' + (histFilter === x[0] ? 'bg-[#E3F2FD]' : 'bg-white border border-[#F3E8D3]') + '">' + t(x[1]) + '</button>').join('') + '</div>' +
       '<div class="flex gap-2 mb-3">' +
-        '<button onclick="histAddNew()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">' + histAddLabel() + '</button>' +
-        '<button onclick="historyDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
+        '<button onclick="histAddNew()" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] font-bold text-[13px]">' + histAddLabel() + '</button>' +
+        '<button onclick="historyDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
         '<button onclick="openPdfPreview()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-        '<button onclick="historySharePdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
+        '<button onclick="historySharePdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
       '</div>' +
       '<div class="flex gap-2 items-end mb-2">' +
         '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(histFrom) + '" onchange="histSetFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
@@ -1672,7 +1709,7 @@ function updatePersonSaveBtn(){
   const amt = parseFloat(document.getElementById('leAmount').value) || 0;
   const ok = name.length > 0 && amt > 0;
   btn.disabled = !ok;
-  btn.style.background = ok ? '#2D2A26' : '#9E9E9E';
+  btn.style.background = ok ? '#E3F2FD' : '#9E9E9E';
   const label = (editingLoanKey || '').startsWith('add:addloan') ? t('saveLoan') : t('save');
   btn.textContent = ok ? label + ' • ' + bnDigits(fmt(amt)) : label;
 }
@@ -1783,7 +1820,7 @@ function emiTableHtml(entry, toggleFn){
   const rows = bankEmiSchedule(entry);
   if(!rows.length) return { html: '<div class="text-[12px] text-[#8B7355] text-center py-3">—</div>', paid: 0, total: 0 };
   const html = '<table class="w-full text-[13px]">' +
-    '<thead><tr class="text-left text-[#2D2A26]"><th class="px-2 py-2 font-bold">SL No</th><th class="px-2 py-2 font-bold">Date</th><th class="px-2 py-2 font-bold text-right">EMI</th><th class="px-2 py-2 font-bold text-center">Paid</th></tr></thead>' +
+    '<thead><tr class="text-left text-[#8B5E3C]"><th class="px-2 py-2 font-bold">SL No</th><th class="px-2 py-2 font-bold">Date</th><th class="px-2 py-2 font-bold text-right">EMI</th><th class="px-2 py-2 font-bold text-center">Paid</th></tr></thead>' +
     '<tbody>' + rows.map(r =>
       '<tr class="' + (r.paid ? 'bg-[#EAF7EE]' : 'bg-[#FFF0F0]') + ' border-t border-[#F3E8D3]">' +
       '<td class="px-2 py-2">' + r.sl + '</td>' +
@@ -1860,8 +1897,7 @@ function saveEmiChecklist(){
   const e = (state.bankLoans || [])[emiCheckIdx]; if(!e){ closeEmiChecklist(); return; }
   e.emiPaid = normalizeEmiPaid(emiPaidDraft, Math.floor(+(e.months || 0)));
   e.updatedAt = new Date().toISOString();
-  persist(); render(); closeEmiChecklist();
-  showToast(t('saved'));
+  persist(); render(); flashSaved(document.getElementById('emiSaveBtn'), () => { closeEmiChecklist(); showToast(t('saved')); });
 }
 function closeEmiChecklist(){
   document.getElementById('emiSheet').classList.add('hidden');
@@ -1899,20 +1935,21 @@ function homeBankLoansHtml(){
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(homeBankFrom) + '" onchange="homeBankFrom=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(homeBankTo) + '" onchange="homeBankTo=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div></div>' +
     '<div class="flex gap-2 mb-2">' +
-    '<button onclick="openHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('downloadPdf') + '</button>' +
+    '<button onclick="downloadHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('downloadPdf') + '</button>' +
     '<button onclick="openHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-    '<button onclick="shareHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#C9A227] text-white font-bold text-[13px]">📤 ' + t('shareBtn') + '</button></div>' +
+    '<button onclick="shareHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📤 ' + t('shareBtn') + '</button></div>' +
     '<div class="text-[11px] text-[#8B7355] text-center">' + t('filterLoansHint') + '</div></div>' +
     '<div class="flex justify-between items-center mt-4 mb-2"><h3 class="font-extrabold text-[15px]">' + t('bankLoansPage') + '</h3>' +
-    '<span class="w-6 h-6 rounded-full bg-[#2D2A26] text-white text-[12px] flex items-center justify-center font-bold">' + loans.length + '</span></div>' +
+    '<span class="w-6 h-6 rounded-full bg-[#E3F2FD] text-[12px] flex items-center justify-center font-bold">' + loans.length + '</span></div>' +
     (cards || '<div class="text-center text-[13px] text-[#8B7355] py-4">' + t('noData') + '</div>');
 }
 function homeBankPdfHtml(){
   const rows = homeBankLoansFiltered().map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' • ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
   const period = statementPeriod(homeBankFrom, homeBankTo, rows);
-  return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows);
+  return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows, 'noCategory');
 }
-function openHomeBankPdf(){ pdfMode = 'homeBank'; downloadPdfFile(); }
+function openHomeBankPdf(){ pdfMode = 'homeBank'; showStatementPreview(homeBankPdfHtml()); }
+function downloadHomeBankPdf(){ pdfMode = 'homeBank'; downloadPdfFile(); }
 function shareHomeBankPdf(){ pdfMode = 'homeBank'; sharePdf(); }
 let catDetail = null;
 function saveLoanEntry(){
@@ -1935,8 +1972,7 @@ function saveLoanEntry(){
       entry.emiPaid = normalizeEmiPaid(emiPaidDraft, entry.months);
       state.bankLoans = [...(state.bankLoans || []), entry];
       currentView = 'loans'; loansKind = 'bank';
-      persist(); render(); closeLoanEntryForm();
-      showToast(t('bankLoanAdded')); return;
+      persist(); render(); flashSaved(loanEntrySaveBtn(), () => { closeLoanEntryForm(); showToast(t('bankLoanAdded')); }); return;
     }
     const arr = kind === 'given' ? state.peopleGiven : state.peopleTaken;
     const name = (document.getElementById('lePersonName').value || '').trim();
@@ -1958,8 +1994,7 @@ function saveLoanEntry(){
     if(mode === 'addloan') person.loans = [...(person.loans || []), entry];
     else person.payments = [...(person.payments || []), entry];
     currentView = 'person'; personKind = kind; personIdx = pi2;
-    persist(); render(); closeLoanEntryForm();
-    showToast(mode === 'addloan' ? t('loanAdded') : t('paymentAdded')); return;
+    persist(); render(); flashSaved(loanEntrySaveBtn(), () => { closeLoanEntryForm(); showToast(mode === 'addloan' ? t('loanAdded') : t('paymentAdded')); }); return;
   }
   const r = loanEntryByKey(editingLoanKey || '');
   if(!r.entry) { closeLoanEntryForm(); return; }
@@ -1996,8 +2031,7 @@ function saveLoanEntry(){
   r.entry.updatedAt = new Date().toISOString();
   persist();
   render();
-  closeLoanEntryForm();
-  showToast(t('saved'));
+  flashSaved(loanEntrySaveBtn(), () => { closeLoanEntryForm(); showToast(t('saved')); });
 }
 function deleteLoanEntry(key){
   const r = loanEntryByKey(key);
@@ -2068,24 +2102,59 @@ function statementHeaderHtml(title, totalRecords, period){
     '<div style="font-size:12px;color:#555;line-height:1.5">Total Records: ' + totalRecords + '</div>' +
     '<div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:10px">Statement Period: ' + escA(period.from) + ' – ' + escA(period.to) + '</div>';
 }
-function statementEntriesTable(rows){
+function statementEntriesTable(rows, colsMode){
+  colsMode = colsMode || 'both';
   const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
   const th = 'border:1px solid #ccc;padding:5px 6px;text-align:left;background:#F5EEDD;font-weight:700;overflow-wrap:break-word';
-  const body = rows.length ? rows.map(r =>
-    '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
-    '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
-    '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
-    '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
-    '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
-    '<td style="' + cell + '">' + escA(r.to || '') + '</td>' +
-    '<td style="' + cell + ';text-align:right">' + fmt(Math.abs(r.amount || 0)) + '</td></tr>').join('')
-    : '<tr style="page-break-inside:avoid"><td colspan="7" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
   const total = rows.reduce((s, r) => s + Math.abs(r.amount || 0), 0);
-  return '<table class="stmt-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><colgroup><col style="width:11%"><col style="width:11%"><col style="width:17%"><col style="width:24%"><col style="width:9%"><col style="width:9%"><col style="width:19%"></colgroup><thead>' +
-    '<tr style="page-break-inside:avoid"><th style="' + th + '">Date</th><th style="' + th + '">Person</th><th style="' + th + '">Category</th><th style="' + th + '">Note</th><th colspan="2" style="' + th + ';text-align:center">Channel</th><th style="' + th + ';text-align:right">Amount</th></tr>' +
-    '<tr style="page-break-inside:avoid"><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '">From</th><th style="' + th + '">To</th><th style="' + th + '"></th></tr></thead>' +
+  let body, colgroup, thead, totalSpan, emptySpan;
+  if(colsMode === 'noPerson'){
+    // Expense / Income: no Person column
+    body = rows.length ? rows.map(r =>
+      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.to || '') + '</td>' +
+      '<td style="' + cell + ';text-align:right">' + fmt(Math.abs(r.amount || 0)) + '</td></tr>').join('')
+      : '<tr style="page-break-inside:avoid"><td colspan="6" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
+    colgroup = '<colgroup><col style="width:13%"><col style="width:20%"><col style="width:28%"><col style="width:10%"><col style="width:10%"><col style="width:19%"></colgroup>';
+    thead = '<tr style="page-break-inside:avoid"><th style="' + th + '">Date</th><th style="' + th + '">Category</th><th style="' + th + '">Note</th><th colspan="2" style="' + th + ';text-align:center">Channel</th><th style="' + th + ';text-align:right">Amount</th></tr>' +
+      '<tr style="page-break-inside:avoid"><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '">From</th><th style="' + th + '">To</th><th style="' + th + '"></th></tr>';
+    totalSpan = 5; emptySpan = 6;
+  } else if(colsMode === 'noCategory'){
+    // Given / Taken / Return / Repayment / Bank Loan: no Category column
+    body = rows.length ? rows.map(r =>
+      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.to || '') + '</td>' +
+      '<td style="' + cell + ';text-align:right">' + fmt(Math.abs(r.amount || 0)) + '</td></tr>').join('')
+      : '<tr style="page-break-inside:avoid"><td colspan="6" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
+    colgroup = '<colgroup><col style="width:13%"><col style="width:15%"><col style="width:31%"><col style="width:10%"><col style="width:10%"><col style="width:21%"></colgroup>';
+    thead = '<tr style="page-break-inside:avoid"><th style="' + th + '">Date</th><th style="' + th + '">Person</th><th style="' + th + '">Note</th><th colspan="2" style="' + th + ';text-align:center">Channel</th><th style="' + th + ';text-align:right">Amount</th></tr>' +
+      '<tr style="page-break-inside:avoid"><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '">From</th><th style="' + th + '">To</th><th style="' + th + '"></th></tr>';
+    totalSpan = 5; emptySpan = 6;
+  } else {
+    // All: Person + Category both
+    body = rows.length ? rows.map(r =>
+      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
+      '<td style="' + cell + '">' + escA(r.to || '') + '</td>' +
+      '<td style="' + cell + ';text-align:right">' + fmt(Math.abs(r.amount || 0)) + '</td></tr>').join('')
+      : '<tr style="page-break-inside:avoid"><td colspan="7" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
+    colgroup = '<colgroup><col style="width:11%"><col style="width:11%"><col style="width:17%"><col style="width:24%"><col style="width:9%"><col style="width:9%"><col style="width:19%"></colgroup>';
+    thead = '<tr style="page-break-inside:avoid"><th style="' + th + '">Date</th><th style="' + th + '">Person</th><th style="' + th + '">Category</th><th style="' + th + '">Note</th><th colspan="2" style="' + th + ';text-align:center">Channel</th><th style="' + th + ';text-align:right">Amount</th></tr>' +
+      '<tr style="page-break-inside:avoid"><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '">From</th><th style="' + th + '">To</th><th style="' + th + '"></th></tr>';
+    totalSpan = 6; emptySpan = 7;
+  }
+  return '<table class="stmt-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">' + colgroup + '<thead>' + thead + '</thead>' +
     '<tbody>' + body + '</tbody>' +
-    '<tfoot><tr style="page-break-inside:avoid"><td colspan="6" style="' + cell + ';font-weight:700;background:#F5EEDD">Total (' + rows.length + ' records)</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(total) + '</td></tr></tfoot></table>';
+    '<tfoot><tr style="page-break-inside:avoid"><td colspan="' + totalSpan + '" style="' + cell + ';font-weight:700;background:#F5EEDD">Total (' + rows.length + ' records)</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(total) + '</td></tr></tfoot></table>';
 }
 function personStatementRows(){
   const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
@@ -2107,28 +2176,58 @@ function statementText(title, rows, fromISO, toISO){
 function pdfStatementHtml(){
   const rows = pdfStatementRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
   const period = statementPeriod(histFrom, histTo, rows);
-  return statementHeaderHtml('History - ' + statementFilterName(), rows.length, period) + statementEntriesTable(rows);
+  return statementHeaderHtml('History - ' + statementFilterName(), rows.length, period) + statementEntriesTable(rows, pdfColsMode());
 }
 
 
 /* ---------- Statement preview: render as one A4 page, scaled to fit the sheet ---------- */
+let pdfZoom = 1; // 1 = fit-width (100%)
+function pdfZoomIn(){ pdfZoom = Math.min(3, pdfZoom + 0.25); fitStatementPreview(); }
+function pdfZoomOut(){ pdfZoom = Math.max(0.5, pdfZoom - 0.25); fitStatementPreview(); }
+function pdfZoomReset(){ pdfZoom = 1; fitStatementPreview(); }
+let stmtPinchBound = false, pinching = false, pinchStartDist = 0, pinchStartZoom = 1;
+function pdfPinchStart(e){
+  if(e.touches.length === 2){
+    pinching = true;
+    pinchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    pinchStartZoom = pdfZoom;
+  }
+}
+function pdfPinchMove(e){
+  if(!pinching || e.touches.length !== 2) return;
+  const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+  if(pinchStartDist > 0){
+    pdfZoom = Math.min(3, Math.max(0.5, pinchStartZoom * d / pinchStartDist));
+    fitStatementPreview();
+  }
+  e.preventDefault();
+}
+function pdfPinchEnd(e){
+  if(e.touches.length < 2){ pinching = false; pinchStartDist = 0; }
+}
 function fitStatementPreview(){
   const body = document.getElementById('pdfPreviewBody');
   const wrap = document.getElementById('stmtScaleWrap');
   const page = document.getElementById('stmtPage');
   if(!body || !wrap || !page) return;
   const avail = body.clientWidth || 360;
-  const scale = Math.min(1, avail / 794);
+  const PAD = 16; // 8px grey border around the A4 page
+  const fitScale = Math.min(1, (avail - PAD) / 794);
+  const scale = fitScale * pdfZoom;
   page.style.transform = 'scale(' + scale + ')';
   page.style.transformOrigin = 'top left';
-  wrap.style.height = Math.ceil(page.offsetHeight * scale) + 'px';
-  wrap.style.width = Math.ceil(794 * scale) + 'px';
-  wrap.style.margin = '0 auto';
+  const w = Math.ceil(794 * scale + PAD);
+  wrap.style.height = Math.ceil(page.offsetHeight * scale + PAD) + 'px';
+  wrap.style.width = w + 'px';
+  wrap.style.margin = w <= avail ? '0 auto' : '0';
+  const lbl = document.getElementById('pdfZoomLabel');
+  if(lbl) lbl.textContent = Math.round(pdfZoom * 100) + '%';
 }
 let stmtFitBound = false;
 function showStatementPreview(html){
+  pdfZoom = 1;
   document.getElementById('pdfPreviewBody').innerHTML =
-    '<div id="stmtScaleWrap" style="overflow:hidden"><div id="stmtPage" style="width:794px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12);padding:10px">' + html + '</div></div>';
+    '<div id="stmtScaleWrap" style="overflow:hidden;background:#D9D9D9;padding:8px"><div id="stmtPage" style="width:794px;min-height:1123px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.25);padding:10px">' + html + '</div></div>';
   document.getElementById('pdfPreviewSheet').classList.remove('hidden');
   document.getElementById('pdfOverlay').classList.remove('hidden');
   setTimeout(fitStatementPreview, 30);
@@ -2137,6 +2236,14 @@ function showStatementPreview(html){
     window.addEventListener('resize', function(){
       if(!document.getElementById('pdfPreviewSheet').classList.contains('hidden')) fitStatementPreview();
     });
+  }
+  if(!stmtPinchBound){
+    stmtPinchBound = true;
+    const pb = document.getElementById('pdfPreviewBody');
+    pb.addEventListener('touchstart', pdfPinchStart, { passive: true });
+    pb.addEventListener('touchmove', pdfPinchMove, { passive: false });
+    pb.addEventListener('touchend', pdfPinchEnd, { passive: true });
+    pb.addEventListener('touchcancel', pdfPinchEnd, { passive: true });
   }
 }
 function openPdfPreview(){
@@ -2230,11 +2337,26 @@ function personSectionData(person, kind, from, to){
   const totalPays = pays.reduce((a, x) => a + x.amount, 0);
   return { name: person.name || '', mobile: person.mobile || '', kind: kind, balance: totalLoans - totalPays, totalLoans: totalLoans, totalPays: totalPays, loans: loans, pays: pays };
 }
+// Which columns the statement table shows:
+// 'both' = Date + Person + Category + Note + Channel + Amount (All)
+// 'noPerson' = Date + Category + Note + Channel + Amount (Income / Expense - no person involved)
+// 'noCategory' = Date + Person + Note + Channel + Amount (Given / Taken / Return / Repayment / Bank Loan - no category)
+function pdfColsMode(){
+  if(pdfMode === 'history'){
+    if(histFilter === 'income' || histFilter === 'expense') return 'noPerson';
+    if(histFilter === 'given' || histFilter === 'taken' || histFilter === 'return' || histFilter === 'repayment' || histFilter === 'bank') return 'noCategory';
+    return 'both';
+  }
+  if(pdfMode === 'reports') return 'noPerson';
+  if(pdfMode === 'loans' && loansKind === 'bank') return 'noCategory';
+  if(pdfMode === 'homeBank') return 'noCategory';
+  return 'both';
+}
 function pdfStatementData(){
   const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
   if(pdfMode === 'history'){
     const rows = pdfStatementRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
-    return { prof: prof, title: 'History - ' + statementFilterName(), records: rows.length, period: statementPeriod(histFrom, histTo, rows), entriesRows: rows };
+    return { prof: prof, title: 'History - ' + statementFilterName(), records: rows.length, period: statementPeriod(histFrom, histTo, rows), entriesRows: rows, colsMode: pdfColsMode() };
   }
   if(pdfMode === 'person'){
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
@@ -2246,7 +2368,7 @@ function pdfStatementData(){
   if(pdfMode === 'loans'){
     if(loansKind === 'bank'){
       const rows = (state.bankLoans || []).map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' \u2022 ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-      return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(loansFrom, loansTo, rows), entriesRows: rows };
+      return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(loansFrom, loansTo, rows), entriesRows: rows, colsMode: 'noCategory' };
     }
     const people = loansPeopleFiltered();
     const secs = people.map(x => personSectionData(x.person, loansKind, loansFrom, loansTo));
@@ -2255,11 +2377,11 @@ function pdfStatementData(){
   if(pdfMode === 'reports'){
     const rows = reportRows();
     const r = repRange();
-    return { prof: prof, title: 'Reports', records: rows.length, period: statementPeriod(r.from, r.to, rows), entriesRows: rows };
+    return { prof: prof, title: 'Reports', records: rows.length, period: statementPeriod(r.from, r.to, rows), entriesRows: rows, colsMode: 'noPerson' };
   }
   if(pdfMode === 'homeBank'){
     const rows = homeBankLoansFiltered().map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' \u2022 ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
-    return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(homeBankFrom, homeBankTo, rows), entriesRows: rows };
+    return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(homeBankFrom, homeBankTo, rows), entriesRows: rows, colsMode: 'noCategory' };
   }
   return null;
 }
@@ -2320,7 +2442,7 @@ function pdfPersonSectionsJpegs(data){
   mctx.font = FS;
   const titleLines = pdfWrapText(mctx, data.title, CW);
   const jpegs = [];
-  let pc = null, ctx = null, y = M, firstPage = true;
+  let pc = null, ctx = null, y = M;
   const drawPageHeader = () => {
     ctx.font = FT; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = '#000';
     ctx.fillText('Lifestyle', M, y); y += 24;
@@ -2348,7 +2470,7 @@ function pdfPersonSectionsJpegs(data){
     ctx = pc.getContext('2d'); ctx.scale(S, S);
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
     y = M;
-    if(firstPage){ drawPageHeader(); firstPage = false; }
+    drawPageHeader(); // full header + title on EVERY page
   };
   const finishPage = () => {
     const dataUrl = pc.toDataURL('image/jpeg', 0.92);
@@ -2510,33 +2632,89 @@ function pdfStatementJpegs(){
     ];
     emptyRow = [{ text: t('noData'), span: 5, align: 'center' }];
   } else {
-    cols = [{ w: 11, align: 'left' }, { w: 11, align: 'left' }, { w: 17, align: 'left' }, { w: 24, align: 'left' }, { w: 9, align: 'left' }, { w: 9, align: 'left' }, { w: 19, align: 'right' }];
-    headerRows = [
-      [
-        { text: 'Date', span: 1, align: 'left' },
-        { text: 'Person', span: 1, align: 'left' },
-        { text: 'Category', span: 1, align: 'left' },
-        { text: 'Note', span: 1, align: 'left' },
-        { text: 'Channel', span: 2, align: 'center' },
-        { text: 'Amount', span: 1, align: 'right' },
-      ],
-      [
-        { text: '', span: 1, align: 'left' },
-        { text: '', span: 1, align: 'left' },
-        { text: '', span: 1, align: 'left' },
-        { text: '', span: 1, align: 'left' },
-        { text: 'From', span: 1, align: 'left' },
-        { text: 'To', span: 1, align: 'left' },
-        { text: '', span: 1, align: 'left' },
-      ],
-    ];
-    rows = data.entriesRows.map(r => [fmtDMY(r.date), r.person || '', r.category || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]);
+    const colsMode = data.colsMode || 'both';
     const tot = data.entriesRows.reduce((s, r) => s + Math.abs(r.amount || 0), 0);
-    totalRow = [
-      { text: 'Total (' + data.entriesRows.length + ' records)', span: 6, align: 'left' },
-      { text: fmt(tot), span: 1, align: 'right' },
-    ];
-    emptyRow = [{ text: t('noData'), span: 7, align: 'center' }];
+    if(colsMode === 'noPerson'){
+      // Expense / Income: no Person column
+      cols = [{ w: 13, align: 'left' }, { w: 20, align: 'left' }, { w: 28, align: 'left' }, { w: 10, align: 'left' }, { w: 10, align: 'left' }, { w: 19, align: 'right' }];
+      headerRows = [
+        [
+          { text: 'Date', span: 1, align: 'left' },
+          { text: 'Category', span: 1, align: 'left' },
+          { text: 'Note', span: 1, align: 'left' },
+          { text: 'Channel', span: 2, align: 'center' },
+          { text: 'Amount', span: 1, align: 'right' },
+        ],
+        [
+          { text: '', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+          { text: 'From', span: 1, align: 'left' },
+          { text: 'To', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+        ],
+      ];
+      rows = data.entriesRows.map(r => [fmtDMY(r.date), r.category || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]);
+      totalRow = [
+        { text: 'Total (' + data.entriesRows.length + ' records)', span: 5, align: 'left' },
+        { text: fmt(tot), span: 1, align: 'right' },
+      ];
+      emptyRow = [{ text: t('noData'), span: 6, align: 'center' }];
+    } else if(colsMode === 'noCategory'){
+      // Given / Taken / Return / Repayment / Bank Loan: no Category column
+      cols = [{ w: 13, align: 'left' }, { w: 15, align: 'left' }, { w: 31, align: 'left' }, { w: 10, align: 'left' }, { w: 10, align: 'left' }, { w: 21, align: 'right' }];
+      headerRows = [
+        [
+          { text: 'Date', span: 1, align: 'left' },
+          { text: 'Person', span: 1, align: 'left' },
+          { text: 'Note', span: 1, align: 'left' },
+          { text: 'Channel', span: 2, align: 'center' },
+          { text: 'Amount', span: 1, align: 'right' },
+        ],
+        [
+          { text: '', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+          { text: 'From', span: 1, align: 'left' },
+          { text: 'To', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+        ],
+      ];
+      rows = data.entriesRows.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]);
+      totalRow = [
+        { text: 'Total (' + data.entriesRows.length + ' records)', span: 5, align: 'left' },
+        { text: fmt(tot), span: 1, align: 'right' },
+      ];
+      emptyRow = [{ text: t('noData'), span: 6, align: 'center' }];
+    } else {
+      // All: Person + Category both
+      cols = [{ w: 11, align: 'left' }, { w: 11, align: 'left' }, { w: 17, align: 'left' }, { w: 24, align: 'left' }, { w: 9, align: 'left' }, { w: 9, align: 'left' }, { w: 19, align: 'right' }];
+      headerRows = [
+        [
+          { text: 'Date', span: 1, align: 'left' },
+          { text: 'Person', span: 1, align: 'left' },
+          { text: 'Category', span: 1, align: 'left' },
+          { text: 'Note', span: 1, align: 'left' },
+          { text: 'Channel', span: 2, align: 'center' },
+          { text: 'Amount', span: 1, align: 'right' },
+        ],
+        [
+          { text: '', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+          { text: 'From', span: 1, align: 'left' },
+          { text: 'To', span: 1, align: 'left' },
+          { text: '', span: 1, align: 'left' },
+        ],
+      ];
+      rows = data.entriesRows.map(r => [fmtDMY(r.date), r.person || '', r.category || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]);
+      totalRow = [
+        { text: 'Total (' + data.entriesRows.length + ' records)', span: 6, align: 'left' },
+        { text: fmt(tot), span: 1, align: 'right' },
+      ];
+      emptyRow = [{ text: t('noData'), span: 7, align: 'center' }];
+    }
   }
   const colW = cols.map(c => c.w / 100 * CW);
   const sumW = colW.reduce((a, b) => a + b, 0);
@@ -2599,7 +2777,7 @@ function pdfStatementJpegs(){
   } else {
     let idx = 0, first = true;
     while(idx < rows.length){
-      const avail = first ? (PAGE_H - headerH - headerRowsH) : (PAGE_H - headerRowsH);
+      const avail = PAGE_H - headerH - headerRowsH; // every page has the full header + title
       const pageRows = [];
       let used = 0;
       while(idx < rows.length && used + dataRowHeights[idx] <= avail){
@@ -2616,7 +2794,7 @@ function pdfStatementJpegs(){
       first = false;
     }
     const last = pages[pages.length - 1];
-    const lastAvail = last.first ? (PAGE_H - headerH - headerRowsH) : (PAGE_H - headerRowsH);
+    const lastAvail = PAGE_H - headerH - headerRowsH; // every page has the full header + title
     const lastUsed = last.rows.reduce((s, i) => s + dataRowHeights[i], 0);
     if(lastUsed + totalRowH <= lastAvail) last.total = true;
     else pages.push({ rows: [], total: true, empty: false, first: false });
@@ -2632,7 +2810,8 @@ function pdfStatementJpegs(){
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
     let y = M;
-    if(pg.first){
+    // Full header + title on EVERY page (not just the first)
+    {
       ctx.font = FT;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
@@ -2740,8 +2919,7 @@ function pdfMakeBlob(){
 function downloadPdfFile(){
   if(pdfBusy) return;
   pdfBusy = true;
-  const html = pdfDocHtml();
-  showStatementPreview(html);
+  // PDF button: ONLY auto-downloads (no preview, no extra click)
   const blob = pdfMakeBlob();
   pdfBusy = false;
   if(!blob){ showToast(t('pdfFail')); return; }
@@ -2759,8 +2937,7 @@ function downloadPdfFile(){
 function sharePdf(){
   if(pdfBusy) return;
   pdfBusy = true;
-  const html = pdfDocHtml();
-  showStatementPreview(html);
+  // Share button: ONLY opens the share sheet (no preview)
   const blob = pdfMakeBlob();
   pdfBusy = false;
   if(!blob){ showToast(t('pdfFail')); return; }
@@ -2821,10 +2998,10 @@ function renderLoansView(){
   const title = loansPageTitle();
   const backBtn = '<button onclick="navGo(\'home\')" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>';
   const controls = '<div class="flex gap-2 mb-3">' +
-    '<button onclick="' + (loansKind === 'bank' ? 'openLoanEntryForm(\'addbank\',\'bank\',\'\')' : 'openAddPerson(\'' + loansKind + '\')') + '" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">' + (loansKind === 'bank' ? t('addBankLoanBtn') : t('addPerson')) + '</button>' +
-    '<button onclick="loansDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
+    '<button onclick="' + (loansKind === 'bank' ? 'openLoanEntryForm(\'addbank\',\'bank\',\'\')' : 'openAddPerson(\'' + loansKind + '\')') + '" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] font-bold text-[13px]">' + (loansKind === 'bank' ? t('addBankLoanBtn') : t('addPerson')) + '</button>' +
+    '<button onclick="loansDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
     '<button onclick="openLoansPdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-    '<button onclick="loansSharePdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button></div>';
+    '<button onclick="loansSharePdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button></div>';
   const dates = '<div class="flex gap-2 items-end mb-2">' +
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(loansFrom) + '" onchange="loansFrom=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(loansTo) + '" onchange="loansTo=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
@@ -2903,17 +3080,17 @@ function renderPersonView(){
     '<div class="flex justify-between items-start gap-2"><div style="min-width:0"><div class="font-extrabold text-[20px]">' + escA(person.name || '') + '</div><div class="text-[13px] text-[#8B7355]">' + escA(person.mobile || '') + '</div></div>' +
     '<div class="flex gap-1 shrink-0 flex-nowrap"><button onclick="openEditPerson()" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
     '<button onclick="deletePerson()" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div>' +
-    '<div class="card p-4 mt-3" style="background:#2D2A26;color:#fff"><div class="text-[13px] opacity-80">' + (personKind === 'given' ? t('youWillGet') : t('youWillPay')) + '</div>' +
+    '<div class="card p-4 mt-3" style="background:#E3F2FD"><div class="text-[13px] opacity-80">' + (personKind === 'given' ? t('youWillGet') : t('youWillPay')) + '</div>' +
     '<div class="font-extrabold text-[26px]">' + fmt(tot.balance) + '</div>' +
     '<div class="text-[12px] opacity-80 mt-1">' + t('totalLbl') + ': ' + fmt(tot.loans) + ' • ' + (personKind === 'given' ? t('returned') : t('repaid')) + ': ' + fmt(tot.pays) + '</div></div>' +
     '<div class="flex gap-2 mt-3">' +
-      '<button onclick="openLoanEntryForm(\'addloan\',\'' + personKind + '\',' + personIdx + ')" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">' + t('addLoanBtn') + '</button>' +
-      '<button onclick="openLoanEntryForm(\'addpay\',\'' + personKind + '\',' + personIdx + ')" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">' + t('addPaymentBtn') + '</button>' +
+      '<button onclick="openLoanEntryForm(\'addloan\',\'' + personKind + '\',' + personIdx + ')" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] font-bold text-[13px]">' + t('addLoanBtn') + '</button>' +
+      '<button onclick="openLoanEntryForm(\'addpay\',\'' + personKind + '\',' + personIdx + ')" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] font-bold text-[13px]">' + t('addPaymentBtn') + '</button>' +
     '</div>' +
     '<div class="flex gap-2 mt-2">' +
-      '<button onclick="personDownloadPdf()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
+      '<button onclick="personDownloadPdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
       '<button onclick="openPersonPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-      '<button onclick="personSharePdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
+      '<button onclick="personSharePdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
     '</div>' +
     '<div class="flex gap-2 items-end mt-3 mb-2">' +
       '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(personFrom) + '" onchange="personFrom=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
@@ -2977,18 +3154,14 @@ function savePerson(){
     const person = (arr || [])[editingPerson.idx];
     if(person){ person.name = name; person.mobile = mobile; person.updatedAt = new Date().toISOString(); }
     persist();
-    closeAddPerson();
-    showToast(t('personUpdated'));
-    render();
+    flashSaved(document.querySelector('button[onclick="savePerson()"]'), () => { closeAddPerson(); showToast(t('personUpdated')); render(); });
     return;
   }
   const arr = addPersonKind === 'given' ? state.peopleGiven : state.peopleTaken;
   const person = { id: uid(), name: name, mobile: mobile, loans: [], payments: [], updatedAt: new Date().toISOString() };
   arr.push(person);
   persist();
-  closeAddPerson();
-  showToast(t('personAdded'));
-  openPersonDetail(addPersonKind, arr.length - 1);
+  flashSaved(document.querySelector('button[onclick="savePerson()"]'), () => { closeAddPerson(); showToast(t('personAdded')); openPersonDetail(addPersonKind, arr.length - 1); });
 }
 /* ---------- Phase 3: Person Picker ---------- */
 function openPersonPicker(kind, action){
@@ -3039,7 +3212,7 @@ function loansPdfHtml(){
   if(loansKind === 'bank'){
     const rows = (state.bankLoans || []).map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' • ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
     const period = statementPeriod(loansFrom, loansTo, rows);
-    return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows);
+    return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows, 'noCategory');
   }
   const people = loansPeopleFiltered();
   const period = statementPeriod(loansFrom, loansTo, []);
@@ -3201,7 +3374,7 @@ function appGoBack(){
   if(currentView === 'history' && histCat){ histCat = ''; renderHistoryView(); return true; }
   if(currentView === 'person'){ loansKind = personKind; currentView = 'loans'; render(); return true; }
   if(currentView && currentView !== 'home'){ navGo('home'); return true; }
-  return false; // Home, nothing open -> let the browser exit
+  return true; // Home, nothing open -> stay on Home, never exit the app
 }
 if(typeof window !== 'undefined' && window.addEventListener){
   window.addEventListener('popstate', function(){ if(appGoBack()){ try{ history.pushState({app: true}, ''); }catch(e){} } });
