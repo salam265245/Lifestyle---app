@@ -9,10 +9,11 @@
   <meta name="theme-color" content="#2D2A26">
 <title>Lifestyle</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
   .card{background:#fff;border:1px solid #F3E8D3;border-radius:16px;}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
   .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#2D2A26;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:100;white-space:nowrap;}
   .hidden{display:none;}
@@ -30,11 +31,11 @@
 </style>
 </head>
 <body>
-<div id="app" class="max-w-md mx-auto min-h-screen pb-28"></div>
+<div id="app" class="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto min-h-screen pb-28"></div>
 
 <!-- Bottom Nav -->
 <div class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#F3E8D3]">
-  <div class="max-w-md mx-auto flex items-end relative">
+  <div class="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto flex items-end relative">
     <div id="navHome" class="nav-btn active" onclick="navGo('home')"><div class="nav-ico text-[20px]">🏠</div><span data-t="home">HOME</span></div>
     <div id="navHistory" class="nav-btn" onclick="navGo('history')"><div class="nav-ico text-[20px]">🕘</div><span data-t="history">History</span></div>
     <div class="flex-1 flex justify-center"><button onclick="openAddSheet()" class="w-14 h-14 -mt-6 rounded-full bg-[#2D2A26] text-white text-[28px] font-bold shadow-lg">+</button></div>
@@ -47,22 +48,19 @@
 <div id="addSheetOverlay" class="overlay hidden" onclick="closeAddSheet()"></div>
 <div id="addSheet" class="sheet hidden">
   <div class="p-5">
-    <div style="position:sticky;top:0;z-index:10;background:#fff;margin:-20px -20px 0;padding:20px 20px 10px;border-bottom:1px solid #F3E8D3;border-radius:24px 24px 0 0">
     <div class="flex justify-between items-center mb-4"><h2 class="text-[17px] font-extrabold" data-t="addNewTx">Add New Transaction</h2><button onclick="closeAddSheet()" class="text-xl px-2">✕</button></div>
     <button onclick="openForm('income')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#EAF7EA] font-bold text-[14px]">💰 <span data-t="addIncome">Add Income</span></button>
     <button onclick="openForm('expense')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#FDECEC] font-bold text-[14px]">💸 <span data-t="addExpense">Add Expense</span></button>
-    <button onclick="closeAddSheet();openAddPerson('given')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#FFF8E1] font-bold text-[14px]">🤝 <span data-t="giveLoan">Give Loan</span></button>
-    <button onclick="closeAddSheet();openAddPerson('taken')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#E3F2FD] font-bold text-[14px]">📥 <span data-t="takeLoan">Take Loan</span></button>
-    <button onclick="closeAddSheet();openLoanEntryForm('addbank', 'bank', '')" class="w-full text-left py-3.5 px-4 rounded-2xl bg-[#F3E5F5] font-bold text-[14px]">🏦 <span data-t="bankLoan">Bank Loan</span></button>
+    <button onclick="phaseLater('Give Loan')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#FFF8E1] font-bold text-[14px]">🤝 <span data-t="giveLoan">Give Loan</span></button>
+    <button onclick="phaseLater('Take Loan')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#E3F2FD] font-bold text-[14px]">📥 <span data-t="takeLoan">Take Loan</span></button>
+    <button onclick="phaseLater('Bank Loan')" class="w-full text-left py-3.5 px-4 rounded-2xl bg-[#F3E5F5] font-bold text-[14px]">🏦 <span data-t="bankLoan">Bank Loan</span></button>
   </div>
-</div>
 </div>
 
 <!-- Add Income / Expense form sheet -->
 <div id="formOverlay" class="overlay hidden" onclick="closeForm()"></div>
 <div id="formSheet" class="sheet hidden">
   <div class="p-5">
-    <div style="position:sticky;top:0;z-index:10;background:#fff;margin:-20px -20px 0;padding:20px 20px 10px;border-bottom:1px solid #F3E8D3;border-radius:24px 24px 0 0">
     <div class="flex justify-between items-center mb-4"><h2 id="formTitle" class="text-[17px] font-extrabold">Add Income</h2><button onclick="closeForm()" class="text-xl px-2">✕</button></div>
     <div id="selCatBox" class="hidden mb-3 p-3 rounded-xl bg-[#FFFBF7] border border-[#F3E8D3] flex justify-between items-center"><div><div class="text-[11px] text-[#8B7355]" data-t="selectedCat">Selected Category</div><div id="selCatLabel" class="font-bold text-[14px]"></div></div><button onclick="clearCat()" class="px-2 text-[#8B7355]">✕</button></div>
     <div class="flex gap-2 mb-4">
@@ -70,8 +68,7 @@
       <button onclick="closeForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
     <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
-    <input id="fAmount" type="number" inputmode="decimal" placeholder="0" oninput="updateSaveBtn()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
-    </div>
+    <input id="fAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
     <div class="flex items-center gap-2 mt-1 mb-2">
       <label class="text-[12px] font-bold text-[#8B7355] shrink-0" data-t="category">Category</label>
       <div class="flex-1 flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-1.5">
@@ -150,7 +147,7 @@
     <div class="flex justify-between items-center mb-3"><h2 class="text-[17px] font-extrabold">PDF Preview</h2><button onclick="closePdfPreview()" class="text-xl px-2">✕</button></div>
     <div id="pdfPreviewBody"></div>
     <div class="flex gap-2 mt-4">
-      <button onclick="printPdf()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]" data-t="printPdf">Print / Save PDF</button>
+      <button onclick="downloadPdfFile()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]" data-t="printPdf">Print / Save PDF</button>
       <button onclick="sharePdf()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="shareBtn">Share</button>
     </div>
     <div class="flex gap-2 mt-2">
@@ -164,44 +161,34 @@
 <div id="loanEditSheet" class="sheet hidden">
   <div class="p-5">
     <div class="flex justify-between items-center mb-4"><h2 id="leTitle" class="text-[17px] font-extrabold">Edit Loan Entry</h2><button onclick="closeLoanEntryForm()" class="text-xl px-2">✕</button></div>
-    <div class="flex gap-2 mb-4">
-      <button id="leSaveBtn" onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
-      <button id="leCancelBtn" onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
-    </div>
-    <div id="leCommonFields">
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
-      <input id="leAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="date">Date</label>
-      <input id="leDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="medium">Medium</label>
-      <select id="leMedium" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></select>
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="note">Note</label>
-      <input id="leNote" type="text" maxlength="200" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
-    </div>
+    <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
+    <input id="leAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
+    <label class="text-[12px] font-bold text-[#8B7355]" data-t="date">Date</label>
+    <input id="leDate" oninput="renderBankEmiSheet()" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
+    <label class="text-[12px] font-bold text-[#8B7355]" data-t="medium">Medium</label>
+    <select id="leMedium" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></select>
+    <label class="text-[12px] font-bold text-[#8B7355]" data-t="note">Note</label>
+    <input id="leNote" type="text" maxlength="200" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
     <div id="leBankFields" class="hidden">
-      <label class="text-[12px] font-bold text-[#8B7355]">Bank Name</label>
-      <select id="leBank" onchange="updateBankForm()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></select>
-      <div class="flex gap-2 mb-3">
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">Loan Amount</label>
-        <input id="leBankAmount" type="number" inputmode="decimal" placeholder="0" oninput="updateBankForm()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1"></div>
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">Term (months)</label>
-        <input id="leMonths" type="number" inputmode="numeric" placeholder="0" oninput="updateBankForm()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1"></div>
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="bankNameLbl">Bank name</label>
+      <input id="leBank" type="text" maxlength="80" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
+      <div class="flex gap-2">
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="monthsLbl">Months</label>
+        <input id="leMonths" oninput="renderBankEmiSheet()" type="number" inputmode="numeric" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="rateLbl">Interest rate (%)</label>
+        <input id="leRate" oninput="renderBankEmiSheet()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
       </div>
-      <label class="text-[12px] font-bold text-[#8B7355]">Interest Rate %</label>
-      <input id="leRate" type="number" inputmode="decimal" placeholder="0" oninput="updateBankForm()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
-      <div class="flex gap-2 mb-3">
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">Disbursement Date</label>
-        <input id="leDisbDate" type="date" onchange="updateBankForm()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1"></div>
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">EMI Start Date</label>
-        <input id="leEmiStart" type="date" onchange="updateBankForm()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1"></div>
-      </div>
-      <label class="text-[12px] font-bold text-[#8B7355]">EMI End Date (auto)</label>
-      <input id="leEmiEnd" type="date" disabled class="w-full bg-[#FFF7EA] border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
+    </div>
+    <div id="leEmiWrap" class="hidden">
       <div class="flex justify-between items-center mt-1 mb-2">
         <span class="text-[14px] font-bold">EMI Sheet</span>
         <span id="leEmiPaidCount" class="text-[12px] text-[#8B7355]">0/0 Paid</span>
       </div>
-      <div id="leEmiSheet" class="border border-[#F3E8D3] rounded-[14px] overflow-hidden"></div>
+      <div id="leEmiSheet" class="border border-[#F3E8D3] rounded-[14px] overflow-hidden mb-3"></div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
+      <button onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -225,43 +212,23 @@
   </div>
 </div>
 
-<!-- Loans: Add Person -->
+<!-- Phase 3: Add Person -->
 <div id="personOverlay" class="overlay hidden" onclick="closeAddPerson()"></div>
 <div id="personSheet" class="sheet hidden">
   <div class="p-5">
     <div class="flex justify-between items-center mb-4"><h2 id="psTitle" class="text-[17px] font-extrabold">Add Person</h2><button onclick="closeAddPerson()" class="text-xl px-2">✕</button></div>
-    <div class="flex gap-2 mb-4">
-      <button id="psSaveBtn" onclick="savePerson()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]" data-t="saveLoan">Save Loan</button>
-      <button onclick="closeAddPerson()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
-    </div>
     <label class="text-[12px] font-bold text-[#8B7355]" data-t="personName">Person name</label>
-    <div class="flex items-center gap-2 mb-3">
-      <input id="psName" type="text" maxlength="80" placeholder="New person name" oninput="updatePersonSaveBtn()" class="flex-1 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1">
-      <button type="button" onclick="pickContact()" class="w-11 h-11 shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center mt-1">📇</button>
-    </div>
+    <input id="psName" type="text" maxlength="80" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
     <label class="text-[12px] font-bold text-[#8B7355]" data-t="mobileNo">Mobile number</label>
-    <div class="flex items-center gap-2 mb-3">
-      <input id="psMobile" type="tel" maxlength="20" placeholder="Type manually or pick from contacts" class="flex-1 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1">
-      <button type="button" onclick="pickContact()" class="w-11 h-11 shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center mt-1">📞</button>
-    </div>
-    <div id="psLoanFields">
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
-      <input id="psAmount" type="number" inputmode="decimal" placeholder="0" oninput="updatePersonSaveBtn()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="date">Date</label>
-      <input id="psDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
-      <div class="flex gap-2 mb-3">
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromChannel">From Channel</label><select id="psFrom" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1"></select></div>
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toChannel">To Channel</label><select id="psTo" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1"></select></div>
-      </div>
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="expReturnDate">Expected Return Date</label>
-      <input id="psExpDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="note">Note</label>
-      <textarea id="psNote" rows="2" maxlength="500" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1"></textarea>
+    <input id="psMobile" type="tel" maxlength="20" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
+    <div class="flex gap-2">
+      <button onclick="savePerson()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
+      <button onclick="closeAddPerson()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- Loans: Person Picker (Add Return / Add Repayment) -->
+<!-- Phase 3: Person Picker (Add Return / Add Repayment) -->
 <div id="pickerOverlay" class="overlay hidden" onclick="closePersonPicker()"></div>
 <div id="pickerSheet" class="sheet hidden">
   <div class="p-5">
@@ -293,7 +260,7 @@ const MEDIUMS = [{"id": "bKash", "en": "bKash", "bn": "বিকাশ"}, {"id":
 const EXPENSE_FLAT = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({ en: it.en, bn: it.bn, icon: it.icon })));
 
 const T = {
-  bn: { home:'হোম', history:'হিস্ট্রি', reports:'রিপোর্ট', profile:'প্রোফাইল', addNewTx:'নতুন লেনদেন যোগ করুন', addIncome:'আয় যোগ করুন', addExpense:'ব্যয় যোগ করুন', giveLoan:'লোন দিন', takeLoan:'লোন নিন', bankLoan:'ব্যাংক লোন', selectedCat:'নির্বাচিত খাত', cancel:'বাতিল', amount:'টাকা (৳)', category:'খাত', date:'তারিখ', medium:'মাধ্যম', note:'মন্তব্য', saved:'সংরক্ষিত হয়েছে', pickCat:'খাত বেছে নিন', searchPh:'খুঁজুন… যেমন: মাছ', noMatch:'কিছু পাওয়া যায়নি', todayIncome:"আজকের আয়", todayExpense:"আজকের ব্যয়", todayBalance:"আজকের জের", monthIncome:'মাসের আয়', monthExpense:'মাসের ব্যয়', monthBalance:'মাসের জের', loansTitle:'লোন ও পাওনা', totalGiven:'মোট প্রদান', totalTaken:'মোট গ্রহণ', given:'প্রদান', taken:'গ্রহণ', returned:'ফেরত', repaid:'পরিশোধ', localSaved:'লোকালি সেভ হয়েছে', time:'সময়', day:'দিন', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync ধাপ ৪-এ আসছে',
+  bn: { home:'হোম', history:'হিস্ট্রি', reports:'রিপোর্ট', profile:'প্রোফাইল', addNewTx:'নতুন লেনদেন যোগ করুন', addIncome:'আয় যোগ করুন', addExpense:'ব্যয় যোগ করুন', giveLoan:'লোন দিন', takeLoan:'লোন নিন', bankLoan:'ব্যাংক লোন', selectedCat:'নির্বাচিত খাত', cancel:'বাতিল', amount:'টাকা (৳)', category:'খাত', date:'তারিখ', medium:'মাধ্যম', note:'মন্তব্য', saved:'সংরক্ষিত হয়েছে', pickCat:'খাত বেছে নিন', searchPh:'খুঁজুন… যেমন: মাছ', noMatch:'কিছু পাওয়া যায়নি', todayIncome:"আজকের আয়", todayExpense:"আজকের ব্যয়", todayBalance:"আজকের জের", monthIncome:'মাসের আয়', monthExpense:'মাসের ব্যয়', monthBalance:'মাসের জের', loansTitle:'লোন ও পাওনা', totalGiven:'মোট প্রদান', totalTaken:'মোট গ্রহণ', given:'প্রদান', taken:'গ্রহণ', returned:'ফেরত', repaid:'পরিশোধ', localSaved:'লোকালি সেভ হয়েছে', comingSoon:'এটা ধাপ ৩-এ আসছে', time:'সময়', day:'দিন', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync ধাপ ৪-এ আসছে',
     cloudTitle:'Cloud Sync', cloudDesc:'একই Sync Code দুই ফোনে দিলে দুই ফোনের ডেটা এক হয়ে যাবে।',
     syncCodeLbl:'Sync Code', cloudLastSync:'শেষ Sync: ', cloudNever:'কখনো Sync হয়নি',
     configLbl:'Firebase Config (JSON)', saveCloudBtn:'সেটিংস সেভ করো', cloudSyncNow:'Sync Now', cloudDownload:'Download',
@@ -350,8 +317,8 @@ const T = {
     cloudSyncDone:'Sync হয়ে গেছে ✅', cloudUploadDone:'Upload হয়ে গেছে ✅', cloudDownloadDone:'Download হয়ে গেছে ✅',
     cloudSyncFail:'Sync হয়নি — ইন্টারনেট / Config দেখো', cloudSaved:'Cloud সেটিংস সেভ হয়েছে',
     cloudCleared:'Cloud সংযোগ মুছে ফেলা হয়েছে', cloudInvalidConfig:'Config ঠিক নেই — JSON দেখো', cloudNoCode:'Sync Code দাও',
-    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'নাম', mobileNo:'মোবাইল / কন্টাক্ট নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', monthsLbl:'মাস', rateLbl:'সুদের হার (%)', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'+ লোক যোগ করো', fromChannel:'কোথা থেকে', toChannel:'কোথায়', expReturnDate:'ফেরতের প্রত্যাশিত তারিখ', saveLoan:'লোন সেভ করো', contactsUnsupported:'এই ডিভাইসে কন্টাক্ট সাপোর্ট করে না — হাতে লিখুন', needAmount:'টাকার পরিমাণ লিখুন', addBankLoanTitle:'ব্যাংক লোন যোগ করো', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
-  en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', localSaved:'Saved locally', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
+    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', monthsLbl:'মাস', rateLbl:'সুদের হার (%)', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন যোগ করো', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
+  en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', localSaved:'Saved locally', comingSoon:'Coming in Phase 3', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
     cloudTitle:'Cloud Sync', cloudDesc:'Use the same Sync Code on both phones to merge their data.',
     syncCodeLbl:'Sync Code', cloudLastSync:'Last sync: ', cloudNever:'Never synced',
     configLbl:'Firebase Config (JSON)', saveCloudBtn:'Save Settings', cloudSyncNow:'Sync Now', cloudDownload:'Download',
@@ -408,7 +375,7 @@ const T = {
     cloudSyncDone:'Synced ✅', cloudUploadDone:'Uploaded ✅', cloudDownloadDone:'Downloaded ✅',
     cloudSyncFail:'Sync failed — check internet / Config', cloudSaved:'Cloud settings saved',
     cloudCleared:'Cloud connection removed', cloudInvalidConfig:'Config looks wrong — check the JSON', cloudNoCode:'Enter a Sync Code',
-    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Name', mobileNo:'Mobile / Contact Number', selectPerson:'Select person', bankNameLbl:'Bank name', monthsLbl:'Months', rateLbl:'Interest rate (%)', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPaymentTitle:'Add Payment', addPersonTitle:'+ Add Person', fromChannel:'From Channel', toChannel:'To Channel', expReturnDate:'Expected Return Date', saveLoan:'Save Loan', contactsUnsupported:'Contacts are not supported on this device — please type manually', needAmount:'Enter an amount', addBankLoanTitle:'Add Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
+    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank name', monthsLbl:'Months', rateLbl:'Interest rate (%)', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Add Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
 let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
@@ -442,6 +409,7 @@ function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); 
 function uid(){ return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
 function today(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 function thisMonth(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function firstOfMonth(){ return thisMonth() + '-01'; }
 function normDate(d){ try{ if(!d) return ''; d = String(d).trim(); let m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[1]).slice(-2); m = d.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/); if(m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2); return d.slice(0,10); }catch(e){ return ''; } }
 function fmt(n){ return '৳ ' + Math.round(n || 0).toLocaleString('en-US'); }
 function showToast(msg){ const box = document.getElementById('toastBox'); box.innerHTML = '<div class="toast">' + msg + '</div>'; const dur = String(msg).length > 80 ? 6000 : 2000; setTimeout(()=>{ box.innerHTML = ''; }, dur); }
@@ -689,11 +657,11 @@ function devInfo(){ return DEV[lang] || DEV.en; }
 function developerCardHtml(){
   const d = devInfo();
   return '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-5">' +
-    '<div class="flex items-center gap-3 mb-0.5"><span class="text-[20px] leading-none">💻</span><span class="font-extrabold text-[16px] leading-tight">' + d.title + '</span></div>' +
-    '<div class="flex items-center gap-3 py-0.5"><span class="text-[20px] leading-none">👤</span><span class="font-bold text-[15px] leading-tight">' + d.name + '</span></div>' +
-    '<div class="flex items-center gap-3 py-0.5"><span class="text-[20px] leading-none">📍</span><span class="text-[14px] leading-tight">' + d.address + '</span></div>' +
-    '<div class="flex items-center gap-3 py-0.5"><span class="text-[20px] leading-none">📞</span><span class="text-[14px] leading-tight">' + d.phoneLabel + ': ' + DEV_PHONE + '</span></div>' +
-    '<div class="flex items-center gap-3 py-0.5"><span class="text-[20px] leading-none">✉️</span><span class="text-[14px] leading-tight">' + d.emailLabel + ': ' + DEV_EMAIL + '</span></div>' +
+    '<div class="flex items-center gap-3 mb-0.5 leading-tight"><span class="text-[20px]">💻</span><span class="font-extrabold text-[16px]">' + d.title + '</span></div>' +
+    '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">👤</span><span class="font-bold text-[15px]">' + d.name + '</span></div>' +
+    '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">📍</span><span class="text-[14px]">' + d.address + '</span></div>' +
+    '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">📞</span><span class="text-[14px]">' + d.phoneLabel + ': ' + DEV_PHONE + '</span></div>' +
+    '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">✉️</span><span class="text-[14px]">' + d.emailLabel + ': ' + DEV_EMAIL + '</span></div>' +
   '</div>';
 }
 
@@ -829,7 +797,7 @@ function reportPdfHtml(){
   return statementHeaderHtml('Reports', rows.length, statementPeriod(r.from, r.to, rows)) + statementEntriesTable(rows);
 }
 function reportViewPdf(){ pdfMode = 'reports'; showStatementPreview(reportPdfHtml()); }
-function reportDownloadPdf(){ pdfMode = 'reports'; printPdf(); }
+function reportDownloadPdf(){ pdfMode = 'reports'; downloadPdfFile(); }
 function reportSharePdf(){
   const rows = reportRows();
   const r = repRange();
@@ -852,9 +820,9 @@ function pageHeaderHtml(){
       '<div class="flex-1">' +
         '<div class="font-extrabold text-[20px] leading-tight">' + t('appName') + '</div>' +
         (authEmail() && name ? '<div class="text-[13px] font-bold text-[#8B7355]">' + escA(name) + '</div>' : '') +
-        '<div class="text-[13px] text-[#8B7355] mt-1">' + t('time') + ': ' + timeStr + '</div>' +
-        '<div class="text-[13px] text-[#8B7355]">' + t('date') + ': ' + dateStr + '</div>' +
-        '<div class="text-[13px] text-[#8B7355]">' + t('day') + ': ' + dayStr + '</div>' +
+        '<div class="text-[13px] text-black mt-1">' + t('time') + ': ' + timeStr + '</div>' +
+        '<div class="text-[13px] text-black">' + t('date') + ': ' + dateStr + '</div>' +
+        '<div class="text-[13px] text-black">' + t('day') + ': ' + dayStr + '</div>' +
       '</div>' +
       '<div class="flex border border-[#F3E8D3] rounded-full overflow-hidden text-[13px] font-bold">' +
         '<button onclick="setLang(\'en\')" class="px-3 py-1.5 ' + (lang === 'en' ? 'bg-[#2D2A26] text-white' : '') + '">EN</button>' +
@@ -867,7 +835,7 @@ function pageHeaderHtml(){
 function renderProfileView(){
   const photo = loadLS('lifestyle_profile_photo', null);
   const email = authEmail();
-  let h = pageHeaderHtml();
+  let h = '<div style="position:sticky;top:0;z-index:20;background:#FFFBF7;border-bottom:1px solid #F3E8D3;padding-bottom:8px">' + pageHeaderHtml() + '</div>';
   h += '<div class="px-4 pt-4 pb-6">';
   h += '<div class="flex justify-center mb-4"><div class="relative w-28 h-28 rounded-full bg-[#F3E8D3] overflow-hidden flex items-center justify-center text-[40px]">' + (photo ? '<img src="' + photo + '" class="w-full h-full object-cover">' : '👤') + '<button onclick="document.getElementById(\'photoPicker\').click()" class="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-[#C9A86A] text-white text-[16px] flex items-center justify-center">📷</button></div></div>';
   h += '<input type="file" id="photoPicker" accept="image/*" class="hidden" onchange="changeProfilePhoto(this)">';
@@ -897,14 +865,16 @@ function renderProfileView(){
 function renderReportsView(){
   const d = reportsData();
   const recycle = state.recycle || [];
-  let h = pageHeaderHtml();
-  h += '<div class="px-4 pt-4 pb-6">';
+  let h = '<div style="position:sticky;top:0;z-index:20;background:#FFFBF7;border-bottom:1px solid #F3E8D3;padding-bottom:8px">' + pageHeaderHtml();
+  h += '<div class="px-4 pt-4">';
   h += '<h2 class="font-extrabold text-[20px] mb-3">' + t('reportsPageTitle') + '</h2>';
   h += '<div class="grid grid-cols-3 gap-2 mb-4">' +
     '<div class="bg-[#E6F4EA] rounded-[16px] p-3"><div class="text-[12px] font-bold text-[#1E7B34]">' + t('repIncome') + '</div><div class="font-extrabold text-[16px]">' + fmt(d.income) + '</div></div>' +
     '<div class="bg-[#FDE8E8] rounded-[16px] p-3"><div class="text-[12px] font-bold text-[#C0392B]">' + t('repExpense') + '</div><div class="font-extrabold text-[16px]">' + fmt(d.expense) + '</div></div>' +
     '<div class="bg-[#FBF6EC] rounded-[16px] p-3"><div class="text-[12px] font-bold text-[#8B7355]">' + t('repBalance') + '</div><div class="font-extrabold text-[16px]">' + fmt(d.balance) + '</div></div>' +
   '</div>';
+  h += '</div></div>';
+  h += '<div class="px-4 pb-6">';
   h += '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-3">' + t('categoryWise') + '</h3>';
   if(!d.list.length){ h += '<p class="text-[13px] text-[#8B7355]">' + t('noExpense') + '</p>'; }
   d.list.forEach(it => {
@@ -964,16 +934,16 @@ function restoreViewState(){
   if(typeof r.pi === 'number' && r.pi >= 0) personIdx = Math.floor(r.pi);
   if(typeof r.hf === 'string' && r.hf) histFilter = r.hf;
   if(typeof r.hs === 'string') histSearch = r.hs;
-  if(typeof r.hfr === 'string') histFrom = r.hfr;
-  if(typeof r.hto === 'string') histTo = r.hto;
+  if(typeof r.hfr === 'string' && r.hfr) histFrom = r.hfr;
+  if(typeof r.hto === 'string' && r.hto) histTo = r.hto;
   if(typeof r.hc === 'string') histCat = r.hc;
   if(typeof r.ls === 'string') loansSearch = r.ls;
-  if(typeof r.lfr === 'string') loansFrom = r.lfr;
-  if(typeof r.lto === 'string') loansTo = r.lto;
-  if(typeof r.pfr === 'string') personFrom = r.pfr;
-  if(typeof r.pto === 'string') personTo = r.pto;
-  if(typeof r.hbf === 'string') homeBankFrom = r.hbf;
-  if(typeof r.hbt === 'string') homeBankTo = r.hbt;
+  if(typeof r.lfr === 'string' && r.lfr) loansFrom = r.lfr;
+  if(typeof r.lto === 'string' && r.lto) loansTo = r.lto;
+  if(typeof r.pfr === 'string' && r.pfr) personFrom = r.pfr;
+  if(typeof r.pto === 'string' && r.pto) personTo = r.pto;
+  if(typeof r.hbf === 'string' && r.hbf) homeBankFrom = r.hbf;
+  if(typeof r.hbt === 'string' && r.hbt) homeBankTo = r.hbt;
   if(r.cd && typeof r.cd === 'object' && r.cd.catEn) catDetail = { catEn: r.cd.catEn || '', catBn: r.cd.catBn || '', type: r.cd.type === 'income' ? 'income' : 'expense', icon: r.cd.icon || '' };
   if(currentView === 'person'){
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
@@ -985,11 +955,24 @@ function restoreViewState(){
   else if(['home','history','profile','reports'].includes(currentView)) setNavActive(currentView);
   else setNavActive('');
 }
+function openHomeCard(card){
+  const td = today();
+  const m1 = td.slice(0, 7) + '-01';
+  const mEnd = td.slice(0, 7) + '-' + String(new Date(+td.slice(0, 4), +td.slice(5, 7), 0).getDate()).padStart(2, '0');
+  if(card === 'todayIncome'){ histFilter = 'income'; histFrom = td; histTo = td; }
+  else if(card === 'todayExpense'){ histFilter = 'expense'; histFrom = td; histTo = td; }
+  else if(card === 'todayBalance'){ histFilter = 'all'; histFrom = td; histTo = td; }
+  else if(card === 'monthIncome'){ histFilter = 'income'; histFrom = m1; histTo = mEnd; }
+  else if(card === 'monthExpense'){ histFilter = 'expense'; histFrom = m1; histTo = mEnd; }
+  else if(card === 'monthBalance'){ histFilter = 'all'; histFrom = m1; histTo = mEnd; }
+  else { return; }
+  histSearch = ''; histCat = '';
+  navGo('history');
+}
 function render(){
   document.title = t('appName');
   saveViewState();
   if(currentView === 'history'){ renderHistoryView(); return; }
-  if(currentView === 'catdetail'){ renderCatDetailView(); return; }
   if(currentView === 'loans'){ renderLoansView(); return; }
   if(currentView === 'person'){ renderPersonView(); return; }
   if(currentView === 'profile'){ renderProfileView(); return; }
@@ -1007,15 +990,15 @@ function render(){
   const pAddr = (profile.address || '').trim();
   document.getElementById('app').innerHTML =
     '<div class="px-4 pt-4">' +
-      '<div class="flex items-start gap-3 cursor-pointer" onclick="navGo(\'profile\')">' +
+      '<div class="flex items-start gap-3 cursor-pointer" style="position:sticky;top:0;z-index:20;background:#FFFBF7;margin:-16px -16px 0;padding:16px 16px 10px;border-bottom:1px solid #F3E8D3" onclick="navGo(\'profile\')">' +
         '<div class="w-12 h-12 rounded-full bg-[#F3E8D3] overflow-hidden flex items-center justify-center text-[22px]">' + (photo ? '<img src="' + photo + '" class="w-full h-full object-cover">' : '👤') + '</div>' +
         '<div class="flex-1"><div class="font-extrabold text-[20px] leading-tight">' + name + '</div>' +
         (pDes ? '<div class="text-[13px] font-bold text-[#8B7355]">' + pDes + '</div>' : '') +
         (pAddr ? '<div class="text-[13px] text-[#8B7355]">' + pAddr + '</div>' : '') +
         (pMob ? '<div class="text-[13px] text-[#8B7355]">' + pMob + '</div>' : '') +
-        '<div class="text-[13px] text-[#8B7355] mt-1">' + t('time') + ': ' + timeStr + '</div>' +
-        '<div class="text-[13px] text-[#8B7355]">' + t('date') + ': ' + dateStr + '</div>' +
-        '<div class="text-[13px] text-[#8B7355]">' + t('day') + ': ' + dayStr + '</div></div>' +
+        '<div class="text-[13px] text-black mt-1">' + t('time') + ': ' + timeStr + '</div>' +
+        '<div class="text-[13px] text-black">' + t('date') + ': ' + dateStr + '</div>' +
+        '<div class="text-[13px] text-black">' + t('day') + ': ' + dayStr + '</div></div>' +
         '<div class="flex flex-col items-end gap-2 shrink-0" onclick="event.stopPropagation()">' +
           '<div class="flex gap-2">' +
             '<button onclick="setLang(\'en\')" class="px-3 py-1.5 rounded-full text-[12px] font-bold ' + (lang==='en' ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">EN</button>' +
@@ -1028,15 +1011,15 @@ function render(){
       '</div>' +
       '<h3 class="mt-5 mb-2 font-extrabold text-[15px]">' + (lang==='en' ? 'Today' : 'আজ') + '</h3>' +
       '<div class="grid grid-cols-3 gap-2">' +
-        '<div class="card p-3 cursor-pointer" style="background:#EAF7EA" onclick="openHomeCard(\'todayIncome\')"><div class="text-[11px] font-bold text-green-700">' + t('todayIncome') + '</div><div class="font-extrabold text-[15px] text-green-700">' + fmt(tot.tIn) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" style="background:#FDECEC" onclick="openHomeCard(\'todayExpense\')"><div class="text-[11px] font-bold text-red-600">' + t('todayExpense') + '</div><div class="font-extrabold text-[15px] text-red-600">' + fmt(tot.tEx) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" style="background:#FFF8E1" onclick="openHomeCard(\'todayBalance\')"><div class="text-[11px] font-bold text-[#8B7355]">' + t('todayBalance') + '</div><div class="font-extrabold text-[15px]">' + fmt(tot.tIn - tot.tEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayIncome\')"><div class="text-[11px] text-[#8B7355]">' + t('todayIncome') + '</div><div class="font-extrabold text-[15px] text-green-700">' + fmt(tot.tIn) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayExpense\')"><div class="text-[11px] text-[#8B7355]">' + t('todayExpense') + '</div><div class="font-extrabold text-[15px] text-red-600">' + fmt(tot.tEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayBalance\')"><div class="text-[11px] text-[#8B7355]">' + t('todayBalance') + '</div><div class="font-extrabold text-[15px]">' + fmt(tot.tIn - tot.tEx) + '</div></div>' +
       '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + (lang==='en' ? 'This Month' : 'এই মাস') + '</h3>' +
       '<div class="grid grid-cols-3 gap-2">' +
-        '<div class="card p-3 cursor-pointer" style="background:#EAF7EA" onclick="openHomeCard(\'monthIncome\')"><div class="text-[11px] font-bold text-green-700">' + t('monthIncome') + '</div><div class="font-extrabold text-[15px] text-green-700">' + fmt(tot.mIn) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" style="background:#FDECEC" onclick="openHomeCard(\'monthExpense\')"><div class="text-[11px] font-bold text-red-600">' + t('monthExpense') + '</div><div class="font-extrabold text-[15px] text-red-600">' + fmt(tot.mEx) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" style="background:#FFF8E1" onclick="openHomeCard(\'monthBalance\')"><div class="text-[11px] font-bold text-[#8B7355]">' + t('monthBalance') + '</div><div class="font-extrabold text-[15px]">' + fmt(tot.mIn - tot.mEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthIncome\')"><div class="text-[11px] text-[#8B7355]">' + t('monthIncome') + '</div><div class="font-extrabold text-[15px] text-green-700">' + fmt(tot.mIn) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthExpense\')"><div class="text-[11px] text-[#8B7355]">' + t('monthExpense') + '</div><div class="font-extrabold text-[15px] text-red-600">' + fmt(tot.mEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthBalance\')"><div class="text-[11px] text-[#8B7355]">' + t('monthBalance') + '</div><div class="font-extrabold text-[15px]">' + fmt(tot.mIn - tot.mEx) + '</div></div>' +
       '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + t('bazarTitle') + '</h3>' +
       '<div class="grid grid-cols-3 gap-2">' +
@@ -1046,10 +1029,10 @@ function render(){
       '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + t('loansTitle') + '</h3>' +
       '<div class="grid grid-cols-2 gap-2">' +
-        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'given\')"><div class="font-bold text-[13px]">' + t('totalGiven') + '</div><div class="text-[12px] text-[#8B7355]">' + t('given') + ': ' + fmt(tot.given) + '</div><div class="text-[12px] text-[#8B7355]">' + t('returned') + ': ' + fmt(tot.returned) + '</div><div class="text-[12px] font-bold text-green-700">' + t('youWillGet') + ': ' + fmt(tot.given - tot.returned) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'taken\')"><div class="font-bold text-[13px]">' + t('totalTaken') + '</div><div class="text-[12px] text-[#8B7355]">' + t('taken') + ': ' + fmt(tot.taken) + '</div><div class="text-[12px] text-[#8B7355]">' + t('repaid') + ': ' + fmt(tot.repaid) + '</div><div class="text-[12px] font-bold text-red-600">' + t('youWillPay') + ': ' + fmt(tot.taken - tot.repaid) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'given\')"><div class="font-bold text-[13px]">' + t('totalGiven') + '</div><div class="text-[12px] text-[#8B7355]">' + t('given') + ': ' + fmt(tot.given) + '</div><div class="text-[12px] text-[#8B7355]">' + t('returned') + ': ' + fmt(tot.returned) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'taken\')"><div class="font-bold text-[13px]">' + t('totalTaken') + '</div><div class="text-[12px] text-[#8B7355]">' + t('taken') + ': ' + fmt(tot.taken) + '</div><div class="text-[12px] text-[#8B7355]">' + t('repaid') + ': ' + fmt(tot.repaid) + '</div></div>' +
       '</div>' +
-      homeBankLoansHtml() +
+    homeBankLoansHtml() +
     '</div>';
   document.querySelectorAll('[data-t]').forEach(el => { const k = el.getAttribute('data-t'); if(T[lang][k]) el.textContent = T[lang][k]; });
 }
@@ -1069,15 +1052,14 @@ function navGo(page){
   if(page === 'profile'){ currentView = 'profile'; setNavActive('profile'); render(); return; }
   if(page === 'reports'){ currentView = 'reports'; setNavActive('reports'); render(); return; } /* reports live on History (PDF / Share) until the dedicated Reports page is built */
 }
+function phaseLater(name){ showToast(name + ' - ' + t('comingSoon')); }
 function openAddSheet(){ closeForm(); document.getElementById('addSheet').classList.remove('hidden'); document.getElementById('addSheetOverlay').classList.remove('hidden'); }
 function closeAddSheet(){ document.getElementById('addSheet').classList.add('hidden'); document.getElementById('addSheetOverlay').classList.add('hidden'); }
 function openForm(type){
   formType = type; selCat = null; selSub = null; editingTxId = null;
   closeAddSheet();
-  document.getElementById('formSheet').classList.remove('hidden');
-  document.getElementById('formOverlay').classList.remove('hidden');
   document.getElementById('formTitle').textContent = type === 'income' ? t('addIncome') : t('addExpense');
-  resetSaveBtn(); document.getElementById('formSheet').scrollTop = 0;
+  document.getElementById('saveBtn').textContent = 'Save';
   document.getElementById('fAmount').value = '';
   document.getElementById('fDate').value = today();
   document.getElementById('fNote').value = '';
@@ -1091,8 +1073,10 @@ function openForm(type){
   const clr = document.getElementById('catSearchClear');
   if(clr) clr.classList.add('hidden');
   renderCats();
+  document.getElementById('formSheet').classList.remove('hidden');
+  document.getElementById('formOverlay').classList.remove('hidden');
 }
-function closeForm(){ resetSaveBtn(); document.getElementById('formSheet').classList.add('hidden'); document.getElementById('formOverlay').classList.add('hidden'); }
+function closeForm(){ document.getElementById('formSheet').classList.add('hidden'); document.getElementById('formOverlay').classList.add('hidden'); }
 /* ---------- Profile ---------- */
 
 
@@ -1157,16 +1141,6 @@ function pickSub(j){
   document.getElementById('selCatBox').classList.remove('hidden');
   renderCats();
 }
-function updateSaveBtn(){
-  const btn = document.getElementById('saveBtn'); if(!btn || btn.disabled) return;
-  const amt = parseFloat((document.getElementById('fAmount') || {}).value) || 0;
-  btn.textContent = amt > 0 ? 'Save \u2022 ' + fmt(amt) : 'Save';
-}
-function resetSaveBtn(){
-  const btn = document.getElementById('saveBtn'); if(!btn) return;
-  btn.disabled = false; btn.style.background = ''; btn.style.color = '';
-  btn.textContent = 'Save';
-}
 function saveForm(){
   const amt = parseFloat(document.getElementById('fAmount').value) || 0;
   if(formType === 'income' && selCat === null){ showToast(t('pickCat')); return; }
@@ -1183,9 +1157,7 @@ function saveForm(){
   };
   saveTransaction(tx);
   editingTxId = null;
-  const btn = document.getElementById('saveBtn');
-  if(btn){ btn.disabled = true; btn.style.background = '#1E7B34'; btn.textContent = '\u2713 ' + t('saved') + ' \u2022 ' + fmt(amt); }
-  setTimeout(() => { closeForm(); }, 650);
+  closeForm();
 }
 /* ---------- BAZAR ---------- */
 function bazarStats(){
@@ -1452,7 +1424,7 @@ function bazarDelete(id){
 
 
 /* ================= PHASE 2: HISTORY ================= */
-let histFilter = 'all', histSearch = '', histCat = '', histFrom = '', histTo = '';
+let histFilter = 'all', histSearch = '', histCat = '', histFrom = firstOfMonth(), histTo = today();
 let editingLoanKey = null;
 function escA(v){ return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function histFilterLabel(){ return { all: t('fAll'), income: t('fIncome'), expense: t('fExpense'), given: t('fGiven'), taken: t('fTaken'), return: t('fReturn'), repayment: t('fRepay'), bank: t('fBank') }[histFilter] || histFilter; }
@@ -1492,18 +1464,6 @@ function histSetCat(v){ histCat = v || ''; renderHistoryView(); }
 function histSetFrom(v){ histFrom = v || ''; render(); }
 function histSetTo(v){ histTo = v || ''; render(); }
 function histClearDates(){ histFrom = ''; histTo = ''; render(); }
-function monthEndStr(d){ const y = +d.slice(0,4), m = +d.slice(5,7); const last = new Date(y, m, 0).getDate(); return d.slice(0,7) + '-' + String(last).padStart(2,'0'); }
-function openHomeCard(which){
-  histSearch = ''; histCat = '';
-  const td = today();
-  if(which === 'todayIncome'){ histFilter = 'income'; histFrom = td; histTo = td; }
-  else if(which === 'todayExpense'){ histFilter = 'expense'; histFrom = td; histTo = td; }
-  else if(which === 'todayBalance'){ histFilter = 'all'; histFrom = td; histTo = td; }
-  else if(which === 'monthIncome'){ histFilter = 'income'; histFrom = td.slice(0,7) + '-01'; histTo = monthEndStr(td); }
-  else if(which === 'monthExpense'){ histFilter = 'expense'; histFrom = td.slice(0,7) + '-01'; histTo = monthEndStr(td); }
-  else if(which === 'monthBalance'){ histFilter = 'all'; histFrom = td.slice(0,7) + '-01'; histTo = monthEndStr(td); }
-  navGo('history');
-}
 function histAddNew(){
   if(histFilter === 'income' || histFilter === 'expense'){ openForm(histFilter); return; }
   if(histFilter === 'all'){ openAddSheet(); return; }
@@ -1513,97 +1473,29 @@ function histAddNew(){
   if(histFilter === 'bank'){ openLoanEntryForm('addbank', 'bank', ''); return; }
   openAddSheet();
 }
-function historyRowHtml(r){
-  const sub = [r.date, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
-  const titleClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : (r.kind === 'income' || r.kind === 'expense') ? ' onclick="openCatDetailFor(\'' + r.key + '\')" style="cursor:pointer"' : '';
-  return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]"' + titleClick + '>' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
-    '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (r.sign >= 0 ? 'text-green-700' : 'text-red-600') + '">' + (r.sign >= 0 ? '+' : '-') + fmt(r.amount) + '</div>' +
-    '<div class="flex gap-1 flex-nowrap"><button onclick="editHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-    '<button onclick="deleteHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
-}
-/* ---------- Category detail (tap a category row in History) ---------- */
-let catDetail = null;
-function openCatDetailFor(key){
-  const id = String(key || '').replace(/^tx:/, '');
-  const tx = (state.transactions || []).find(x => x.id === id);
-  if(!tx) return;
-  let cat = null;
-  if(tx.type === 'income') cat = INCOME_CATEGORIES.find(c => c.en === tx.category);
-  else cat = EXPENSE_FLAT.find(c => c.en === tx.category);
-  catDetail = { catEn: tx.category || '', catBn: tx.categoryBn || (cat && cat.bn) || tx.category || '', type: tx.type, icon: tx.icon || (cat && cat.icon) || '' };
-  currentView = 'catdetail'; setNavActive('history');
-  render();
-}
-function catDetailRows(){
-  if(!catDetail) return [];
-  let rows = historyRows().filter(r => (r.kind === catDetail.type) && (r.catEn === catDetail.catEn));
-  if(histFrom) rows = rows.filter(r => normDate(r.date) >= histFrom);
-  if(histTo) rows = rows.filter(r => normDate(r.date) <= histTo);
-  return rows;
-}
-function catDetailTitle(){
-  if(!catDetail) return '';
-  const a = lang === 'en' ? catDetail.catEn : catDetail.catBn;
-  const b = lang === 'en' ? catDetail.catBn : catDetail.catEn;
-  return a + ((b && b !== a) ? ' - ' + b : '');
-}
-function catDetailPdfRows(){
-  return catDetailRows().map(r => ({ date: r.date || '', person: '', category: r.catEn || r.catBn, comment: r.note || '', from: r.medium || '', to: r.medium || '', amount: r.sign * r.amount }));
-}
-function catDetailStatementHtml(){
-  const rows = catDetailPdfRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
-  const period = statementPeriod(histFrom, histTo, rows);
-  return statementHeaderHtml('History - ' + catDetailTitle(), rows.length, period) + statementEntriesTable(rows);
-}
-function openCatDetailPdf(){ pdfMode = 'catdetail'; showStatementPreview(catDetailStatementHtml()); }
-function shareCatDetailPdf(){ pdfMode = 'catdetail'; sharePdf(); }
-function renderCatDetailView(){
-  const rows = catDetailRows();
-  const total = rows.reduce((s, r) => s + Math.abs(r.amount || 0), 0);
-  const listHtml = rows.length ? rows.map(r => historyRowHtml(r)).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
-  document.getElementById('app').innerHTML =
-    '<div class="px-4 pt-4">' +
-      '<div class="flex items-center gap-2 mb-3">' +
-        '<button onclick="navGo(\'history\')" class="w-9 h-9 shrink-0 rounded-full bg-white border border-[#F3E8D3] font-bold text-[16px]">\u2190</button>' +
-        '<div class="font-extrabold text-[16px] leading-tight">' + escA(catDetailTitle()) + '</div>' +
-        '<span class="px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ' + (catDetail.type === 'income' ? 'bg-[#EAF7EA] text-green-700' : 'bg-[#FDECEC] text-red-600') + '">' + (catDetail.type === 'income' ? t('fIncome') : t('fExpense')) + '</span>' +
-      '</div>' +
-      '<div class="rounded-2xl bg-[#2D2A26] text-white p-4 mb-3">' +
-        '<div class="font-extrabold text-[18px] leading-tight">' + escA((catDetail.icon ? catDetail.icon + ' ' : '') + catDetailTitle()) + '</div>' +
-        '<div class="text-[13px] opacity-80 mt-1">' + (catDetail.type === 'income' ? t('fIncome') : t('fExpense')) + '</div>' +
-        '<div class="font-extrabold text-[20px] mt-2">' + fmt(total) + '</div>' +
-        '<div class="text-[12px] opacity-80">' + rows.length + ' ' + t('entriesLbl') + '</div>' +
-      '</div>' +
-      '<div class="flex gap-2 mb-3">' +
-        '<button onclick="openCatDetailPdf()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">\uD83D\uDCC4 ' + t('pdfBtn') + '</button>' +
-        '<button onclick="openCatDetailPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">\uD83D\uDC41 ' + t('viewBtn') + '</button>' +
-        '<button onclick="shareCatDetailPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">\uD83D\uDD17 ' + t('shareBtn') + '</button>' +
-      '</div>' +
-      '<div class="flex gap-2 items-end mb-2">' +
-        '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(histFrom) + '" onchange="histSetFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
-        '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(histTo) + '" onchange="histSetTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
-        '<button onclick="histClearDates()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">\u2715 <span data-t="dateClear">Date Clear</span></button>' +
-      '</div>' +
-      '<div>' + listHtml + '</div>' +
-    '</div>';
-  document.querySelectorAll('[data-t]').forEach(el => { const k = el.getAttribute('data-t'); if(T[lang][k]) el.textContent = T[lang][k]; });
-}
 function renderHistoryView(){
   const rows = filteredHistoryRows();
   const tabs = [['all','fAll'],['income','fIncome'],['expense','fExpense'],['given','fGiven'],['taken','fTaken'],['return','fReturn'],['repayment','fRepay'],['bank','fBank']];
-  const listHtml = rows.length ? rows.map(r => historyRowHtml(r)).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
+  const listHtml = rows.length ? rows.map(r => {
+    const sub = [r.date, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
+    const titleClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : '';
+    return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]"' + titleClick + '>' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
+      '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (r.sign >= 0 ? 'text-green-700' : 'text-red-600') + '">' + (r.sign >= 0 ? '+' : '-') + fmt(r.amount) + '</div>' +
+      '<div class="flex gap-1 flex-nowrap"><button onclick="editHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
+      '<button onclick="deleteHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
+  }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
   document.getElementById('app').innerHTML =
     '<div class="px-4 pt-4">' +
-      '<div style="position:sticky;top:0;z-index:10;background:#FFFBF7;margin:-16px -16px 0;padding:16px 16px 8px;border-bottom:1px solid #F3E8D3">' +
+      '<div style="position:sticky;top:0;z-index:20;background:#FFFBF7;border-bottom:1px solid #F3E8D3;padding-bottom:8px">' +
       '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span>' +
       '<input type="text" value="' + escA(histSearch) + '" placeholder="' + escA(t('histSearchPh')) + '" oninput="histSetSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
       '<div class="grid grid-cols-4 gap-2 mb-3">' + tabs.map(x =>
         '<button onclick="histSetFilter(\'' + x[0] + '\')" class="px-1 py-2 rounded-full text-[12px] font-bold text-center leading-tight ' + (histFilter === x[0] ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">' + t(x[1]) + '</button>').join('') + '</div>' +
       '<div class="flex gap-2 mb-3">' +
         '<button onclick="histAddNew()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">' + histAddLabel() + '</button>' +
-        '<button onclick="openPdfPreview()" class="px-4 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
+        '<button onclick="historyDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
         '<button onclick="openPdfPreview()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-        '<button onclick="sharePdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
+        '<button onclick="historySharePdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
       '</div>' +
       '<div class="flex gap-2 items-end mb-2">' +
         '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(histFrom) + '" onchange="histSetFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
@@ -1644,7 +1536,6 @@ function editTransaction(id){
     if(idx >= 0){ selSub = idx; selCat = -1; const it = EXPENSE_FLAT[idx]; document.getElementById('selCatLabel').textContent = it.icon + ' ' + (lang === 'en' ? it.en : it.bn); document.getElementById('selCatBox').classList.remove('hidden'); }
   }
   renderCats();
-  updateSaveBtn();
 }
 function deleteTransaction(id){
   if(!confirmTwice(t('confirmDeleteTx'))) return;
@@ -1669,33 +1560,17 @@ function editLoanEntry(key){
   const r = loanEntryByKey(key);
   if(!r.entry) return;
   editingLoanKey = key;
+  document.getElementById('leTitle').textContent = t('loanEntryTitle');
   const isBank = r.kind === 'bank';
-  document.getElementById('leTitle').textContent = isBank ? 'Bank Loan' : t('loanEntryTitle');
-  const saveBtn = document.getElementById('leSaveBtn');
-  saveBtn.textContent = isBank ? 'Save Loan' : 'Save';
-  saveBtn.disabled = false; saveBtn.style.opacity = '';
-  document.getElementById('leCancelBtn').textContent = isBank ? 'Cancel' : t('cancel');
-  document.getElementById('leCommonFields').classList.toggle('hidden', isBank);
   document.getElementById('leBankFields').classList.toggle('hidden', !isBank);
-  if(isBank){
-    const bankSel = document.getElementById('leBank');
-    bankSel.innerHTML = buildBankOptions(r.entry.bank || r.entry.name || '');
-    bankSel.value = r.entry.bank || r.entry.name || 'BRAC BANK';
-    document.getElementById('leBankAmount').value = r.entry.amount || '';
-    document.getElementById('leMonths').value = r.entry.months || '';
-    document.getElementById('leRate').value = r.entry.rate || '';
-    document.getElementById('leDisbDate').value = normDate(r.entry.date) || today();
-    document.getElementById('leEmiStart').value = normDate(r.entry.emiStart) || normDate(r.entry.date) || today();
-    emiPaidDraft = Array.isArray(r.entry.emiPaid) ? r.entry.emiPaid.slice() : [];
-    updateBankForm();
-  } else {
-    document.getElementById('leAmount').value = r.entry.amount || '';
-    document.getElementById('leDate').value = normDate(r.entry.date) || today();
-    const med = document.getElementById('leMedium');
-    med.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
-    med.value = r.entry.medium || r.entry.channel || r.entry.fromChannel || 'Cash';
-    document.getElementById('leNote').value = r.entry.note || '';
-  }
+  document.getElementById('leEmiWrap').classList.toggle('hidden', !isBank);
+  if(isBank){ document.getElementById('leBank').value = r.entry.bank || r.entry.name || ''; document.getElementById('leMonths').value = r.entry.months || ''; document.getElementById('leRate').value = r.entry.rate || ''; emiPaidDraft = normalizeEmiPaid(r.entry.emiPaid, r.entry.months); renderBankEmiSheet(); }
+  document.getElementById('leAmount').value = r.entry.amount || '';
+  document.getElementById('leDate').value = normDate(r.entry.date) || today();
+  const med = document.getElementById('leMedium');
+  med.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
+  med.value = r.entry.medium || r.entry.channel || r.entry.fromChannel || 'Cash';
+  document.getElementById('leNote').value = r.entry.note || '';
   document.getElementById('loanEditSheet').classList.remove('hidden');
   document.getElementById('loanEditOverlay').classList.remove('hidden');
 }
@@ -1703,150 +1578,53 @@ function closeLoanEntryForm(){
   document.getElementById('loanEditSheet').classList.add('hidden');
   document.getElementById('loanEditOverlay').classList.add('hidden');
   document.getElementById('leBankFields').classList.add('hidden');
-  document.getElementById('leCommonFields').classList.remove('hidden');
   editingLoanKey = null;
 }
 function openLoanEntryForm(mode, kind, pi){
   editingLoanKey = 'add:' + mode + ':' + kind + ':' + (pi === '' || pi == null ? '' : pi);
+  document.getElementById('leTitle').textContent = mode === 'addloan' ? t('addLoanTitle') : mode === 'addpay' ? t('addPaymentTitle') : t('addBankLoanTitle');
+  document.getElementById('leAmount').value = '';
+  document.getElementById('leDate').value = today();
+  const med = document.getElementById('leMedium');
+  med.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
+  med.value = 'Cash';
+  document.getElementById('leNote').value = '';
+  const isBank = mode === 'addbank';
+  document.getElementById('leBankFields').classList.toggle('hidden', !isBank);
+  document.getElementById('leEmiWrap').classList.toggle('hidden', !isBank);
+  if(isBank){ document.getElementById('leBank').value = ''; document.getElementById('leMonths').value = ''; document.getElementById('leRate').value = ''; emiPaidDraft = []; renderBankEmiSheet(); }
   document.getElementById('loanEditSheet').classList.remove('hidden');
   document.getElementById('loanEditOverlay').classList.remove('hidden');
-  const isBank = mode === 'addbank';
-  document.getElementById('leTitle').textContent = isBank ? 'Bank Loan' : mode === 'addloan' ? t('addLoanTitle') : mode === 'addpay' ? t('addPaymentTitle') : t('addBankLoanTitle');
-  const saveBtn = document.getElementById('leSaveBtn');
-  saveBtn.textContent = isBank ? 'Save Loan' : 'Save';
-  saveBtn.disabled = false; saveBtn.style.opacity = '';
-  document.getElementById('leCancelBtn').textContent = isBank ? 'Cancel' : t('cancel');
-  document.getElementById('leCommonFields').classList.toggle('hidden', isBank);
-  document.getElementById('leBankFields').classList.toggle('hidden', !isBank);
-  if(isBank){
-    const bankSel = document.getElementById('leBank');
-    bankSel.innerHTML = buildBankOptions('');
-    bankSel.value = 'BRAC BANK';
-    document.getElementById('leBankAmount').value = '';
-    document.getElementById('leMonths').value = '';
-    document.getElementById('leRate').value = '';
-    document.getElementById('leDisbDate').value = today();
-    document.getElementById('leEmiStart').value = today();
-    emiPaidDraft = [];
-    updateBankForm();
-  } else {
-    document.getElementById('leAmount').value = '';
-    document.getElementById('leDate').value = today();
-    const med = document.getElementById('leMedium');
-    med.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
-    med.value = 'Cash';
-    document.getElementById('leNote').value = '';
-  }
 }
-function saveLoanEntry(){
-  const key = editingLoanKey || '';
-  if(key.startsWith('add:')){
-    const parts = key.split(':');
-    const mode = parts[1], kind = parts[2], pi = parts[3];
-    if(mode === 'addbank'){
-      const amt = parseFloat(document.getElementById('leBankAmount').value) || 0;
-      if(!(amt > 0)){ showToast(t('needAmount')); return; }
-      const months = Math.floor(parseFloat(document.getElementById('leMonths').value) || 0);
-      const emiStart = document.getElementById('leEmiStart').value || today();
-      const entry = { id: uid(), amount: amt, date: document.getElementById('leDisbDate').value || today(), medium: 'Bank', channel: 'Bank', note: '', bank: document.getElementById('leBank').value, months: months, rate: parseFloat(document.getElementById('leRate').value) || 0, emiStart: emiStart, emiEnd: months > 0 ? addMonthsISO(emiStart, months - 1) : '', emiPaid: normalizeEmiPaid(emiPaidDraft, months), updatedAt: new Date().toISOString() };
-      state.bankLoans = [...(state.bankLoans || []), entry];
-      currentView = 'loans'; loansKind = 'bank';
-      persist(); render(); closeLoanEntryForm();
-      showToast(t('bankLoanAdded')); return;
-    }
-    const entry = { id: uid(), amount: parseFloat(document.getElementById('leAmount').value) || 0, date: document.getElementById('leDate').value || today(), medium: document.getElementById('leMedium').value, channel: document.getElementById('leMedium').value, note: document.getElementById('leNote').value || '', updatedAt: new Date().toISOString() };
-    const arr = kind === 'given' ? state.peopleGiven : state.peopleTaken;
-    const person = (arr || [])[+pi];
-    if(!person){ closeLoanEntryForm(); return; }
-    if(mode === 'addloan') person.loans = [...(person.loans || []), entry];
-    else person.payments = [...(person.payments || []), entry];
-    currentView = 'person'; personKind = kind; personIdx = +pi;
-    persist(); render(); closeLoanEntryForm();
-    showToast(mode === 'addloan' ? t('loanAdded') : t('paymentAdded')); return;
-  }
-  const r = loanEntryByKey(editingLoanKey || '');
-  if(!r.entry) { closeLoanEntryForm(); return; }
-  if(r.kind === 'bank'){
-    const months = Math.floor(parseFloat(document.getElementById('leMonths').value) || 0);
-    const emiStart = document.getElementById('leEmiStart').value || today();
-    r.entry.bank = document.getElementById('leBank').value || r.entry.bank || t('fBank');
-    r.entry.amount = parseFloat(document.getElementById('leBankAmount').value) || 0;
-    r.entry.date = document.getElementById('leDisbDate').value || today();
-    r.entry.emiStart = emiStart;
-    r.entry.months = months;
-    r.entry.rate = parseFloat(document.getElementById('leRate').value) || 0;
-    r.entry.emiEnd = months > 0 ? addMonthsISO(emiStart, months - 1) : '';
-    r.entry.emiPaid = normalizeEmiPaid(emiPaidDraft, months);
-    r.entry.medium = r.entry.medium || 'Bank';
-    r.entry.channel = r.entry.channel || 'Bank';
-  } else {
-    r.entry.amount = parseFloat(document.getElementById('leAmount').value) || 0;
-    r.entry.date = document.getElementById('leDate').value || today();
-    r.entry.medium = document.getElementById('leMedium').value;
-    r.entry.channel = r.entry.medium;
-    r.entry.note = document.getElementById('leNote').value || '';
-  }
-  r.entry.updatedAt = new Date().toISOString();
-  persist();
-  render();
-  closeLoanEntryForm();
-  showToast(t('saved'));
+/* ---------- Bank Loan EMI schedule ---------- */
+function addMonths(ds, n){
+  const d = new Date(normDate(ds) + 'T00:00:00');
+  d.setMonth(d.getMonth() + n);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
-
-/* ---------- Bank Loan: banks + EMI sheet ---------- */
-const BANKS = [
-  { id: 'BRAC BANK', en: 'BRAC BANK', bn: 'ব্র্যাক ব্যাংক' },
-  { id: 'CITY BANK', en: 'CITY BANK', bn: 'সিটি ব্যাংক' },
-  { id: 'SONALI BANK', en: 'SONALI BANK', bn: 'সোনালী ব্যাংক' },
-  { id: 'ISLAMI BANK', en: 'ISLAMI BANK', bn: 'ইসলামী ব্যাংক' }
-];
-let emiPaidDraft = [];
-function buildBankOptions(selected){
-  let opts = BANKS.map(b => '<option value="' + b.id + '">' + (lang === 'en' ? b.en : b.bn) + '</option>').join('');
-  if(selected && !BANKS.some(b => b.id === selected)) opts = '<option value="' + escA(selected) + '">' + escA(selected) + '</option>' + opts;
-  return opts;
+function calcEmi(P, rate, months){
+  P = +P || 0; rate = +rate || 0; months = Math.floor(+months || 0);
+  if(P <= 0 || months <= 0) return 0;
+  if(rate <= 0) return P / months;
+  const r = rate / 100 / 12;
+  const f = Math.pow(1 + r, months);
+  return P * r * f / (f - 1);
 }
-function addMonthsISO(iso, n){
-  if(!iso) return '';
-  const p = String(iso).split('-');
-  let y = parseInt(p[0], 10) || 1970, m = (parseInt(p[1], 10) || 1) - 1, d = parseInt(p[2], 10) || 1;
-  m += n;
-  y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
-  const last = new Date(y, m + 1, 0).getDate();
-  return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(Math.min(d, last)).padStart(2, '0');
-}
-function calcEmi(principal, annualRate, months){
-  principal = +principal || 0; months = Math.floor(+months || 0);
-  if(!(months > 0) || !(principal > 0)) return 0;
-  const r = (+annualRate || 0) / 1200;
-  if(r <= 0) return principal / months;
-  const pow = Math.pow(1 + r, months);
-  return principal * r * pow / (pow - 1);
+function normalizeEmiPaid(arr, months){
+  const out = Array.isArray(arr) ? arr.slice(0, months) : [];
+  while(out.length < months) out.push(false);
+  return out.map(v => !!v);
 }
 function bankEmiSchedule(entry){
   const months = Math.floor(+(entry.months || 0));
-  const start = normDate(entry.emiStart || entry.date) || today();
+  if(months <= 0) return [];
   const emi = Math.round(calcEmi(entry.amount, entry.rate, months));
+  const paid = normalizeEmiPaid(entry.emiPaid, months);
   const rows = [];
-  for(let i = 0; i < months; i++) rows.push({ sl: i + 1, date: addMonthsISO(start, i), emi: emi, paid: !!(entry.emiPaid && entry.emiPaid[i]) });
+  for(let i = 0; i < months; i++){
+    rows.push({ sl: i + 1, date: fmtDMY(addMonths(entry.emiStart || entry.date || today(), i)), emi: emi, paid: !!paid[i] });
+  }
   return rows;
-}
-function normalizeEmiPaid(arr, months){
-  const out = [];
-  for(let i = 0; i < months; i++) out.push(!!(arr && arr[i]));
-  return out;
-}
-function bankFormDraft(){
-  return { amount: parseFloat(document.getElementById('leBankAmount').value) || 0, rate: parseFloat(document.getElementById('leRate').value) || 0, months: Math.floor(parseFloat(document.getElementById('leMonths').value) || 0), emiStart: document.getElementById('leEmiStart').value || today(), emiPaid: emiPaidDraft };
-}
-function updateBankForm(){
-  const months = Math.floor(parseFloat(document.getElementById('leMonths').value) || 0);
-  while(emiPaidDraft.length < months) emiPaidDraft.push(false);
-  if(emiPaidDraft.length > months) emiPaidDraft.length = months;
-  const start = document.getElementById('leEmiStart').value || today();
-  document.getElementById('leEmiEnd').value = months > 0 ? addMonthsISO(start, months - 1) : '';
-  renderBankEmiSheet();
-  updateBankSaveBtn();
 }
 function emiTableHtml(entry, toggleFn){
   const rows = bankEmiSchedule(entry);
@@ -1862,17 +1640,26 @@ function emiTableHtml(entry, toggleFn){
       '</tr>').join('') + '</tbody></table>';
   return { html: html, paid: rows.filter(r => r.paid).length, total: rows.length };
 }
+let emiPaidDraft = [];
+function bankFormDraft(){
+  const amt = parseFloat(document.getElementById('leAmount').value) || 0;
+  const date = document.getElementById('leDate').value || today();
+  const months = parseFloat(document.getElementById('leMonths').value) || 0;
+  const rate = parseFloat(document.getElementById('leRate').value) || 0;
+  return { amount: amt, date: date, emiStart: date, months: months, rate: rate, emiPaid: emiPaidDraft };
+}
 function renderBankEmiSheet(){
-  const box = document.getElementById('leEmiSheet'); if(!box) return;
+  const wrap = document.getElementById('leEmiWrap'); if(!wrap) return;
+  if(document.getElementById('leBankFields').classList.contains('hidden')){ wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
   const r = emiTableHtml(bankFormDraft(), 'toggleEmiPaid');
-  box.innerHTML = r.html;
+  document.getElementById('leEmiSheet').innerHTML = r.html;
   document.getElementById('leEmiPaidCount').textContent = r.paid + '/' + r.total + ' Paid';
 }
 function toggleEmiPaid(i){
   emiPaidDraft[i] = !emiPaidDraft[i];
   renderBankEmiSheet();
 }
-
 /* ---------- Bank Loan: EMI Checklist (tick installments) ---------- */
 let emiCheckIdx = -1;
 function openEmiChecklist(ei){
@@ -1953,15 +1740,55 @@ function homeBankPdfHtml(){
 }
 function openHomeBankPdf(){ pdfMode = 'homeBank'; showStatementPreview(homeBankPdfHtml()); }
 function shareHomeBankPdf(){ pdfMode = 'homeBank'; sharePdf(); }
-function updateBankSaveBtn(){
-  const btn = document.getElementById('leSaveBtn'); if(!btn) return;
-  const isBank = !document.getElementById('leBankFields').classList.contains('hidden');
-  if(!isBank){ btn.disabled = false; btn.style.opacity = ''; return; }
-  const amt = parseFloat(document.getElementById('leBankAmount').value) || 0;
-  const months = parseFloat(document.getElementById('leMonths').value) || 0;
-  const ok = !!document.getElementById('leBank').value && amt > 0 && months > 0;
-  btn.disabled = !ok;
-  btn.style.opacity = ok ? '' : '0.45';
+let catDetail = null;
+function saveLoanEntry(){
+  const key = editingLoanKey || '';
+  if(key.startsWith('add:')){
+    const parts = key.split(':');
+    const mode = parts[1], kind = parts[2], pi = parts[3];
+    const entry = { id: uid(), amount: parseFloat(document.getElementById('leAmount').value) || 0, date: document.getElementById('leDate').value || today(), medium: document.getElementById('leMedium').value, channel: document.getElementById('leMedium').value, note: document.getElementById('leNote').value || '', updatedAt: new Date().toISOString() };
+    if(mode === 'addbank'){
+      entry.bank = document.getElementById('leBank').value.trim() || t('fBank');
+      entry.months = parseFloat(document.getElementById('leMonths').value) || 0;
+      entry.rate = parseFloat(document.getElementById('leRate').value) || 0;
+      entry.emiStart = entry.date;
+      entry.emiEnd = addMonths(entry.date, Math.max(0, entry.months - 1));
+      entry.emiPaid = normalizeEmiPaid(emiPaidDraft, entry.months);
+      state.bankLoans = [...(state.bankLoans || []), entry];
+      currentView = 'loans'; loansKind = 'bank';
+      persist(); render(); closeLoanEntryForm();
+      showToast(t('bankLoanAdded')); return;
+    }
+    const arr = kind === 'given' ? state.peopleGiven : state.peopleTaken;
+    const person = (arr || [])[+pi];
+    if(!person){ closeLoanEntryForm(); return; }
+    if(mode === 'addloan') person.loans = [...(person.loans || []), entry];
+    else person.payments = [...(person.payments || []), entry];
+    currentView = 'person'; personKind = kind; personIdx = +pi;
+    persist(); render(); closeLoanEntryForm();
+    showToast(mode === 'addloan' ? t('loanAdded') : t('paymentAdded')); return;
+  }
+  const r = loanEntryByKey(editingLoanKey || '');
+  if(!r.entry) { closeLoanEntryForm(); return; }
+  r.entry.amount = parseFloat(document.getElementById('leAmount').value) || 0;
+  r.entry.date = document.getElementById('leDate').value || today();
+  r.entry.medium = document.getElementById('leMedium').value;
+  r.entry.channel = r.entry.medium;
+  r.entry.note = document.getElementById('leNote').value || '';
+  r.entry.updatedAt = new Date().toISOString();
+  if(r.kind === 'bank'){
+    r.entry.bank = document.getElementById('leBank').value.trim() || r.entry.bank || t('fBank');
+    r.entry.months = parseFloat(document.getElementById('leMonths').value) || 0;
+    r.entry.rate = parseFloat(document.getElementById('leRate').value) || 0;
+    r.entry.emiStart = r.entry.date;
+    r.entry.emiEnd = addMonths(r.entry.date, Math.max(0, r.entry.months - 1));
+    r.entry.emiPaid = normalizeEmiPaid(emiPaidDraft, r.entry.months);
+  }
+  r.entry.updatedAt = new Date().toISOString();
+  persist();
+  render();
+  closeLoanEntryForm();
+  showToast(t('saved'));
 }
 function deleteLoanEntry(key){
   const r = loanEntryByKey(key);
@@ -2086,6 +1913,8 @@ function fitStatementPreview(){
   page.style.transform = 'scale(' + scale + ')';
   page.style.transformOrigin = 'top left';
   wrap.style.height = Math.ceil(page.offsetHeight * scale) + 'px';
+  wrap.style.width = Math.ceil(794 * scale) + 'px';
+  wrap.style.margin = '0 auto';
 }
 let stmtFitBound = false;
 function showStatementPreview(html){
@@ -2105,13 +1934,15 @@ function openPdfPreview(){
   pdfMode = 'history';
   showStatementPreview(pdfStatementHtml());
 }
+function historyDownloadPdf(){ pdfMode = 'history'; downloadPdfFile(); }
+function historySharePdf(){ pdfMode = 'history'; sharePdf(); }
 
 function closePdfPreview(){
   document.getElementById('pdfPreviewSheet').classList.add('hidden');
   document.getElementById('pdfOverlay').classList.add('hidden');
 }
 let pdfMode = 'history', pdfPrintHeader = '';
-function pdfDocHtml(){ return pdfMode === 'person' ? personPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfMode === 'catdetail' ? catDetailStatementHtml() : pdfStatementHtml(); }
+function pdfDocHtml(){ return pdfMode === 'person' ? personPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfStatementHtml(); }
 function pdfTextForMode(){
   if(pdfMode === 'person'){
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
@@ -2136,13 +1967,29 @@ function pdfTextForMode(){
       '\nTotal (' + people.length + ' people): ' + fmt(tL) + ' • ' + fmt(tP) + ' • ' + fmt(tB);
   }
   const rows = pdfStatementRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
-  if(pdfMode === 'catdetail'){
-    const rows = catDetailPdfRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
-    return statementText('History - ' + catDetailTitle(), rows, histFrom, histTo);
-  }
   return statementText('History - ' + statementFilterName(), rows, histFrom, histTo);
 }
 
+function downloadPdfFile(){
+  const html = pdfDocHtml();
+  if(typeof html2pdf === 'undefined'){ printPdf(); return; }
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:794px;background:#fff;padding:10px;position:fixed;left:-9999px;top:0;';
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap);
+  const fname = 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
+  const done = () => { try{ wrap.remove(); }catch(e){} };
+  try{
+    html2pdf().from(wrap).set({
+      margin: [8, 8, 8, 8],
+      filename: fname,
+      image: { type: 'jpeg', quality: 0.96 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
+    }).save().then(done).catch(() => { done(); printPdf(); });
+  }catch(e){ done(); printPdf(); }
+}
 function printPdf(){
   const w = window.open('', '_blank');
   if(!w){ showToast(t('printPdf')); return; }
@@ -2161,8 +2008,8 @@ function sharePdf(){
 
 /* ================= PHASE 3: LOANS ================= */
 let loansKind = 'given', personKind = 'given', personIdx = 0;
-let loansSearch = '', loansFrom = '', loansTo = '', personFrom = '', personTo = '';
-let homeBankFrom = '', homeBankTo = '';
+let loansSearch = '', loansFrom = firstOfMonth(), loansTo = today(), personFrom = firstOfMonth(), personTo = today();
+let homeBankFrom = firstOfMonth(), homeBankTo = today();
 let addPersonKind = 'given', pickerKind = 'given', pickerAction = 'payment', pickerSearch = '';
 function loansPageTitle(){ return loansKind === 'given' ? t('loansGivenPage') : loansKind === 'taken' ? t('loansTakenPage') : t('bankLoansPage'); }
 function openLoansPage(kind){
@@ -2206,9 +2053,9 @@ function renderLoansView(){
   const backBtn = '<button onclick="navGo(\'home\')" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>';
   const controls = '<div class="flex gap-2 mb-3">' +
     '<button onclick="' + (loansKind === 'bank' ? 'openLoanEntryForm(\'addbank\',\'bank\',\'\')' : 'openAddPerson(\'' + loansKind + '\')') + '" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">' + (loansKind === 'bank' ? t('addBankLoanBtn') : t('addPerson')) + '</button>' +
-    '<button onclick="openLoansPdf()" class="px-4 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
+    '<button onclick="loansDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
     '<button onclick="openLoansPdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-    '<button onclick="sharePdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button></div>';
+    '<button onclick="loansSharePdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button></div>';
   const dates = '<div class="flex gap-2 items-end mb-2">' +
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(loansFrom) + '" onchange="loansFrom=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(loansTo) + '" onchange="loansTo=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
@@ -2295,9 +2142,9 @@ function renderPersonView(){
       '<button onclick="openLoanEntryForm(\'addpay\',\'' + personKind + '\',' + personIdx + ')" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">' + t('addPaymentBtn') + '</button>' +
     '</div>' +
     '<div class="flex gap-2 mt-2">' +
-      '<button onclick="openPersonPdf()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
+      '<button onclick="personDownloadPdf()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
       '<button onclick="openPersonPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-      '<button onclick="sharePdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
+      '<button onclick="personSharePdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
     '</div>' +
     '<div class="flex gap-2 items-end mt-3 mb-2">' +
       '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(personFrom) + '" onchange="personFrom=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
@@ -2310,29 +2157,16 @@ function renderPersonView(){
     '</div>';
   document.querySelectorAll('[data-t]').forEach(el => { const k = el.getAttribute('data-t'); if(T[lang][k]) el.textContent = T[lang][k]; });
 }
-/* ---------- Loans: Add Person ---------- */
+/* ---------- Phase 3: Add Person ---------- */
 let editingPerson = null;
 function openAddPerson(kind){
   addPersonKind = kind;
   editingPerson = null;
-  document.getElementById('personSheet').classList.remove('hidden');
-  document.getElementById('personOverlay').classList.remove('hidden');
   document.getElementById('psTitle').textContent = t('addPersonTitle');
   document.getElementById('psName').value = '';
   document.getElementById('psMobile').value = '';
-  document.getElementById('psLoanFields').classList.remove('hidden');
-  document.getElementById('psSaveBtn').textContent = t('saveLoan');
-  document.getElementById('psAmount').value = '';
-  document.getElementById('psDate').value = today();
-  const from = document.getElementById('psFrom');
-  from.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
-  from.value = 'Cash';
-  const to = document.getElementById('psTo');
-  to.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
-  to.value = 'Cash';
-  document.getElementById('psExpDate').value = '';
-  document.getElementById('psNote').value = '';
-  updatePersonSaveBtn();
+  document.getElementById('personSheet').classList.remove('hidden');
+  document.getElementById('personOverlay').classList.remove('hidden');
 }
 function closeAddPerson(){
   document.getElementById('personSheet').classList.add('hidden');
@@ -2347,9 +2181,6 @@ function openEditPerson(){
   document.getElementById('psTitle').textContent = t('editPersonTitle');
   document.getElementById('psName').value = person.name || '';
   document.getElementById('psMobile').value = person.mobile || '';
-  document.getElementById('psLoanFields').classList.add('hidden');
-  document.getElementById('psSaveBtn').textContent = 'Save';
-  updatePersonSaveBtn();
   document.getElementById('personSheet').classList.remove('hidden');
   document.getElementById('personOverlay').classList.remove('hidden');
 }
@@ -2382,40 +2213,15 @@ function savePerson(){
     render();
     return;
   }
-  const amt = parseFloat(document.getElementById('psAmount').value) || 0;
-  if(!(amt > 0)){ showToast(t('needAmount')); return; }
   const arr = addPersonKind === 'given' ? state.peopleGiven : state.peopleTaken;
-  const entry = { id: uid(), amount: amt, date: document.getElementById('psDate').value || today(), medium: document.getElementById('psFrom').value, channel: document.getElementById('psFrom').value, fromChannel: document.getElementById('psFrom').value, toChannel: document.getElementById('psTo').value, expectedReturnDate: document.getElementById('psExpDate').value || '', note: document.getElementById('psNote').value || '', updatedAt: new Date().toISOString() };
-  const person = { id: uid(), name: name, mobile: mobile, loans: [entry], payments: [], updatedAt: new Date().toISOString() };
+  const person = { id: uid(), name: name, mobile: mobile, loans: [], payments: [], updatedAt: new Date().toISOString() };
   arr.push(person);
   persist();
   closeAddPerson();
-  showToast(t('loanAdded'));
+  showToast(t('personAdded'));
   openPersonDetail(addPersonKind, arr.length - 1);
 }
-function updatePersonSaveBtn(){
-  const btn = document.getElementById('psSaveBtn'); if(!btn) return;
-  const nameOk = (document.getElementById('psName') || {}).value.trim() !== '';
-  const amtOk = editingPerson ? true : (parseFloat((document.getElementById('psAmount') || {}).value) || 0) > 0;
-  const ok = nameOk && amtOk;
-  btn.disabled = !ok;
-  btn.style.opacity = ok ? '' : '0.45';
-}
-async function pickContact(){
-  try{
-    const cp = (typeof navigator !== 'undefined') ? navigator.contacts : null;
-    if(!cp || typeof cp.select !== 'function'){ showToast(t('contactsUnsupported')); return; }
-    const list = await cp.select(['name', 'tel'], { multiple: false });
-    if(!list || !list.length) return;
-    const c = list[0];
-    if(c.name && c.name[0]) document.getElementById('psName').value = c.name[0];
-    if(c.tel && c.tel[0]) document.getElementById('psMobile').value = String(c.tel[0]).replace(/[\s-]/g, '');
-    updatePersonSaveBtn();
-  }catch(e){
-    if(e && e.name === 'NotAllowedError') showToast(t('contactsUnsupported'));
-  }
-}
-/* ---------- Loans: Person Picker ---------- */
+/* ---------- Phase 3: Person Picker ---------- */
 function openPersonPicker(kind, action){
   pickerKind = kind; pickerAction = action; pickerSearch = '';
   document.getElementById('pickerSearch').value = '';
@@ -2444,7 +2250,7 @@ function pickPerson(pi){
   if(pickerAction === 'payment') openLoanEntryForm('addpay', pickerKind, pi);
   else openPersonDetail(pickerKind, pi);
 }
-/* ---------- Loans: PDFs ---------- */
+/* ---------- Phase 3: PDFs ---------- */
 function loansPdfHtml(){
   if(loansKind === 'bank'){
     const rows = (state.bankLoans || []).map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' • ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
@@ -2477,6 +2283,8 @@ function openLoansPdf(){
   pdfMode = 'loans';
   showStatementPreview(loansPdfHtml());
 }
+function loansDownloadPdf(){ pdfMode = 'loans'; downloadPdfFile(); }
+function loansSharePdf(){ pdfMode = 'loans'; sharePdf(); }
 
 function personPdfHtml(){
   const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
@@ -2500,12 +2308,18 @@ function openPersonPdf(){
   pdfMode = 'person';
   showStatementPreview(personPdfHtml());
 }
+function personDownloadPdf(){ pdfMode = 'person'; downloadPdfFile(); }
+function personSharePdf(){ pdfMode = 'person'; sharePdf(); }
 
 function csvEsc(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
 function csvRowsForMode(){
   if(pdfMode === 'history'){
     return [['Date', 'Person', 'Category', 'Note', 'From', 'To', 'Amount']].concat(
       pdfStatementRows().map(r => [fmtDMY(r.date), r.person, r.category, r.comment, r.from, r.to, Math.abs(r.amount)]));
+  }
+  if(pdfMode === 'homeBank'){
+    return [['Date', 'Bank', 'Note', 'From', 'To', 'Amount']].concat(
+      homeBankLoansFiltered().map(e => [fmtDMY(e.date || ''), e.bank || e.name || '', e.note || '', e.medium || '', e.medium || '', Math.abs(+(e.amount || 0))]));
   }
   if(pdfMode === 'loans'){
     if(loansKind === 'bank'){
