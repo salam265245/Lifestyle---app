@@ -28,6 +28,7 @@
   #pdfPreviewBody{overflow-x:hidden;}
   .stmt-table{table-layout:fixed;width:100%;}
   .stmt-table td,.stmt-table th{overflow-wrap:break-word;}
+#leBankSaveBtn:disabled{background:#A8A29E;}
 </style>
 </head>
 <body>
@@ -51,16 +52,16 @@
     <div class="flex justify-between items-center mb-4"><h2 class="text-[17px] font-extrabold" data-t="addNewTx">Add New Transaction</h2><button onclick="closeAddSheet()" class="text-xl px-2">✕</button></div>
     <button onclick="openForm('income')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#EAF7EA] font-bold text-[14px]">💰 <span data-t="addIncome">Add Income</span></button>
     <button onclick="openForm('expense')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#FDECEC] font-bold text-[14px]">💸 <span data-t="addExpense">Add Expense</span></button>
-    <button onclick="phaseLater('Give Loan')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#FFF8E1] font-bold text-[14px]">🤝 <span data-t="giveLoan">Give Loan</span></button>
-    <button onclick="phaseLater('Take Loan')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#E3F2FD] font-bold text-[14px]">📥 <span data-t="takeLoan">Take Loan</span></button>
-    <button onclick="phaseLater('Bank Loan')" class="w-full text-left py-3.5 px-4 rounded-2xl bg-[#F3E5F5] font-bold text-[14px]">🏦 <span data-t="bankLoan">Bank Loan</span></button>
+    <button onclick="closeAddSheet();openLoanEntryForm('addloan','given','')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#FFF8E1] font-bold text-[14px]">🤝 <span data-t="giveLoan">Give Loan</span></button>
+    <button onclick="closeAddSheet();openLoanEntryForm('addloan','taken','')" class="w-full text-left py-3.5 px-4 mb-2 rounded-2xl bg-[#E3F2FD] font-bold text-[14px]">📥 <span data-t="takeLoan">Take Loan</span></button>
+    <button onclick="closeAddSheet();openLoanEntryForm('addbank','bank','')" class="w-full text-left py-3.5 px-4 rounded-2xl bg-[#F3E5F5] font-bold text-[14px]">🏦 <span data-t="bankLoan">Bank Loan</span></button>
   </div>
 </div>
 
 <!-- Add Income / Expense form sheet -->
 <div id="formOverlay" class="overlay hidden" onclick="closeForm()"></div>
 <div id="formSheet" class="sheet hidden">
-  <div class="p-5">
+  <div class="sticky top-0 z-10 bg-white px-5 pt-5 pb-3">
     <div class="flex justify-between items-center mb-4"><h2 id="formTitle" class="text-[17px] font-extrabold">Add Income</h2><button onclick="closeForm()" class="text-xl px-2">✕</button></div>
     <div id="selCatBox" class="hidden mb-3 p-3 rounded-xl bg-[#FFFBF7] border border-[#F3E8D3] flex justify-between items-center"><div><div class="text-[11px] text-[#8B7355]" data-t="selectedCat">Selected Category</div><div id="selCatLabel" class="font-bold text-[14px]"></div></div><button onclick="clearCat()" class="px-2 text-[#8B7355]">✕</button></div>
     <div class="flex gap-2 mb-4">
@@ -68,7 +69,9 @@
       <button onclick="closeForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
     <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
-    <input id="fAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
+    <input id="fAmount" oninput="updateSaveBtn()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1">
+  </div>
+  <div class="px-5 pb-5">
     <div class="flex items-center gap-2 mt-1 mb-2">
       <label class="text-[12px] font-bold text-[#8B7355] shrink-0" data-t="category">Category</label>
       <div class="flex-1 flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-1.5">
@@ -87,13 +90,6 @@
   </div>
 </div>
 
-
-<!-- Profile sheet: opened by tapping the name area on Home -->
-
-
-
-
-<!-- Bazar sheet -->
 <div id="bazarOverlay" class="overlay hidden" onclick="closeBazar()"></div>
 <div id="bazarSheet" class="sheet hidden">
   <div class="p-5">
@@ -161,23 +157,61 @@
 <div id="loanEditSheet" class="sheet hidden">
   <div class="p-5">
     <div class="flex justify-between items-center mb-4"><h2 id="leTitle" class="text-[17px] font-extrabold">Edit Loan Entry</h2><button onclick="closeLoanEntryForm()" class="text-xl px-2">✕</button></div>
-    <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
-    <input id="leAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
-    <label class="text-[12px] font-bold text-[#8B7355]" data-t="date">Date</label>
-    <input id="leDate" oninput="renderBankEmiSheet()" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
-    <label class="text-[12px] font-bold text-[#8B7355]" data-t="medium">Medium</label>
-    <select id="leMedium" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></select>
-    <label class="text-[12px] font-bold text-[#8B7355]" data-t="note">Note</label>
-    <input id="leNote" type="text" maxlength="200" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
-    <div id="leBankFields" class="hidden">
-      <label class="text-[12px] font-bold text-[#8B7355]" data-t="bankNameLbl">Bank name</label>
-      <input id="leBank" type="text" maxlength="80" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
-      <div class="flex gap-2">
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="monthsLbl">Months</label>
-        <input id="leMonths" oninput="renderBankEmiSheet()" type="number" inputmode="numeric" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
-        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="rateLbl">Interest rate (%)</label>
-        <input id="leRate" oninput="renderBankEmiSheet()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
+    <div id="leBankTop" class="hidden flex gap-2 mb-3">
+      <button id="leBankSaveBtn" onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]" data-t="saveLoan">Save Loan</button>
+      <button onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
+    </div>
+    <div id="lePersonTop" class="hidden flex gap-2 mb-3">
+      <button id="lePersonSaveBtn" onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#9E9E9E] text-white font-bold text-[14px]" disabled>Save Loan</button>
+      <button onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
+    </div>
+    <div id="lePersonFields">
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="nameLbl">Name</label>
+      <div class="flex gap-2 items-center mt-1 mb-3">
+        <input id="lePersonName" type="text" maxlength="80" placeholder="New person name" oninput="updatePersonSaveBtn()" class="flex-1 min-w-0 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px]">
+        <button onclick="openLoanPersonPicker()" class="w-[46px] h-[46px] shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center" title="Contacts">📒</button>
       </div>
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="mobileContactLbl">Mobile / Contact Number</label>
+      <div class="flex gap-2 items-center mt-1 mb-3">
+        <input id="lePersonMobile" type="tel" maxlength="20" placeholder="Type manually or pick from contacts" class="flex-1 min-w-0 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px]">
+        <button onclick="openLoanPersonPicker()" class="w-[46px] h-[46px] shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center" title="Contacts">📞</button>
+      </div>
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
+      <input id="leAmount" oninput="updatePersonSaveBtn()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="date">Date</label>
+      <input id="leDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
+      <div class="flex gap-2">
+        <div class="flex-1 min-w-0"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromChannelLbl">From Channel</label>
+        <select id="leFromChannel" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></select></div>
+        <div class="flex-1 min-w-0"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toChannelLbl">To Channel</label>
+        <select id="leToChannel" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></select></div>
+      </div>
+      <div id="leExpectedReturnRow">
+        <label class="text-[12px] font-bold text-[#8B7355]" data-t="expectedReturnLbl">Expected Return Date</label>
+        <input id="leExpectedReturn" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
+      </div>
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="note">Note</label>
+      <textarea id="leNote" rows="3" maxlength="500" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></textarea>
+    </div>
+    <div id="leBankFields" class="hidden">
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="bankNameLbl">Bank Name</label>
+      <select id="leBank" onchange="renderBankEmiSheet()" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></select>
+      <div class="flex gap-2">
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="loanAmountLbl">Loan Amount</label>
+        <input id="leBankAmount" oninput="renderBankEmiSheet()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="termLbl">Term (months)</label>
+        <input id="leMonths" oninput="renderBankEmiSheet()" type="number" inputmode="numeric" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3"></div>
+      </div>
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="rateLbl">Interest Rate %</label>
+      <input id="leRate" oninput="renderBankEmiSheet()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px] mt-1 mb-3">
+      <div class="flex gap-2">
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="disbursementLbl">Disbursement Date</label>
+        <input id="leDisbursement" oninput="renderBankEmiSheet()" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></div>
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="emiStartLbl">EMI Start Date</label>
+        <input id="leEmiStart" oninput="renderBankEmiSheet()" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3"></div>
+      </div>
+      <label class="text-[12px] font-bold text-[#8B7355]" data-t="emiEndLbl">EMI End Date (auto)</label>
+      <input id="leEmiEnd" type="date" readonly class="w-full bg-[#F5EEDD] border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
     </div>
     <div id="leEmiWrap" class="hidden">
       <div class="flex justify-between items-center mt-1 mb-2">
@@ -186,13 +220,12 @@
       </div>
       <div id="leEmiSheet" class="border border-[#F3E8D3] rounded-[14px] overflow-hidden mb-3"></div>
     </div>
-    <div class="flex gap-2">
+    <div id="leBottomBtns" class="hidden flex gap-2">
       <button onclick="saveLoanEntry()" class="flex-1 py-3 rounded-full bg-[#2D2A26] text-white font-bold text-[14px]">Save</button>
       <button onclick="closeLoanEntryForm()" class="flex-1 py-3 rounded-full border-2 border-[#F3E8D3] font-bold text-[14px]" data-t="cancel">Cancel</button>
     </div>
   </div>
 </div>
-
 
 <!-- Bank Loan: EMI Checklist -->
 <div id="emiOverlay" class="overlay hidden" onclick="closeEmiChecklist()"></div>
@@ -242,6 +275,7 @@
 
 
 <!-- Phase 4: Cloud Sync -->
+
 
 
 
@@ -317,7 +351,7 @@ const T = {
     cloudSyncDone:'Sync হয়ে গেছে ✅', cloudUploadDone:'Upload হয়ে গেছে ✅', cloudDownloadDone:'Download হয়ে গেছে ✅',
     cloudSyncFail:'Sync হয়নি — ইন্টারনেট / Config দেখো', cloudSaved:'Cloud সেটিংস সেভ হয়েছে',
     cloudCleared:'Cloud সংযোগ মুছে ফেলা হয়েছে', cloudInvalidConfig:'Config ঠিক নেই — JSON দেখো', cloudNoCode:'Sync Code দাও',
-    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', monthsLbl:'মাস', rateLbl:'সুদের হার (%)', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন যোগ করো', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
+    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', saveLoan:'লোন সেভ করো', loanAmountLbl:'লোনের পরিমাণ', termLbl:'মেয়াদ (মাস)', disbursementLbl:'বিতরণের তারিখ', emiStartLbl:'EMI শুরুর তারিখ', emiEndLbl:'EMI শেষের তারিখ (অটো)', selectBank:'ব্যাংক বাছুন', monthsLbl:'মাস', rateLbl:'সুদের হার %', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPersonLoanTitle:'+ লোক যোগ করো', nameLbl:'নাম', mobileContactLbl:'মোবাইল / যোগাযোগ নম্বর', fromChannelLbl:'কোথা থেকে', toChannelLbl:'কোথায়', expectedReturnLbl:'ফেরতের সম্ভাব্য তারিখ', newPersonNamePh:'নতুন লোকের নাম', typeManuallyPh:'নিজে লিখুন বা কন্ট্যাক্ট থেকে নিন', newPerson:'নতুন লোক', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
   en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', localSaved:'Saved locally', comingSoon:'Coming in Phase 3', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
     cloudTitle:'Cloud Sync', cloudDesc:'Use the same Sync Code on both phones to merge their data.',
     syncCodeLbl:'Sync Code', cloudLastSync:'Last sync: ', cloudNever:'Never synced',
@@ -375,7 +409,7 @@ const T = {
     cloudSyncDone:'Synced ✅', cloudUploadDone:'Uploaded ✅', cloudDownloadDone:'Downloaded ✅',
     cloudSyncFail:'Sync failed — check internet / Config', cloudSaved:'Cloud settings saved',
     cloudCleared:'Cloud connection removed', cloudInvalidConfig:'Config looks wrong — check the JSON', cloudNoCode:'Enter a Sync Code',
-    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank name', monthsLbl:'Months', rateLbl:'Interest rate (%)', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Add Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
+    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Term (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
 let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
@@ -814,9 +848,9 @@ function pageHeaderHtml(){
       '<div class="flex-1">' +
         '<div class="font-extrabold text-[20px] leading-tight">' + t('appName') + '</div>' +
         (authEmail() && name ? '<div class="text-[13px] font-bold text-[#8B7355]">' + escA(name) + '</div>' : '') +
-        '<div class="text-[13px] text-black mt-1">' + t('time') + ': ' + timeStr + '</div>' +
-        '<div class="text-[13px] text-black">' + t('date') + ': ' + dateStr + '</div>' +
-        '<div class="text-[13px] text-black">' + t('day') + ': ' + dayStr + '</div>' +
+        '<div class="text-[13px] text-black mt-1" id="clockTime">' + t('time') + ': ' + timeStr + '</div>' +
+        '<div class="text-[13px] text-black" id="clockDate">' + t('date') + ': ' + dateStr + '</div>' +
+        '<div class="text-[13px] text-black" id="clockDay">' + t('day') + ': ' + dayStr + '</div>' +
       '</div>' +
       '<div class="flex border border-[#F3E8D3] rounded-full overflow-hidden text-[13px] font-bold">' +
         '<button onclick="setLang(\'en\')" class="px-3 py-1.5 ' + (lang === 'en' ? 'bg-[#2D2A26] text-white' : '') + '">EN</button>' +
@@ -986,19 +1020,18 @@ function render(){
     '<div class="px-4 pt-4">' +
       '<div class="flex items-start gap-3 cursor-pointer" style="position:sticky;top:0;z-index:20;background:#FFFBF7;margin:-16px -16px 0;padding:16px 16px 10px;border-bottom:1px solid #F3E8D3" onclick="navGo(\'profile\')">' +
         '<div class="w-12 h-12 rounded-full bg-[#F3E8D3] overflow-hidden flex items-center justify-center text-[22px]">' + (photo ? '<img src="' + photo + '" class="w-full h-full object-cover">' : '👤') + '</div>' +
-        '<div class="flex-1"><div class="font-extrabold text-[20px] leading-tight">' + name + '</div>' +
+        '<div class="flex-1"><div class="font-extrabold text-[20px] leading-tight text-[#8B7355]">' + t('appName') + '</div><div class="font-extrabold text-[20px] leading-tight">' + name + '</div>' +
         (pDes ? '<div class="text-[13px] font-bold text-[#8B7355]">' + pDes + '</div>' : '') +
         (pAddr ? '<div class="text-[13px] text-[#8B7355]">' + pAddr + '</div>' : '') +
         (pMob ? '<div class="text-[13px] text-[#8B7355]">' + pMob + '</div>' : '') +
-        '<div class="text-[13px] text-black mt-1">' + t('time') + ': ' + timeStr + '</div>' +
-        '<div class="text-[13px] text-black">' + t('date') + ': ' + dateStr + '</div>' +
-        '<div class="text-[13px] text-black">' + t('day') + ': ' + dayStr + '</div></div>' +
+        '<div class="text-[13px] text-black mt-1" id="clockTime">' + t('time') + ': ' + timeStr + '</div>' +
+        '<div class="text-[13px] text-black" id="clockDate">' + t('date') + ': ' + dateStr + '</div>' +
+        '<div class="text-[13px] text-black" id="clockDay">' + t('day') + ': ' + dayStr + '</div></div>' +
         '<div class="flex flex-col items-end gap-2 shrink-0" onclick="event.stopPropagation()">' +
           '<div class="flex gap-2">' +
             '<button onclick="setLang(\'en\')" class="px-3 py-1.5 rounded-full text-[12px] font-bold ' + (lang==='en' ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">EN</button>' +
         '<button onclick="setLang(\'bn\')" class="px-3 py-1.5 rounded-full text-[12px] font-bold ' + (lang==='bn' ? 'bg-[#2D2A26] text-white' : 'bg-white border border-[#F3E8D3]') + '">BN</button>' +
           '</div>' +
-          '<div class="text-[11px] text-green-700 font-bold text-right">✅ ' + t('localSaved') + '</div>' +
           '<button onclick="cloudSync(\'sync\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[11px] font-bold whitespace-nowrap">🔄 ' + t('syncNow') + '</button>' +
           '<button onclick="cloudSync(\'upload\')" class="px-3 py-1.5 rounded-full bg-[#FFF8E1] border border-[#FFE082] text-[11px] font-bold whitespace-nowrap">☁️ ' + t('upload') + '</button>' +
         '</div>' +
@@ -1069,8 +1102,20 @@ function openForm(type){
   renderCats();
   document.getElementById('formSheet').classList.remove('hidden');
   document.getElementById('formOverlay').classList.remove('hidden');
+  document.getElementById('formSheet').scrollTop = 0;
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = false;
+  btn.style.background = '';
+  btn.textContent = 'Save';
 }
-function closeForm(){ document.getElementById('formSheet').classList.add('hidden'); document.getElementById('formOverlay').classList.add('hidden'); }
+function closeForm(){
+  document.getElementById('formSheet').classList.add('hidden');
+  document.getElementById('formOverlay').classList.add('hidden');
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = false;
+  btn.style.background = '';
+  btn.textContent = 'Save';
+}
 /* ---------- Profile ---------- */
 
 
@@ -1135,7 +1180,19 @@ function pickSub(j){
   document.getElementById('selCatBox').classList.remove('hidden');
   renderCats();
 }
+function bnDigits(str){
+  if(lang !== 'bn') return String(str);
+  const map = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+  return String(str).replace(/[0-9]/g, d => map[d]);
+}
+function updateSaveBtn(){
+  const btn = document.getElementById('saveBtn');
+  if(!btn || btn.disabled) return;
+  const amt = parseFloat(document.getElementById('fAmount').value) || 0;
+  btn.textContent = amt > 0 ? 'Save • ' + bnDigits(fmt(amt)) : 'Save';
+}
 function saveForm(){
+  if(document.getElementById('saveBtn').disabled) return;
   const amt = parseFloat(document.getElementById('fAmount').value) || 0;
   if(formType === 'income' && selCat === null){ showToast(t('pickCat')); return; }
   if(formType === 'expense' && selSub === null){ showToast(t('pickCat')); return; }
@@ -1151,7 +1208,11 @@ function saveForm(){
   };
   saveTransaction(tx);
   editingTxId = null;
-  closeForm();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '✓ Saved • ' + bnDigits(fmt(amt));
+  btn.style.background = '#1E9E4F';
+  setTimeout(() => { closeForm(); }, 500);
 }
 /* ---------- BAZAR ---------- */
 function bazarStats(){
@@ -1440,7 +1501,7 @@ function historyRows(){
 function filteredHistoryRows(){
   let rows = historyRows();
   if(histFilter !== 'all') rows = rows.filter(r => r.kind === histFilter);
-  if(histFilter === 'expense' && histCat.trim()){
+  if((histFilter === 'expense' || histFilter === 'income') && histCat.trim()){
     const q = histCat.trim().toLowerCase();
     rows = rows.filter(r => (r.catEn || '').toLowerCase().includes(q) || (r.catBn || '').includes(histCat.trim()));
   }
@@ -1455,6 +1516,7 @@ function filteredHistoryRows(){
 function histSetFilter(f){ histFilter = f; render(); }
 function histSetSearch(v){ histSearch = v || ''; renderHistoryView(); }
 function histSetCat(v){ histCat = v || ''; renderHistoryView(); }
+function histGoCat(kind, cat){ histFilter = kind; histCat = cat || ''; histSearch = ''; render(); }
 function histSetFrom(v){ histFrom = v || ''; render(); }
 function histSetTo(v){ histTo = v || ''; render(); }
 function histClearDates(){ histFrom = ''; histTo = ''; render(); }
@@ -1472,11 +1534,12 @@ function renderHistoryView(){
   const tabs = [['all','fAll'],['income','fIncome'],['expense','fExpense'],['given','fGiven'],['taken','fTaken'],['return','fReturn'],['repayment','fRepay'],['bank','fBank']];
   const listHtml = rows.length ? rows.map(r => {
     const sub = [r.date, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
-    const titleClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : '';
-    return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]"' + titleClick + '>' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
+    const catEsc = String(r.catEn || r.title || '').replace(/'/g, "\\'");
+    const rowClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : (r.kind === 'income' || r.kind === 'expense') ? ' onclick="histGoCat(\'' + r.kind + '\',\'' + catEsc + '\')" style="cursor:pointer"' : '';
+    return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"' + rowClick + '><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
       '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (r.sign >= 0 ? 'text-green-700' : 'text-red-600') + '">' + (r.sign >= 0 ? '+' : '-') + fmt(r.amount) + '</div>' +
-      '<div class="flex gap-1 flex-nowrap"><button onclick="editHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-      '<button onclick="deleteHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
+      '<div class="flex gap-1 flex-nowrap"><button onclick="event.stopPropagation();editHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
+      '<button onclick="event.stopPropagation();deleteHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
   }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
   document.getElementById('app').innerHTML =
     '<div class="px-4 pt-4">' +
@@ -1530,6 +1593,7 @@ function editTransaction(id){
     if(idx >= 0){ selSub = idx; selCat = -1; const it = EXPENSE_FLAT[idx]; document.getElementById('selCatLabel').textContent = it.icon + ' ' + (lang === 'en' ? it.en : it.bn); document.getElementById('selCatBox').classList.remove('hidden'); }
   }
   renderCats();
+  updateSaveBtn();
 }
 function deleteTransaction(id){
   if(!confirmTwice(t('confirmDeleteTx'))) return;
@@ -1556,15 +1620,34 @@ function editLoanEntry(key){
   editingLoanKey = key;
   document.getElementById('leTitle').textContent = t('loanEntryTitle');
   const isBank = r.kind === 'bank';
+  document.getElementById('lePersonFields').classList.toggle('hidden', isBank);
+  document.getElementById('lePersonTop').classList.toggle('hidden', isBank);
+  document.getElementById('leBankTop').classList.toggle('hidden', !isBank);
+  document.getElementById('leBottomBtns').classList.add('hidden');
   document.getElementById('leBankFields').classList.toggle('hidden', !isBank);
   document.getElementById('leEmiWrap').classList.toggle('hidden', !isBank);
-  if(isBank){ document.getElementById('leBank').value = r.entry.bank || r.entry.name || ''; document.getElementById('leMonths').value = r.entry.months || ''; document.getElementById('leRate').value = r.entry.rate || ''; emiPaidDraft = normalizeEmiPaid(r.entry.emiPaid, r.entry.months); renderBankEmiSheet(); }
+  if(isBank){
+    renderBankSelect(r.entry.bank || r.entry.name || '');
+    document.getElementById('leBankAmount').value = r.entry.amount || '';
+    document.getElementById('leMonths').value = r.entry.months || '';
+    document.getElementById('leRate').value = r.entry.rate || '';
+    document.getElementById('leDisbursement').value = normDate(r.entry.date) || today();
+    document.getElementById('leEmiStart').value = normDate(r.entry.emiStart || r.entry.date) || today();
+    emiPaidDraft = normalizeEmiPaid(r.entry.emiPaid, r.entry.months); renderBankEmiSheet();
+  }
+  loanFormKind = (r.kind === 'given' || r.kind === 'return') ? 'given' : 'taken';
+  loanFormPersonIdx = r.pi;
+  document.getElementById('lePersonName').value = r.person ? (r.person.name || '') : '';
+  document.getElementById('lePersonMobile').value = r.person ? (r.person.mobile || '') : '';
+  document.getElementById('lePersonName').placeholder = t('newPersonNamePh');
+  document.getElementById('lePersonMobile').placeholder = t('typeManuallyPh');
   document.getElementById('leAmount').value = r.entry.amount || '';
   document.getElementById('leDate').value = normDate(r.entry.date) || today();
-  const med = document.getElementById('leMedium');
-  med.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
-  med.value = r.entry.medium || r.entry.channel || r.entry.fromChannel || 'Cash';
+  fillLoanChannels(r.entry.fromChannel || r.entry.medium || r.entry.channel || 'Cash', r.entry.toChannel || r.entry.channel || 'Cash');
+  document.getElementById('leExpectedReturn').value = normDate(r.entry.expectedReturn || '') || '';
+  document.getElementById('leExpectedReturnRow').classList.toggle('hidden', r.lp === 'p');
   document.getElementById('leNote').value = r.entry.note || '';
+  updatePersonSaveBtn();
   document.getElementById('loanEditSheet').classList.remove('hidden');
   document.getElementById('loanEditOverlay').classList.remove('hidden');
 }
@@ -1572,21 +1655,76 @@ function closeLoanEntryForm(){
   document.getElementById('loanEditSheet').classList.add('hidden');
   document.getElementById('loanEditOverlay').classList.add('hidden');
   document.getElementById('leBankFields').classList.add('hidden');
+  document.getElementById('leEmiWrap').classList.add('hidden');
+  document.getElementById('leBankTop').classList.add('hidden');
+  document.getElementById('lePersonTop').classList.add('hidden');
+  document.getElementById('lePersonFields').classList.remove('hidden');
   editingLoanKey = null;
+  loanFormPersonIdx = null;
+}
+/* ---------- Give/Take Loan form (screenshot layout): Name + Mobile + Amount + Date + From/To Channel + Expected Return + Note ---------- */
+let loanFormPersonIdx = null, loanFormKind = 'given';
+function updatePersonSaveBtn(){
+  const btn = document.getElementById('lePersonSaveBtn');
+  if(!btn) return;
+  const name = (document.getElementById('lePersonName').value || '').trim();
+  const amt = parseFloat(document.getElementById('leAmount').value) || 0;
+  const ok = name.length > 0 && amt > 0;
+  btn.disabled = !ok;
+  btn.style.background = ok ? '#2D2A26' : '#9E9E9E';
+  const label = (editingLoanKey || '').startsWith('add:addloan') ? t('saveLoan') : t('save');
+  btn.textContent = ok ? label + ' • ' + bnDigits(fmt(amt)) : label;
+}
+function fillLoanChannels(from, to){
+  const opts = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
+  const f = document.getElementById('leFromChannel'), tt = document.getElementById('leToChannel');
+  if(f){ f.innerHTML = opts; f.value = from || 'Cash'; }
+  if(tt){ tt.innerHTML = opts; tt.value = to || 'Cash'; }
+}
+function openLoanPersonPicker(){
+  pickerKind = loanFormKind;
+  pickerAction = 'fillLoanForm';
+  pickerSearch = '';
+  document.getElementById('pickerSearch').value = '';
+  renderPickerList();
+  document.getElementById('pickerSheet').classList.remove('hidden');
+  document.getElementById('pickerOverlay').classList.remove('hidden');
 }
 function openLoanEntryForm(mode, kind, pi){
   editingLoanKey = 'add:' + mode + ':' + kind + ':' + (pi === '' || pi == null ? '' : pi);
-  document.getElementById('leTitle').textContent = mode === 'addloan' ? t('addLoanTitle') : mode === 'addpay' ? t('addPaymentTitle') : t('addBankLoanTitle');
+  loanFormKind = kind;
+  document.getElementById('leTitle').textContent = mode === 'addloan' ? t('addPersonLoanTitle') : mode === 'addpay' ? t('addPaymentTitle') : t('addBankLoanTitle');
+  const arr = kind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
+  const person = (pi !== '' && pi != null && arr[+pi]) ? arr[+pi] : null;
+  loanFormPersonIdx = person ? +pi : null;
+  document.getElementById('lePersonName').value = person ? (person.name || '') : '';
+  document.getElementById('lePersonMobile').value = person ? (person.mobile || '') : '';
+  document.getElementById('lePersonName').placeholder = t('newPersonNamePh');
+  document.getElementById('lePersonMobile').placeholder = t('typeManuallyPh');
   document.getElementById('leAmount').value = '';
   document.getElementById('leDate').value = today();
-  const med = document.getElementById('leMedium');
-  med.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
-  med.value = 'Cash';
+  fillLoanChannels('Cash', 'Cash');
+  document.getElementById('leExpectedReturn').value = '';
   document.getElementById('leNote').value = '';
+  document.getElementById('leExpectedReturnRow').classList.toggle('hidden', mode !== 'addloan');
   const isBank = mode === 'addbank';
+  document.getElementById('lePersonFields').classList.toggle('hidden', isBank);
+  document.getElementById('lePersonTop').classList.toggle('hidden', isBank);
+  document.getElementById('leBankTop').classList.toggle('hidden', !isBank);
+  document.getElementById('leBottomBtns').classList.add('hidden');
   document.getElementById('leBankFields').classList.toggle('hidden', !isBank);
   document.getElementById('leEmiWrap').classList.toggle('hidden', !isBank);
-  if(isBank){ document.getElementById('leBank').value = ''; document.getElementById('leMonths').value = ''; document.getElementById('leRate').value = ''; emiPaidDraft = []; renderBankEmiSheet(); }
+  if(isBank){
+    renderBankSelect('');
+    document.getElementById('leBankAmount').value = '';
+    document.getElementById('leMonths').value = '';
+    document.getElementById('leRate').value = '';
+    document.getElementById('leDisbursement').value = today();
+    document.getElementById('leEmiStart').value = today();
+    emiPaidDraft = [];
+    renderBankEmiSheet();
+  }
+  updatePersonSaveBtn();
   document.getElementById('loanEditSheet').classList.remove('hidden');
   document.getElementById('loanEditOverlay').classList.remove('hidden');
 }
@@ -1616,7 +1754,7 @@ function bankEmiSchedule(entry){
   const paid = normalizeEmiPaid(entry.emiPaid, months);
   const rows = [];
   for(let i = 0; i < months; i++){
-    rows.push({ sl: i + 1, date: fmtDMY(addMonths(entry.emiStart || entry.date || today(), i)), emi: emi, paid: !!paid[i] });
+    rows.push({ sl: i + 1, date: addMonths(entry.emiStart || entry.date || today(), i), emi: emi, paid: !!paid[i] });
   }
   return rows;
 }
@@ -1635,20 +1773,39 @@ function emiTableHtml(entry, toggleFn){
   return { html: html, paid: rows.filter(r => r.paid).length, total: rows.length };
 }
 let emiPaidDraft = [];
+const BANKS = [{en:'BRAC BANK', bn:'ব্র্যাক ব্যাংক'}, {en:'CITY BANK', bn:'সিটি ব্যাংক'}, {en:'SONALI BANK', bn:'সোনালী ব্যাংক'}, {en:'ISLAMI BANK', bn:'ইসলামী ব্যাংক'}];
+function renderBankSelect(selected){
+  const sel = document.getElementById('leBank'); if(!sel) return;
+  let html = '<option value="">' + (t('selectBank') || 'Select bank') + '</option>';
+  html += BANKS.map(b => '<option value="' + b.en + '">' + (lang === 'en' ? b.en : b.bn) + '</option>').join('');
+  if(selected && !BANKS.some(b => b.en === selected)) html += '<option value="' + escA(selected) + '">' + escA(selected) + '</option>';
+  sel.innerHTML = html;
+  sel.value = selected || '';
+}
+function updateBankSaveBtn(){
+  const btn = document.getElementById('leBankSaveBtn'); if(!btn) return;
+  const ok = !!document.getElementById('leBank').value && !!parseFloat(document.getElementById('leBankAmount').value) && !!parseFloat(document.getElementById('leMonths').value);
+  btn.disabled = !ok;
+}
 function bankFormDraft(){
-  const amt = parseFloat(document.getElementById('leAmount').value) || 0;
-  const date = document.getElementById('leDate').value || today();
+  const amt = parseFloat(document.getElementById('leBankAmount').value) || 0;
+  const date = document.getElementById('leDisbursement').value || today();
+  const emiStart = document.getElementById('leEmiStart').value || date;
   const months = parseFloat(document.getElementById('leMonths').value) || 0;
   const rate = parseFloat(document.getElementById('leRate').value) || 0;
-  return { amount: amt, date: date, emiStart: date, months: months, rate: rate, emiPaid: emiPaidDraft };
+  return { amount: amt, date: date, emiStart: emiStart, months: months, rate: rate, emiPaid: emiPaidDraft };
 }
 function renderBankEmiSheet(){
   const wrap = document.getElementById('leEmiWrap'); if(!wrap) return;
   if(document.getElementById('leBankFields').classList.contains('hidden')){ wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
-  const r = emiTableHtml(bankFormDraft(), 'toggleEmiPaid');
+  const d = bankFormDraft();
+  const endEl = document.getElementById('leEmiEnd');
+  if(endEl) endEl.value = d.months > 0 ? addMonths(d.emiStart, Math.max(0, d.months - 1)) : '';
+  const r = emiTableHtml(d, 'toggleEmiPaid');
   document.getElementById('leEmiSheet').innerHTML = r.html;
   document.getElementById('leEmiPaidCount').textContent = r.paid + '/' + r.total + ' Paid';
+  updateBankSaveBtn();
 }
 function toggleEmiPaid(i){
   emiPaidDraft[i] = !emiPaidDraft[i];
@@ -1740,13 +1897,18 @@ function saveLoanEntry(){
   if(key.startsWith('add:')){
     const parts = key.split(':');
     const mode = parts[1], kind = parts[2], pi = parts[3];
-    const entry = { id: uid(), amount: parseFloat(document.getElementById('leAmount').value) || 0, date: document.getElementById('leDate').value || today(), medium: document.getElementById('leMedium').value, channel: document.getElementById('leMedium').value, note: document.getElementById('leNote').value || '', updatedAt: new Date().toISOString() };
+    const fromCh = document.getElementById('leFromChannel').value || 'Cash';
+    const toCh = document.getElementById('leToChannel').value || 'Cash';
+    const entry = { id: uid(), amount: parseFloat(document.getElementById('leAmount').value) || 0, date: document.getElementById('leDate').value || today(), medium: fromCh, channel: fromCh, fromChannel: fromCh, toChannel: toCh, expectedReturn: mode === 'addloan' ? (document.getElementById('leExpectedReturn').value || '') : '', note: document.getElementById('leNote').value || '', updatedAt: new Date().toISOString() };
     if(mode === 'addbank'){
-      entry.bank = document.getElementById('leBank').value.trim() || t('fBank');
+      entry.amount = parseFloat(document.getElementById('leBankAmount').value) || 0;
+      entry.date = document.getElementById('leDisbursement').value || today();
+      entry.medium = 'Bank'; entry.channel = 'Bank'; entry.note = '';
+      entry.bank = document.getElementById('leBank').value || t('fBank');
       entry.months = parseFloat(document.getElementById('leMonths').value) || 0;
       entry.rate = parseFloat(document.getElementById('leRate').value) || 0;
-      entry.emiStart = entry.date;
-      entry.emiEnd = addMonths(entry.date, Math.max(0, entry.months - 1));
+      entry.emiStart = document.getElementById('leEmiStart').value || entry.date;
+      entry.emiEnd = addMonths(entry.emiStart, Math.max(0, entry.months - 1));
       entry.emiPaid = normalizeEmiPaid(emiPaidDraft, entry.months);
       state.bankLoans = [...(state.bankLoans || []), entry];
       currentView = 'loans'; loansKind = 'bank';
@@ -1754,30 +1916,60 @@ function saveLoanEntry(){
       showToast(t('bankLoanAdded')); return;
     }
     const arr = kind === 'given' ? state.peopleGiven : state.peopleTaken;
-    const person = (arr || [])[+pi];
-    if(!person){ closeLoanEntryForm(); return; }
+    const name = (document.getElementById('lePersonName').value || '').trim();
+    const mobile = (document.getElementById('lePersonMobile').value || '').trim();
+    if(!name){ showToast(t('needName')); return; }
+    let person = null, pi2 = null;
+    if(loanFormPersonIdx != null && arr[loanFormPersonIdx] && (arr[loanFormPersonIdx].name || '').trim().toLowerCase() === name.toLowerCase()){
+      person = arr[loanFormPersonIdx]; pi2 = loanFormPersonIdx;
+    } else {
+      const found = (arr || []).findIndex(x => (x.name || '').trim().toLowerCase() === name.toLowerCase());
+      if(found >= 0){ person = arr[found]; pi2 = found; }
+    }
+    if(!person){
+      person = { id: uid(), name: name, mobile: mobile, loans: [], payments: [], updatedAt: new Date().toISOString() };
+      arr.push(person); pi2 = arr.length - 1;
+    } else if(mobile && person.mobile !== mobile){
+      person.mobile = mobile; person.updatedAt = new Date().toISOString();
+    }
     if(mode === 'addloan') person.loans = [...(person.loans || []), entry];
     else person.payments = [...(person.payments || []), entry];
-    currentView = 'person'; personKind = kind; personIdx = +pi;
+    currentView = 'person'; personKind = kind; personIdx = pi2;
     persist(); render(); closeLoanEntryForm();
     showToast(mode === 'addloan' ? t('loanAdded') : t('paymentAdded')); return;
   }
   const r = loanEntryByKey(editingLoanKey || '');
   if(!r.entry) { closeLoanEntryForm(); return; }
-  r.entry.amount = parseFloat(document.getElementById('leAmount').value) || 0;
-  r.entry.date = document.getElementById('leDate').value || today();
-  r.entry.medium = document.getElementById('leMedium').value;
-  r.entry.channel = r.entry.medium;
-  r.entry.note = document.getElementById('leNote').value || '';
-  r.entry.updatedAt = new Date().toISOString();
   if(r.kind === 'bank'){
-    r.entry.bank = document.getElementById('leBank').value.trim() || r.entry.bank || t('fBank');
+    r.entry.amount = parseFloat(document.getElementById('leBankAmount').value) || 0;
+    r.entry.date = document.getElementById('leDisbursement').value || today();
+    r.entry.medium = 'Bank'; r.entry.channel = 'Bank'; r.entry.note = '';
+    r.entry.bank = document.getElementById('leBank').value || r.entry.bank || t('fBank');
     r.entry.months = parseFloat(document.getElementById('leMonths').value) || 0;
     r.entry.rate = parseFloat(document.getElementById('leRate').value) || 0;
-    r.entry.emiStart = r.entry.date;
-    r.entry.emiEnd = addMonths(r.entry.date, Math.max(0, r.entry.months - 1));
+    r.entry.emiStart = document.getElementById('leEmiStart').value || r.entry.date;
+    r.entry.emiEnd = addMonths(r.entry.emiStart, Math.max(0, r.entry.months - 1));
     r.entry.emiPaid = normalizeEmiPaid(emiPaidDraft, r.entry.months);
+  } else {
+    r.entry.amount = parseFloat(document.getElementById('leAmount').value) || 0;
+    r.entry.date = document.getElementById('leDate').value || today();
+    const fromCh = document.getElementById('leFromChannel').value || 'Cash';
+    const toCh = document.getElementById('leToChannel').value || 'Cash';
+    r.entry.medium = fromCh;
+    r.entry.channel = fromCh;
+    r.entry.fromChannel = fromCh;
+    r.entry.toChannel = toCh;
+    if(r.lp !== 'p') r.entry.expectedReturn = document.getElementById('leExpectedReturn').value || '';
+    r.entry.note = document.getElementById('leNote').value || '';
+    const name = (document.getElementById('lePersonName').value || '').trim();
+    const mobile = (document.getElementById('lePersonMobile').value || '').trim();
+    if(r.person){
+      if(name) r.person.name = name;
+      r.person.mobile = mobile;
+      r.person.updatedAt = new Date().toISOString();
+    }
   }
+  r.entry.updatedAt = new Date().toISOString();
   r.entry.updatedAt = new Date().toISOString();
   persist();
   render();
@@ -2597,14 +2789,29 @@ function renderPickerList(){
     const q = pickerSearch.trim().toLowerCase();
     return (x.person.name || '').toLowerCase().includes(q) || (x.person.mobile || '').includes(pickerSearch.trim());
   });
-  document.getElementById('pickerList').innerHTML = list.length ? list.map(x => {
+  const addRow = (pickerAction === 'loan')
+    ? '<div class="flex justify-between items-center py-2.5 border-b border-[#F3E8D3] cursor-pointer" onclick="closePersonPicker();openLoanEntryForm(\'addloan\',pickerKind,\'\')"><div class="font-bold text-[14px]">+ ' + escA(t('addPerson')) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(t('newPerson')) + '</div></div>'
+    : '';
+  document.getElementById('pickerList').innerHTML = addRow + (list.length ? list.map(x => {
     const tot = personTotals(x.person);
     return '<div class="flex justify-between items-center py-2.5 border-b border-[#F3E8D3] cursor-pointer" onclick="pickPerson(' + x.idx + ')"><div><div class="font-bold text-[14px]">' + escA(x.person.name || '') + '</div><div class="text-[12px] text-[#8B7355]">' + escA(x.person.mobile || '') + '</div></div><div class="font-extrabold text-[14px]">' + fmt(tot.balance) + '</div></div>';
-  }).join('') : '<div class="text-[13px] text-[#8B7355] py-4 text-center">' + t('noPeople') + '</div>';
+  }).join('') : '<div class="text-[13px] text-[#8B7355] py-4 text-center">' + t('noPeople') + '</div>');
 }
 function pickPerson(pi){
   closePersonPicker();
+  if(pickerAction === 'fillLoanForm'){
+    const arr = pickerKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
+    const person = arr[pi];
+    if(person){
+      loanFormPersonIdx = pi;
+      document.getElementById('lePersonName').value = person.name || '';
+      document.getElementById('lePersonMobile').value = person.mobile || '';
+      updatePersonSaveBtn();
+    }
+    return;
+  }
   if(pickerAction === 'payment') openLoanEntryForm('addpay', pickerKind, pi);
+  else if(pickerAction === 'loan') openLoanEntryForm('addloan', pickerKind, pi);
   else openPersonDetail(pickerKind, pi);
 }
 /* ---------- Phase 3: PDFs ---------- */
@@ -2711,6 +2918,23 @@ function exportCsv(){
 restoreViewState();
 render();
 initCloud();
+
+/* ---------- Live clock: updates Time/Date/Day every second ---------- */
+function tickClock(){
+  const elT = document.getElementById('clockTime');
+  const elD = document.getElementById('clockDate');
+  const elDy = document.getElementById('clockDay');
+  if(!elT && !elD && !elDy) return;
+  const now = new Date();
+  const dateStr = String(now.getDate()).padStart(2, '0') + ' ' + now.toLocaleString('en-US', { month:'long' }) + ' ' + now.getFullYear();
+  const dayStr = now.toLocaleString(lang === 'en' ? 'en-US' : 'bn-BD', { weekday:'long' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  if(elT) elT.textContent = t('time') + ': ' + timeStr;
+  if(elD) elD.textContent = t('date') + ': ' + dateStr;
+  if(elDy) elDy.textContent = t('day') + ': ' + dayStr;
+}
+if(typeof process === 'undefined') setInterval(tickClock, 1000);
+
 </script>
 </body>
 </html>
