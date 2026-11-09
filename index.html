@@ -294,7 +294,7 @@ const MEDIUMS = [{"id": "bKash", "en": "bKash", "bn": "বিকাশ"}, {"id":
 const EXPENSE_FLAT = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({ en: it.en, bn: it.bn, icon: it.icon })));
 
 const T = {
-  bn: { home:'হোম', history:'হিস্ট্রি', reports:'রিপোর্ট', profile:'প্রোফাইল', addNewTx:'নতুন লেনদেন যোগ করুন', addIncome:'আয় যোগ করুন', addExpense:'ব্যয় যোগ করুন', giveLoan:'লোন দিন', takeLoan:'লোন নিন', bankLoan:'ব্যাংক লোন', selectedCat:'নির্বাচিত খাত', cancel:'বাতিল', amount:'টাকা (৳)', category:'খাত', date:'তারিখ', medium:'মাধ্যম', note:'মন্তব্য', saved:'সংরক্ষিত হয়েছে', pickCat:'খাত বেছে নিন', searchPh:'খুঁজুন… যেমন: মাছ', noMatch:'কিছু পাওয়া যায়নি', todayIncome:"আজকের আয়", todayExpense:"আজকের ব্যয়", todayBalance:"আজকের জের", monthIncome:'মাসের আয়', monthExpense:'মাসের ব্যয়', monthBalance:'মাসের জের', loansTitle:'লোন ও পাওনা', totalGiven:'মোট প্রদান', totalTaken:'মোট গ্রহণ', given:'প্রদান', taken:'গ্রহণ', returned:'ফেরত', repaid:'পরিশোধ', localSaved:'লোকালি সেভ হয়েছে', comingSoon:'এটা ধাপ ৩-এ আসছে', time:'সময়', day:'দিন', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync ধাপ ৪-এ আসছে',
+  bn: { home:'হোম', history:'হিস্ট্রি', reports:'রিপোর্ট', profile:'প্রোফাইল', addNewTx:'নতুন লেনদেন যোগ করুন', addIncome:'আয় যোগ করুন', addExpense:'ব্যয় যোগ করুন', giveLoan:'লোন দিন', takeLoan:'লোন নিন', bankLoan:'ব্যাংক লোন', selectedCat:'নির্বাচিত খাত', cancel:'বাতিল', amount:'টাকা (৳)', category:'খাত', date:'তারিখ', medium:'মাধ্যম', note:'মন্তব্য', saved:'সংরক্ষিত হয়েছে', pickCat:'খাত বেছে নিন', searchPh:'খুঁজুন… যেমন: মাছ', noMatch:'কিছু পাওয়া যায়নি', todayIncome:"আজকের আয়", todayExpense:"আজকের ব্যয়", todayBalance:"আজকের জের", monthIncome:'মাসের আয়', monthExpense:'মাসের ব্যয়', monthBalance:'মাসের জের', loansTitle:'লোন ও পাওনা', totalGiven:'মোট প্রদান', totalTaken:'মোট গ্রহণ', given:'প্রদান', taken:'গ্রহণ', returned:'ফেরত', repaid:'পরিশোধ', dueLbl:'বকেয়া', localSaved:'লোকালি সেভ হয়েছে', comingSoon:'এটা ধাপ ৩-এ আসছে', time:'সময়', day:'দিন', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync ধাপ ৪-এ আসছে',
     cloudTitle:'Cloud Sync', cloudDesc:'একই Sync Code দুই ফোনে দিলে দুই ফোনের ডেটা এক হয়ে যাবে।',
     syncCodeLbl:'Sync Code', cloudLastSync:'শেষ Sync: ', cloudNever:'কখনো Sync হয়নি',
     configLbl:'Firebase Config (JSON)', saveCloudBtn:'সেটিংস সেভ করো', cloudSyncNow:'Sync Now', cloudDownload:'Download',
@@ -351,8 +351,8 @@ const T = {
     cloudSyncDone:'Sync হয়ে গেছে ✅', cloudUploadDone:'Upload হয়ে গেছে ✅', cloudDownloadDone:'Download হয়ে গেছে ✅',
     cloudSyncFail:'Sync হয়নি — ইন্টারনেট / Config দেখো', cloudSaved:'Cloud সেটিংস সেভ হয়েছে',
     cloudCleared:'Cloud সংযোগ মুছে ফেলা হয়েছে', cloudInvalidConfig:'Config ঠিক নেই — JSON দেখো', cloudNoCode:'Sync Code দাও',
-    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', saveLoan:'লোন সেভ করো', loanAmountLbl:'লোনের পরিমাণ', termLbl:'মেয়াদ (মাস)', disbursementLbl:'বিতরণের তারিখ', emiStartLbl:'EMI শুরুর তারিখ', emiEndLbl:'EMI শেষের তারিখ (অটো)', selectBank:'ব্যাংক বাছুন', monthsLbl:'মাস', rateLbl:'সুদের হার %', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPersonLoanTitle:'+ লোক যোগ করো', nameLbl:'নাম', mobileContactLbl:'মোবাইল / যোগাযোগ নম্বর', fromChannelLbl:'কোথা থেকে', toChannelLbl:'কোথায়', expectedReturnLbl:'ফেরতের সম্ভাব্য তারিখ', newPersonNamePh:'নতুন লোকের নাম', typeManuallyPh:'নিজে লিখুন বা কন্ট্যাক্ট থেকে নিন', newPerson:'নতুন লোক', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
-  en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', localSaved:'Saved locally', comingSoon:'Coming in Phase 3', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
+    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', summaryLbl:'সারাংশ', overdueLbl:'বকেয়া', descLbl:'বিবরণ', dateLbl:'তারিখ', noteLbl:'নোট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', saveLoan:'লোন সেভ করো', loanAmountLbl:'লোনের পরিমাণ', termLbl:'মেয়াদ (মাস)', disbursementLbl:'বিতরণের তারিখ', emiStartLbl:'EMI শুরুর তারিখ', emiEndLbl:'EMI শেষের তারিখ (অটো)', selectBank:'ব্যাংক বাছুন', monthsLbl:'মাস', rateLbl:'সুদের হার %', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPersonLoanTitle:'+ লোক যোগ করো', nameLbl:'নাম', mobileContactLbl:'মোবাইল / যোগাযোগ নম্বর', fromChannelLbl:'কোথা থেকে', toChannelLbl:'কোথায়', expectedReturnLbl:'ফেরতের সম্ভাব্য তারিখ', newPersonNamePh:'নতুন লোকের নাম', typeManuallyPh:'নিজে লিখুন বা কন্ট্যাক্ট থেকে নিন', newPerson:'নতুন লোক', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
+  en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', dueLbl:'Due', localSaved:'Saved locally', comingSoon:'Coming in Phase 3', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
     cloudTitle:'Cloud Sync', cloudDesc:'Use the same Sync Code on both phones to merge their data.',
     syncCodeLbl:'Sync Code', cloudLastSync:'Last sync: ', cloudNever:'Never synced',
     configLbl:'Firebase Config (JSON)', saveCloudBtn:'Save Settings', cloudSyncNow:'Sync Now', cloudDownload:'Download',
@@ -409,7 +409,7 @@ const T = {
     cloudSyncDone:'Synced ✅', cloudUploadDone:'Uploaded ✅', cloudDownloadDone:'Downloaded ✅',
     cloudSyncFail:'Sync failed — check internet / Config', cloudSaved:'Cloud settings saved',
     cloudCleared:'Cloud connection removed', cloudInvalidConfig:'Config looks wrong — check the JSON', cloudNoCode:'Enter a Sync Code',
-    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Term (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
+    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Term (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
 let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
@@ -1056,8 +1056,8 @@ function render(){
       '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + t('loansTitle') + '</h3>' +
       '<div class="grid grid-cols-2 gap-2">' +
-        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'given\')"><div class="font-bold text-[13px]">' + t('totalGiven') + '</div><div class="text-[12px] text-[#8B7355]">' + t('given') + ': ' + fmt(tot.given) + '</div><div class="text-[12px] text-[#8B7355]">' + t('returned') + ': ' + fmt(tot.returned) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'taken\')"><div class="font-bold text-[13px]">' + t('totalTaken') + '</div><div class="text-[12px] text-[#8B7355]">' + t('taken') + ': ' + fmt(tot.taken) + '</div><div class="text-[12px] text-[#8B7355]">' + t('repaid') + ': ' + fmt(tot.repaid) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'given\')"><div class="font-bold text-[13px]">' + t('totalGiven') + '</div><div class="text-[12px] text-[#8B7355]">' + t('given') + ': ' + fmt(tot.given) + '</div><div class="text-[12px] text-[#8B7355]">' + t('returned') + ': ' + fmt(tot.returned) + '</div><div class="text-[12px] font-bold text-green-700">' + t('dueLbl') + ': ' + fmt(tot.given - tot.returned) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'taken\')"><div class="font-bold text-[13px]">' + t('totalTaken') + '</div><div class="text-[12px] text-[#8B7355]">' + t('taken') + ': ' + fmt(tot.taken) + '</div><div class="text-[12px] text-[#8B7355]">' + t('repaid') + ': ' + fmt(tot.repaid) + '</div><div class="text-[12px] font-bold text-red-600">' + t('dueLbl') + ': ' + fmt(tot.taken - tot.repaid) + '</div></div>' +
       '</div>' +
     homeBankLoansHtml() +
     '</div>';
@@ -1516,6 +1516,7 @@ function filteredHistoryRows(){
 function histSetFilter(f){ histFilter = f; render(); }
 function histSetSearch(v){ histSearch = v || ''; renderHistoryView(); }
 function histSetCat(v){ histCat = v || ''; renderHistoryView(); }
+function histClearCat(){ histCat = ''; renderHistoryView(); }
 function histGoCat(kind, cat){ histFilter = kind; histCat = cat || ''; histSearch = ''; render(); }
 function histSetFrom(v){ histFrom = v || ''; render(); }
 function histSetTo(v){ histTo = v || ''; render(); }
@@ -1559,7 +1560,7 @@ function renderHistoryView(){
         '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(histTo) + '" onchange="histSetTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
         '<button onclick="histClearDates()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">✕ <span data-t="dateClear">Date Clear</span></button>' +
       '</div>' +
-      (histFilter === 'expense' ? '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-2"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(histCat) + '" placeholder="' + escA(t('filterByCat')) + ' (English/Bangla)…' + '" oninput="histSetCat(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' : '') +
+      ((histFilter === 'expense' || histFilter === 'income') ? '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-2"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(histCat) + '" placeholder="' + escA(t('filterByCat')) + ' (English/Bangla)…' + '" oninput="histSetCat(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0">' + (histCat ? '<button onclick="histClearCat()" class="shrink-0 w-6 h-6 rounded-full bg-[#F3E8D3] text-[12px] font-bold leading-none">✕</button>' : '') + '</div>' : '') +
       '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + histFilterLabel() + ' • ' + (histFrom || '…') + t('fromToSep') + (histTo || '…') + ' • ' + rows.length + ' ' + t('records') + ' • User, Date, Time included</div>' +
       '</div>' +
       '<div>' + listHtml + '</div>' +
@@ -2198,6 +2199,15 @@ function pdfBuildFromJpegs(jpegs){
   push('trailer\n<< /Size ' + (totalObjs + 1) + ' /Root 1 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF');
   return new Blob(chunks, { type: 'application/pdf' });
 }
+function personSectionData(person, kind, from, to){
+  const r = personEntriesInRange(person, from, to);
+  const mk = (e) => ({ date: e.date || '', person: person.name || '', note: e.note || '', from: e.fromChannel || e.medium || e.channel || '', to: e.toChannel || e.medium || e.channel || '', amount: +(e.amount || 0) });
+  const loans = r.loans.map(mk);
+  const pays = r.pays.map(mk);
+  const totalLoans = loans.reduce((a, x) => a + x.amount, 0);
+  const totalPays = pays.reduce((a, x) => a + x.amount, 0);
+  return { name: person.name || '', mobile: person.mobile || '', kind: kind, balance: totalLoans - totalPays, totalLoans: totalLoans, totalPays: totalPays, loans: loans, pays: pays };
+}
 function pdfStatementData(){
   const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
   if(pdfMode === 'history'){
@@ -2207,8 +2217,9 @@ function pdfStatementData(){
   if(pdfMode === 'person'){
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
     const person = arr[personIdx] || { name: '', loans: [], payments: [] };
+    const sec = personSectionData(person, personKind, personFrom, personTo);
     const rows = personStatementRows();
-    return { prof: prof, title: 'History - ' + (person.name || ''), records: rows.length, period: statementPeriod(personFrom, personTo, rows), entriesRows: rows };
+    return { prof: prof, title: 'History - ' + (person.name || ''), records: rows.length, period: statementPeriod(personFrom, personTo, rows), personSections: [sec] };
   }
   if(pdfMode === 'loans'){
     if(loansKind === 'bank'){
@@ -2216,7 +2227,8 @@ function pdfStatementData(){
       return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(loansFrom, loansTo, rows), entriesRows: rows };
     }
     const people = loansPeopleFiltered();
-    return { prof: prof, title: 'History - ' + loansPageTitle(), records: people.length, period: statementPeriod(loansFrom, loansTo, []), loansRows: people, loansKind: loansKind };
+    const secs = people.map(x => personSectionData(x.person, loansKind, loansFrom, loansTo));
+    return { prof: prof, title: 'History - ' + loansPageTitle(), records: people.length, period: statementPeriod(loansFrom, loansTo, []), personSections: secs, loansKind: loansKind };
   }
   if(pdfMode === 'reports'){
     const rows = reportRows();
@@ -2259,9 +2271,195 @@ function pdfWrapText(ctx, text, maxW){
   if(!lines.length) lines.push('');
   return lines;
 }
+function pdfPersonSectionsJpegs(data){
+  const S = 2, W = 794, H = 1123, M = 24, CW = W - 2 * M, PAGE_H = H - 2 * M;
+  const F = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB = '700 12px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FT = '800 20px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FS = '700 15px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const LH = 18, CLH = 15, CPAD = 5, CPADX = 6;
+  const mctx = document.createElement('canvas').getContext('2d');
+  const prof = data.prof || {};
+  const userLines = [];
+  if(prof.name) userLines.push('User: ' + prof.name);
+  if(prof.designation) userLines.push('Designation: ' + prof.designation);
+  if(prof.address) userLines.push('Address: ' + prof.address);
+  if(prof.mobile) userLines.push('Mobile: ' + prof.mobile);
+  const devLines = ['\u25a0 Developer', '\uD83D\uDC64 Md. Abdus Salam', '\uD83D\uDCCD Bantra, Kalaroa, Satkhira', '\uD83D\uDCDE Mobile: +8801737265245', '\u2709\uFE0F Email: salamwgp@gmail.com'];
+  const RIGHT_W = 230, LEFT_W = CW - RIGHT_W;
+  mctx.font = F;
+  let leftH = 24;
+  const dlLines = pdfWrapText(mctx, 'Download: ' + fmtDownloadNow(), LEFT_W);
+  leftH += dlLines.length * LH;
+  for(let l of userLines){ leftH += pdfWrapText(mctx, l, LEFT_W).length * LH; }
+  let rightH = 0;
+  for(let l of devLines){ rightH += pdfWrapText(mctx, l, RIGHT_W).length * LH; }
+  const blockH = Math.max(leftH, rightH);
+  mctx.font = FS;
+  const titleLines = pdfWrapText(mctx, data.title, CW);
+  const jpegs = [];
+  let pc = null, ctx = null, y = M, firstPage = true;
+  const drawPageHeader = () => {
+    ctx.font = FT; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = '#000';
+    ctx.fillText('Lifestyle', M, y); y += 24;
+    ctx.font = F; ctx.fillStyle = '#555';
+    for(let ln of pdfWrapText(ctx, 'Download: ' + fmtDownloadNow(), LEFT_W)){ ctx.fillText(ln, M, y); y += LH; }
+    ctx.fillStyle = '#333';
+    for(let l of userLines){ for(let ln of pdfWrapText(ctx, l, LEFT_W)){ ctx.fillText(ln, M, y); y += LH; } }
+    let ry = M; ctx.textAlign = 'right';
+    for(let i = 0; i < devLines.length; i++){
+      ctx.font = i === 0 ? FB : F; ctx.fillStyle = '#333';
+      for(let ln of pdfWrapText(ctx, devLines[i], RIGHT_W)){ ctx.fillText(ln, W - M, ry); ry += LH; }
+    }
+    ctx.textAlign = 'left';
+    const divY = M + blockH + 10;
+    ctx.fillStyle = '#222'; ctx.fillRect(M, divY, CW, 1.5);
+    y = divY + 1.5 + 8;
+    ctx.font = FS; ctx.fillStyle = '#000';
+    for(let ln of titleLines){ ctx.fillText(ln, M, y); y += LH; }
+    ctx.font = F; ctx.fillStyle = '#555';
+    ctx.fillText('Total Records: ' + data.records, M, y); y += LH;
+    ctx.fillText('Statement Period: ' + data.period.from + ' \u2013 ' + data.period.to, M, y); y += LH + 10;
+  };
+  const startPage = () => {
+    pc = document.createElement('canvas'); pc.width = W * S; pc.height = H * S;
+    ctx = pc.getContext('2d'); ctx.scale(S, S);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+    y = M;
+    if(firstPage){ drawPageHeader(); firstPage = false; }
+  };
+  const finishPage = () => {
+    const dataUrl = pc.toDataURL('image/jpeg', 0.92);
+    const b64 = (dataUrl.split(',')[1] || '');
+    jpegs.push({ bytes: pdfB64ToBytes(b64), w: pc.width, h: pc.height });
+  };
+  const ensureSpace = (h) => {
+    if(y + h > M + PAGE_H){ finishPage(); startPage(); }
+  };
+  const drawTextLine = (text, font, color) => {
+    ctx.font = font; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = color;
+    const lines = pdfWrapText(ctx, text, CW);
+    ensureSpace(lines.length * LH);
+    for(let ln of lines){ ctx.fillText(ln, M, y); y += LH; }
+  };
+  const drawTable = (cols, headerRows, rows, totalRow, emptyText) => {
+    const colW = cols.map(c => c.w / 100 * CW);
+    const sumW = colW.reduce((a, b) => a + b, 0);
+    colW[colW.length - 1] += CW - sumW;
+    const colX = [M];
+    for(let i = 0; i < colW.length; i++) colX.push(colX[i] + colW[i]);
+    const spanW = (idx, n) => { let s = 0; for(let k = idx; k < idx + n; k++) s += colW[k]; return s; };
+    const measureCells = (cells, font) => {
+      mctx.font = font;
+      let maxLines = 1, idx = 0;
+      for(let c of cells){
+        const lines = pdfWrapText(mctx, c.text, spanW(idx, c.span) - 2 * CPADX);
+        if(lines.length > maxLines) maxLines = lines.length;
+        idx += c.span;
+      }
+      return 2 * CPAD + maxLines * CLH;
+    };
+    const headerHs = headerRows.map(hr => measureCells(hr, FB));
+    const dataHs = rows.map(r => {
+      mctx.font = F;
+      let maxLines = 1;
+      for(let i = 0; i < r.length; i++){
+        const lines = pdfWrapText(mctx, r[i], colW[i] - 2 * CPADX);
+        if(lines.length > maxLines) maxLines = lines.length;
+      }
+      return 2 * CPAD + maxLines * CLH;
+    });
+    const totalH = totalRow ? measureCells(totalRow, FB) : 0;
+    const drawRow = (top, height, kind, cells) => {
+      if(kind === 'header' || kind === 'total'){ ctx.fillStyle = '#F5EEDD'; ctx.fillRect(M, top, CW, height); }
+      ctx.fillStyle = '#ccc'; ctx.fillRect(M, top, CW, 1);
+      ctx.font = (kind === 'header' || kind === 'total') ? FB : F;
+      ctx.textBaseline = 'top'; ctx.fillStyle = '#000';
+      if(kind === 'data'){
+        for(let i = 0; i < cells.length; i++){
+          const align = cols[i].align; ctx.textAlign = align;
+          const lines = pdfWrapText(ctx, cells[i], colW[i] - 2 * CPADX);
+          const tx = align === 'left' ? colX[i] + CPADX : (align === 'right' ? colX[i] + colW[i] - CPADX : colX[i] + colW[i] / 2);
+          for(let li = 0; li < lines.length; li++) ctx.fillText(lines[li], tx, top + CPAD + li * CLH);
+        }
+      } else {
+        let idx = 0;
+        for(let c of cells){
+          const w = spanW(idx, c.span); const x0 = colX[idx];
+          ctx.textAlign = c.align;
+          const lines = pdfWrapText(ctx, c.text, w - 2 * CPADX);
+          const tx = c.align === 'left' ? x0 + CPADX : (c.align === 'right' ? x0 + w - CPADX : x0 + w / 2);
+          for(let li = 0; li < lines.length; li++) ctx.fillText(lines[li], tx, top + CPAD + li * CLH);
+          idx += c.span;
+        }
+      }
+    };
+    const drawHeader = () => {
+      for(let hi = 0; hi < headerRows.length; hi++){
+        ensureSpace(headerHs[hi]);
+        drawRow(y, headerHs[hi], 'header', headerRows[hi]);
+        y += headerHs[hi];
+      }
+    };
+    const drawVLines = (top, bottom) => { for(let x of colX) ctx.fillRect(x, top, 1, bottom - top); };
+    drawHeader();
+    const tableTop = y - headerHs.reduce((a, b) => a + b, 0);
+    if(rows.length){
+      for(let ri = 0; ri < rows.length; ri++){
+        if(y + dataHs[ri] > M + PAGE_H){ finishPage(); startPage(); drawHeader(); }
+        drawRow(y, dataHs[ri], 'data', rows[ri]);
+        y += dataHs[ri];
+      }
+    } else {
+      const eh = measureCells([{ text: emptyText, span: cols.length, align: 'center' }], F);
+      ensureSpace(eh);
+      drawRow(y, eh, 'empty', [{ text: emptyText, span: cols.length, align: 'center' }]);
+      y += eh;
+    }
+    if(totalRow){
+      if(y + totalH > M + PAGE_H){ finishPage(); startPage(); drawHeader(); }
+      drawRow(y, totalH, 'total', totalRow);
+      y += totalH;
+    }
+    ctx.fillStyle = '#ccc'; ctx.fillRect(M, y, CW, 1);
+    drawVLines(tableTop, y);
+    y += 2;
+  };
+  startPage();
+  const entryCols = [{ w: 13, align: 'left' }, { w: 15, align: 'left' }, { w: 30, align: 'left' }, { w: 12, align: 'left' }, { w: 12, align: 'left' }, { w: 18, align: 'right' }];
+  const entryHeader = [
+    [{ text: t('dateLbl'), span: 1, align: 'left' }, { text: t('personCol'), span: 1, align: 'left' }, { text: t('noteLbl'), span: 1, align: 'left' }, { text: 'Channel', span: 2, align: 'center' }, { text: t('amountCol'), span: 1, align: 'right' }],
+    [{ text: '', span: 1, align: 'left' }, { text: '', span: 1, align: 'left' }, { text: '', span: 1, align: 'left' }, { text: t('fromCol'), span: 1, align: 'left' }, { text: t('toCol'), span: 1, align: 'left' }, { text: '', span: 1, align: 'right' }],
+  ];
+  const sumCols = [{ w: 82, align: 'left' }, { w: 18, align: 'right' }];
+  const sumHeader = [[{ text: t('descLbl'), span: 1, align: 'left' }, { text: t('amountCol'), span: 1, align: 'right' }]];
+  const secs = data.personSections || [];
+  for(let si = 0; si < secs.length; si++){
+    const sec = secs[si];
+    if(si > 0){ ensureSpace(14); ctx.fillStyle = '#ccc'; ctx.fillRect(M, y + 5, CW, 1); y += 14; }
+    const balLabel = sec.kind === 'given' ? t('youWillGet') : t('youWillPay');
+    const retLabel = sec.kind === 'given' ? t('returned') : t('repaid');
+    drawTextLine(sec.name || '', FS, '#000');
+    drawTextLine(balLabel + ': ' + fmt(sec.balance), FB, sec.balance >= 0 ? '#0a7a2f' : '#c0392b');
+    drawTextLine(t('totalLbl') + ': ' + fmt(sec.totalLoans) + ' \u2022 ' + retLabel + ': ' + fmt(sec.totalPays), F, '#555');
+    y += 4;
+    drawTextLine(t('loanEntries'), FB, '#000');
+    drawTable(entryCols, entryHeader, sec.loans.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]), [{ text: t('totalLbl') + ' ' + t('loanEntries'), span: 5, align: 'left' }, { text: fmt(sec.totalLoans), span: 1, align: 'right' }], t('noData'));
+    y += 6;
+    drawTextLine(t('paymentsSec'), FB, '#000');
+    drawTable(entryCols, entryHeader, sec.pays.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]), [{ text: t('totalLbl') + ' ' + t('paymentsSec'), span: 5, align: 'left' }, { text: fmt(sec.totalPays), span: 1, align: 'right' }], t('noData'));
+    y += 6;
+    drawTextLine(t('summaryLbl'), FB, '#000');
+    drawTable(sumCols, sumHeader, [[t('totalLbl') + ' ' + t('loanEntries'), fmt(sec.totalLoans)], [t('totalLbl') + ' ' + t('paymentsSec'), fmt(sec.totalPays)]], [{ text: t('overdueLbl'), span: 1, align: 'left' }, { text: fmt(sec.balance), span: 1, align: 'right' }], t('noData'));
+    y += 8;
+  }
+  finishPage();
+  return jpegs;
+}
 function pdfStatementJpegs(){
   const data = pdfStatementData();
   if(!data) return null;
+  if(data.personSections) return pdfPersonSectionsJpegs(data);
   const S = 2, W = 794, H = 1123, M = 24, CW = W - 2 * M, PAGE_H = H - 2 * M;
   const F = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
   const FB = '700 12px system-ui, -apple-system, "Segoe UI", sans-serif';
@@ -2566,7 +2764,7 @@ function openLoansPage(kind){
   render();
 }
 function openPersonDetail(kind, pi){
-  personKind = kind; personIdx = pi; personFrom = ''; personTo = '';
+  personKind = kind; personIdx = pi; personFrom = firstOfMonth(); personTo = today();
   currentView = 'person'; setNavActive('');
   render();
 }
@@ -2822,21 +3020,10 @@ function loansPdfHtml(){
     return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows);
   }
   const people = loansPeopleFiltered();
-  const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
-  const th = 'border:1px solid #ccc;padding:5px 6px;text-align:left;background:#F5EEDD;font-weight:700;overflow-wrap:break-word';
-  const body = people.length ? people.map(x =>
-    '<tr><td style="' + cell + '">' + escA(x.person.name || '') + '</td>' +
-    '<td style="' + cell + '">' + escA(x.person.mobile || '') + '</td>' +
-    '<td style="' + cell + ';text-align:right">' + fmt(x.loans) + '</td>' +
-    '<td style="' + cell + ';text-align:right">' + fmt(x.pays) + '</td>' +
-    '<td style="' + cell + ';text-align:right">' + fmt(x.balance) + '</td></tr>').join('')
-    : '<tr><td colspan="5" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
-  const tL = people.reduce((s, x) => s + x.loans, 0), tP = people.reduce((s, x) => s + x.pays, 0), tB = people.reduce((s, x) => s + x.balance, 0);
   const period = statementPeriod(loansFrom, loansTo, []);
-  return statementHeaderHtml('History - ' + loansPageTitle(), people.length, period) +
-    '<table class="stmt-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><colgroup><col style="width:26%"><col style="width:20%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><thead><tr><th style="' + th + '">Person</th><th style="' + th + '">Mobile</th><th style="' + th + ';text-align:right">Total</th><th style="' + th + ';text-align:right">' + (loansKind === 'given' ? 'Returned' : 'Repaid') + '</th><th style="' + th + ';text-align:right">Balance</th></tr></thead>' +
-    '<tbody>' + body + '</tbody>' +
-    '<tfoot><tr><td colspan="2" style="' + cell + ';font-weight:700;background:#F5EEDD">Total (' + people.length + ' people)</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(tL) + '</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(tP) + '</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(tB) + '</td></tr></tfoot></table>';
+  if(!people.length) return statementHeaderHtml('History - ' + loansPageTitle(), 0, period) + '<div style="font-size:12px;text-align:center;padding:10px">' + t('noData') + '</div>';
+  const secs = people.map(x => personSectionData(x.person, loansKind, loansFrom, loansTo));
+  return statementHeaderHtml('History - ' + loansPageTitle(), people.length, period) + secs.map(sec => personSectionHtml(sec)).join('<hr style="border:none;border-top:1px dashed #ccc;margin:14px 0">');
 }
 
 function loansPdfText(){
@@ -2850,12 +3037,54 @@ function openLoansPdf(){
 function loansDownloadPdf(){ pdfMode = 'loans'; downloadPdfFile(); }
 function loansSharePdf(){ pdfMode = 'loans'; sharePdf(); }
 
+function personEntriesTableHtml(rows, totalLabel, totalAmount){
+  const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
+  const th = 'border:1px solid #ccc;padding:5px 6px;text-align:left;background:#F5EEDD;font-weight:700;overflow-wrap:break-word';
+  const body = rows.length ? rows.map(r =>
+    '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+    '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
+    '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
+    '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
+    '<td style="' + cell + '">' + escA(r.to || '') + '</td>' +
+    '<td style="' + cell + ';text-align:right">' + fmt(Math.abs(r.amount || 0)) + '</td></tr>').join('') :
+    '<tr style="page-break-inside:avoid"><td colspan="6" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
+  return '<table class="stmt-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><colgroup><col style="width:13%"><col style="width:15%"><col style="width:30%"><col style="width:12%"><col style="width:12%"><col style="width:18%"></colgroup><thead>' +
+    '<tr style="page-break-inside:avoid"><th style="' + th + '">' + t('dateLbl') + '</th><th style="' + th + '">' + t('personCol') + '</th><th style="' + th + '">' + t('noteLbl') + '</th><th colspan="2" style="' + th + ';text-align:center">Channel</th><th style="' + th + ';text-align:right">' + t('amountCol') + '</th></tr>' +
+    '<tr style="page-break-inside:avoid"><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '">' + t('fromCol') + '</th><th style="' + th + '">' + t('toCol') + '</th><th style="' + th + '"></th></tr></thead>' +
+    '<tbody>' + body + '</tbody>' +
+    '<tfoot><tr style="page-break-inside:avoid"><td colspan="5" style="' + cell + ';font-weight:700;background:#F5EEDD">' + escA(totalLabel) + '</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(totalAmount) + '</td></tr></tfoot></table>';
+}
+function personSummaryTableHtml(sec){
+  const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
+  const th = 'border:1px solid #ccc;padding:5px 6px;text-align:left;background:#F5EEDD;font-weight:700;overflow-wrap:break-word';
+  const retLabel = sec.kind === 'given' ? t('returned') : t('repaid');
+  return '<table class="stmt-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><colgroup><col style="width:82%"><col style="width:18%"></colgroup><thead>' +
+    '<tr style="page-break-inside:avoid"><th style="' + th + '">' + t('descLbl') + '</th><th style="' + th + ';text-align:right">' + t('amountCol') + '</th></tr></thead><tbody>' +
+    '<tr style="page-break-inside:avoid"><td style="' + cell + '">' + escA(t('totalLbl') + ' ' + t('loanEntries')) + '</td><td style="' + cell + ';text-align:right">' + fmt(sec.totalLoans) + '</td></tr>' +
+    '<tr style="page-break-inside:avoid"><td style="' + cell + '">' + escA(t('totalLbl') + ' ' + t('paymentsSec')) + '</td><td style="' + cell + ';text-align:right">' + fmt(sec.totalPays) + '</td></tr>' +
+    '<tr style="page-break-inside:avoid"><td style="' + cell + ';font-weight:700">' + escA(t('overdueLbl')) + '</td><td style="' + cell + ';text-align:right;font-weight:700">' + fmt(sec.balance) + '</td></tr>' +
+    '</tbody></table>';
+}
+function personSectionHtml(sec){
+  const balLabel = sec.kind === 'given' ? t('youWillGet') : t('youWillPay');
+  const retLabel = sec.kind === 'given' ? t('returned') : t('repaid');
+  const balColor = sec.balance >= 0 ? '#0a7a2f' : '#c0392b';
+  return '<div style="margin-bottom:16px">' +
+    '<div style="font-weight:700;font-size:15px">' + escA(sec.name || '') + '</div>' +
+    '<div style="font-size:12px;line-height:1.5;color:' + balColor + ';font-weight:700">' + escA(balLabel) + ': ' + fmt(sec.balance) + '</div>' +
+    '<div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:8px">' + escA(t('totalLbl')) + ': ' + fmt(sec.totalLoans) + ' • ' + escA(retLabel) + ': ' + fmt(sec.totalPays) + '</div>' +
+    '<h3 style="font-weight:700;font-size:14px;margin:10px 0 4px">' + escA(t('loanEntries')) + '</h3>' + personEntriesTableHtml(sec.loans, t('totalLbl') + ' ' + t('loanEntries'), sec.totalLoans) +
+    '<h3 style="font-weight:700;font-size:14px;margin:12px 0 4px">' + escA(t('paymentsSec')) + '</h3>' + personEntriesTableHtml(sec.pays, t('totalLbl') + ' ' + t('paymentsSec'), sec.totalPays) +
+    '<h3 style="font-weight:700;font-size:14px;margin:12px 0 4px">' + escA(t('summaryLbl')) + '</h3>' + personSummaryTableHtml(sec) +
+    '</div>';
+}
 function personPdfHtml(){
   const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
   const person = arr[personIdx] || { name: '', loans: [], payments: [] };
   const rows = personStatementRows();
   const period = statementPeriod(personFrom, personTo, rows);
-  return statementHeaderHtml('History - ' + (person.name || ''), rows.length, period) + statementEntriesTable(rows);
+  const sec = personSectionData(person, personKind, personFrom, personTo);
+  return statementHeaderHtml('History - ' + (person.name || ''), rows.length, period) + personSectionHtml(sec);
 }
 
 function personPdfText(){
@@ -2934,6 +3163,28 @@ function tickClock(){
   if(elDy) elDy.textContent = t('day') + ': ' + dayStr;
 }
 if(typeof process === 'undefined') setInterval(tickClock, 1000);
+
+/* ---------- Android system Back = in-app Back (stay inside the app) ---------- */
+function appGoBack(){
+  const sheetOpen = id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); };
+  if(sheetOpen('pdfPreviewSheet')){ closePdfPreview(); return true; }
+  if(sheetOpen('pickerSheet')){ closePersonPicker(); return true; }
+  if(sheetOpen('personSheet')){ closeAddPerson(); return true; }
+  if(sheetOpen('loanEditSheet')){ closeLoanEntryForm(); return true; }
+  if(sheetOpen('emiSheet')){ closeEmiChecklist(); return true; }
+  if(sheetOpen('formSheet')){ closeForm(); return true; }
+  if(sheetOpen('bazarFormSheet')){ closeBazarForm(); return true; }
+  if(sheetOpen('bazarSheet')){ closeBazar(); return true; }
+  if(sheetOpen('addSheet')){ closeAddSheet(); return true; }
+  if(currentView === 'history' && histCat){ histCat = ''; renderHistoryView(); return true; }
+  if(currentView === 'person'){ loansKind = personKind; currentView = 'loans'; render(); return true; }
+  if(currentView && currentView !== 'home'){ navGo('home'); return true; }
+  return false; // Home, nothing open -> let the browser exit
+}
+if(typeof window !== 'undefined' && window.addEventListener){
+  window.addEventListener('popstate', function(){ if(appGoBack()){ try{ history.pushState({app: true}, ''); }catch(e){} } });
+  try{ history.pushState({app: true}, ''); }catch(e){}
+}
 
 </script>
 </body>
