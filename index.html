@@ -1877,7 +1877,9 @@ function homeBankLoansFiltered(){
   });
 }
 function homeBankLoansHtml(){
-  const loans = homeBankLoansFiltered();
+  // Cards always show ALL bank loans (a loan is an ongoing liability, not a one-day transaction).
+  // The date filter still applies to the PDF/statement, which is a period report.
+  const loans = (state.bankLoans || []);
   const cards = loans.map(e => {
     const ti = state.bankLoans.indexOf(e);
     const emi = Math.round(calcEmi(e.amount, e.rate, e.months));
@@ -2828,9 +2830,9 @@ function renderLoansView(){
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(loansTo) + '" onchange="loansTo=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
     '<button onclick="loansFrom=\'\';loansTo=\'\';render()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">✕ <span data-t="dateClear">Date Clear</span></button></div>';
   if(loansKind === 'bank'){
+    // Bank cards always show ALL loans (date filter would hide loans taken in earlier months).
+    // Only the search text filters the cards; the PDF is a period report.
     const loans = (state.bankLoans || []).filter(e => {
-      if(loansFrom && normDate(e.date) < loansFrom) return false;
-      if(loansTo && normDate(e.date) > loansTo) return false;
       if(loansSearch.trim() && !((e.bank || e.name || '').toLowerCase().includes(loansSearch.trim().toLowerCase()))) return false;
       return true;
     });
