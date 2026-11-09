@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#2D2A26">
 <title>Lifestyle</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <style>
   body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
   .card{background:#fff;border:1px solid #F3E8D3;border-radius:16px;}
@@ -317,7 +317,7 @@ const T = {
     cloudSyncDone:'Sync হয়ে গেছে ✅', cloudUploadDone:'Upload হয়ে গেছে ✅', cloudDownloadDone:'Download হয়ে গেছে ✅',
     cloudSyncFail:'Sync হয়নি — ইন্টারনেট / Config দেখো', cloudSaved:'Cloud সেটিংস সেভ হয়েছে',
     cloudCleared:'Cloud সংযোগ মুছে ফেলা হয়েছে', cloudInvalidConfig:'Config ঠিক নেই — JSON দেখো', cloudNoCode:'Sync Code দাও',
-    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', monthsLbl:'মাস', rateLbl:'সুদের হার (%)', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন যোগ করো', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
+    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'বাজার', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'কী কিনতে হবে লিখো…', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', monthsLbl:'মাস', rateLbl:'সুদের হার (%)', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন যোগ করো', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
   en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', localSaved:'Saved locally', comingSoon:'Coming in Phase 3', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
     cloudTitle:'Cloud Sync', cloudDesc:'Use the same Sync Code on both phones to merge their data.',
     syncCodeLbl:'Sync Code', cloudLastSync:'Last sync: ', cloudNever:'Never synced',
@@ -375,7 +375,7 @@ const T = {
     cloudSyncDone:'Synced ✅', cloudUploadDone:'Uploaded ✅', cloudDownloadDone:'Downloaded ✅',
     cloudSyncFail:'Sync failed — check internet / Config', cloudSaved:'Cloud settings saved',
     cloudCleared:'Cloud connection removed', cloudInvalidConfig:'Config looks wrong — check the JSON', cloudNoCode:'Enter a Sync Code',
-    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank name', monthsLbl:'Months', rateLbl:'Interest rate (%)', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Add Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
+    cloudSetupTitle:'How to set up (once)', bazarTitle:'Bazar', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'What to buy…', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank name', monthsLbl:'Months', rateLbl:'Interest rate (%)', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Add Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
 let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
@@ -798,13 +798,7 @@ function reportPdfHtml(){
 }
 function reportViewPdf(){ pdfMode = 'reports'; showStatementPreview(reportPdfHtml()); }
 function reportDownloadPdf(){ pdfMode = 'reports'; downloadPdfFile(); }
-function reportSharePdf(){
-  const rows = reportRows();
-  const r = repRange();
-  const text = statementText('Reports', rows, r.from, r.to);
-  if(navigator.share){ navigator.share({ title: 'Lifestyle', text: text }).catch(() => {}); }
-  else { pdfMode = 'reports'; printPdf(); }
-}
+function reportSharePdf(){ pdfMode = 'reports'; sharePdf(); }
 
 /* ---------- Shared page header (Profile / Reports pages) ---------- */
 function pageHeaderHtml(){
@@ -1738,7 +1732,7 @@ function homeBankPdfHtml(){
   const period = statementPeriod(homeBankFrom, homeBankTo, rows);
   return statementHeaderHtml('History - Bank Loan', rows.length, period) + statementEntriesTable(rows);
 }
-function openHomeBankPdf(){ pdfMode = 'homeBank'; showStatementPreview(homeBankPdfHtml()); }
+function openHomeBankPdf(){ pdfMode = 'homeBank'; downloadPdfFile(); }
 function shareHomeBankPdf(){ pdfMode = 'homeBank'; sharePdf(); }
 let catDetail = null;
 function saveLoanEntry(){
@@ -1863,20 +1857,20 @@ function statementEntriesTable(rows){
   const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
   const th = 'border:1px solid #ccc;padding:5px 6px;text-align:left;background:#F5EEDD;font-weight:700;overflow-wrap:break-word';
   const body = rows.length ? rows.map(r =>
-    '<tr><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+    '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
     '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
     '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
     '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
     '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
     '<td style="' + cell + '">' + escA(r.to || '') + '</td>' +
     '<td style="' + cell + ';text-align:right">' + fmt(Math.abs(r.amount || 0)) + '</td></tr>').join('')
-    : '<tr><td colspan="7" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
+    : '<tr style="page-break-inside:avoid"><td colspan="7" style="' + cell + ';text-align:center">' + t('noData') + '</td></tr>';
   const total = rows.reduce((s, r) => s + Math.abs(r.amount || 0), 0);
   return '<table class="stmt-table" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><colgroup><col style="width:11%"><col style="width:11%"><col style="width:17%"><col style="width:24%"><col style="width:9%"><col style="width:9%"><col style="width:19%"></colgroup><thead>' +
-    '<tr><th style="' + th + '">Date</th><th style="' + th + '">Person</th><th style="' + th + '">Category</th><th style="' + th + '">Note</th><th colspan="2" style="' + th + ';text-align:center">Channel</th><th style="' + th + ';text-align:right">Amount</th></tr>' +
-    '<tr><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '">From</th><th style="' + th + '">To</th><th style="' + th + '"></th></tr></thead>' +
+    '<tr style="page-break-inside:avoid"><th style="' + th + '">Date</th><th style="' + th + '">Person</th><th style="' + th + '">Category</th><th style="' + th + '">Note</th><th colspan="2" style="' + th + ';text-align:center">Channel</th><th style="' + th + ';text-align:right">Amount</th></tr>' +
+    '<tr style="page-break-inside:avoid"><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '"></th><th style="' + th + '">From</th><th style="' + th + '">To</th><th style="' + th + '"></th></tr></thead>' +
     '<tbody>' + body + '</tbody>' +
-    '<tfoot><tr><td colspan="6" style="' + cell + ';font-weight:700;background:#F5EEDD">Total (' + rows.length + ' records)</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(total) + '</td></tr></tfoot></table>';
+    '<tfoot><tr style="page-break-inside:avoid"><td colspan="6" style="' + cell + ';font-weight:700;background:#F5EEDD">Total (' + rows.length + ' records)</td><td style="' + cell + ';text-align:right;font-weight:700;background:#F5EEDD">' + fmt(total) + '</td></tr></tfoot></table>';
 }
 function personStatementRows(){
   const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
@@ -1970,39 +1964,402 @@ function pdfTextForMode(){
   return statementText('History - ' + statementFilterName(), rows, histFrom, histTo);
 }
 
-function downloadPdfFile(){
-  const html = pdfDocHtml();
-  if(typeof html2pdf === 'undefined'){ printPdf(); return; }
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'width:794px;background:#fff;padding:10px;position:fixed;left:-9999px;top:0;';
-  wrap.innerHTML = html;
-  document.body.appendChild(wrap);
-  const fname = 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
-  const done = () => { try{ wrap.remove(); }catch(e){} };
-  try{
-    html2pdf().from(wrap).set({
-      margin: [8, 8, 8, 8],
-      filename: fname,
-      image: { type: 'jpeg', quality: 0.96 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] }
-    }).save().then(done).catch(() => { done(); printPdf(); });
-  }catch(e){ done(); printPdf(); }
+let pdfBusy = false;
+function pdfB64ToBytes(b64){
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
 }
-function printPdf(){
-  const w = window.open('', '_blank');
-  if(!w){ showToast(t('printPdf')); return; }
-  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lifestyle - Statement</title><style>@page{size:A4;margin:12mm}@media print{body{margin:0;padding:0}}*{box-sizing:border-box}body{font-family:system-ui,sans-serif}table{page-break-inside:auto}thead{display:table-header-group}tfoot{display:table-footer-group}tr{page-break-inside:avoid}</style></head><body style="font-family:system-ui,sans-serif;margin:0;padding:0">' +
-    pdfDocHtml() + '</body></html>');
-  w.document.close();
-  w.focus();
-  setTimeout(() => { try{ w.print(); }catch(e){} }, 400);
+function pdfBuildFromJpegs(jpegs){
+  const enc = new TextEncoder();
+  const chunks = [];
+  let totalLen = 0;
+  const push = (d) => { const b = (typeof d === 'string') ? enc.encode(d) : d; chunks.push(b); totalLen += b.length; };
+  const n = jpegs.length;
+  const totalObjs = 2 + 3 * n;
+  const offsets = new Array(totalObjs + 1).fill(0);
+  push('%PDF-1.4\n');
+  offsets[1] = totalLen;
+  push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  offsets[2] = totalLen;
+  let kids = '';
+  for(let i = 0; i < n; i++) kids += (3 + 3 * i) + ' 0 R ';
+  push('2 0 obj\n<< /Type /Pages /Kids [' + kids + '] /Count ' + n + ' >>\nendobj\n');
+  for(let i = 0; i < n; i++){
+    const pageObj = 3 + 3 * i, imgObj = 4 + 3 * i, contObj = 5 + 3 * i;
+    const jj = jpegs[i];
+    offsets[pageObj] = totalLen;
+    push(pageObj + ' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im' + i + ' ' + imgObj + ' 0 R >> /ProcSet [/PDF /ImageC] >> /Contents ' + contObj + ' 0 R >>\nendobj\n');
+    offsets[imgObj] = totalLen;
+    push(imgObj + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + jj.w + ' /Height ' + jj.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jj.bytes.length + ' >>\nstream\n');
+    push(jj.bytes);
+    push('\nendstream\nendobj\n');
+    const content = 'q 595 0 0 842 0 0 cm /Im' + i + ' Do Q';
+    offsets[contObj] = totalLen;
+    push(contObj + ' 0 obj\n<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream\nendobj\n');
+  }
+  const xrefPos = totalLen;
+  push('xref\n0 ' + (totalObjs + 1) + '\n');
+  push('0000000000 65535 f \n');
+  for(let k = 1; k <= totalObjs; k++) push(String(offsets[k]).padStart(10, '0') + ' 00000 n \n');
+  push('trailer\n<< /Size ' + (totalObjs + 1) + ' /Root 1 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF');
+  return new Blob(chunks, { type: 'application/pdf' });
+}
+function pdfStatementData(){
+  const prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
+  if(pdfMode === 'history'){
+    const rows = pdfStatementRows().map(r => ({ date: r.date, person: r.person, category: r.category, note: r.comment, from: r.from, to: r.to, amount: r.amount }));
+    return { prof: prof, title: 'History - ' + statementFilterName(), records: rows.length, period: statementPeriod(histFrom, histTo, rows), entriesRows: rows };
+  }
+  if(pdfMode === 'person'){
+    const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
+    const person = arr[personIdx] || { name: '', loans: [], payments: [] };
+    const rows = personStatementRows();
+    return { prof: prof, title: 'History - ' + (person.name || ''), records: rows.length, period: statementPeriod(personFrom, personTo, rows), entriesRows: rows };
+  }
+  if(pdfMode === 'loans'){
+    if(loansKind === 'bank'){
+      const rows = (state.bankLoans || []).map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' \u2022 ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
+      return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(loansFrom, loansTo, rows), entriesRows: rows };
+    }
+    const people = loansPeopleFiltered();
+    return { prof: prof, title: 'History - ' + loansPageTitle(), records: people.length, period: statementPeriod(loansFrom, loansTo, []), loansRows: people, loansKind: loansKind };
+  }
+  if(pdfMode === 'reports'){
+    const rows = reportRows();
+    const r = repRange();
+    return { prof: prof, title: 'Reports', records: rows.length, period: statementPeriod(r.from, r.to, rows), entriesRows: rows };
+  }
+  if(pdfMode === 'homeBank'){
+    const rows = homeBankLoansFiltered().map(e => ({ date: e.date || '', person: '', category: 'Bank Loan', note: (e.bank || e.name || '') + (e.note ? ' \u2022 ' + e.note : ''), from: e.medium || '', to: e.medium || '', amount: +(e.amount || 0) }));
+    return { prof: prof, title: 'History - Bank Loan', records: rows.length, period: statementPeriod(homeBankFrom, homeBankTo, rows), entriesRows: rows };
+  }
+  return null;
+}
+function pdfWrapText(ctx, text, maxW){
+  const words = String(text == null ? '' : text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  const pushLine = (l) => { if(l) lines.push(l); };
+  const breakWord = (w) => {
+    let rest = w;
+    while(rest && ctx.measureText(rest).width > maxW){
+      let n = 1;
+      while(n < rest.length && ctx.measureText(rest.slice(0, n)).width <= maxW) n++;
+      if(n <= 1) n = 2;
+      pushLine(rest.slice(0, n - 1));
+      rest = rest.slice(n - 1);
+    }
+    return rest;
+  };
+  for(let w of words){
+    if(ctx.measureText(w).width > maxW){
+      if(cur){ pushLine(cur); cur = ''; }
+      cur = breakWord(w);
+    } else {
+      const test = cur ? cur + ' ' + w : w;
+      if(ctx.measureText(test).width <= maxW) cur = test;
+      else { pushLine(cur); cur = w; }
+    }
+  }
+  if(cur) pushLine(cur);
+  if(!lines.length) lines.push('');
+  return lines;
+}
+function pdfStatementJpegs(){
+  const data = pdfStatementData();
+  if(!data) return null;
+  const S = 2, W = 794, H = 1123, M = 24, CW = W - 2 * M, PAGE_H = H - 2 * M;
+  const F = '12px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB = '700 12px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FT = '800 20px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FS = '700 15px system-ui, -apple-system, "Segoe UI", sans-serif';
+  const LH = 18, CLH = 15, CPAD = 5, CPADX = 6;
+  const mctx = document.createElement('canvas').getContext('2d');
+  let cols, headerRows, rows, totalRow, emptyRow;
+  if(data.loansRows){
+    cols = [{ w: 26, align: 'left' }, { w: 20, align: 'left' }, { w: 18, align: 'right' }, { w: 18, align: 'right' }, { w: 18, align: 'right' }];
+    const retLabel = data.loansKind === 'given' ? 'Returned' : 'Repaid';
+    headerRows = [[
+      { text: 'Person', span: 1, align: 'left' },
+      { text: 'Mobile', span: 1, align: 'left' },
+      { text: 'Total', span: 1, align: 'right' },
+      { text: retLabel, span: 1, align: 'right' },
+      { text: 'Balance', span: 1, align: 'right' },
+    ]];
+    rows = data.loansRows.map(x => [x.person.name || '', x.person.mobile || '', fmt(x.loans), fmt(x.pays), fmt(x.balance)]);
+    const tL = data.loansRows.reduce((s, x) => s + x.loans, 0), tP = data.loansRows.reduce((s, x) => s + x.pays, 0), tB = data.loansRows.reduce((s, x) => s + x.balance, 0);
+    totalRow = [
+      { text: 'Total (' + data.loansRows.length + ' people)', span: 2, align: 'left' },
+      { text: fmt(tL), span: 1, align: 'right' },
+      { text: fmt(tP), span: 1, align: 'right' },
+      { text: fmt(tB), span: 1, align: 'right' },
+    ];
+    emptyRow = [{ text: t('noData'), span: 5, align: 'center' }];
+  } else {
+    cols = [{ w: 11, align: 'left' }, { w: 11, align: 'left' }, { w: 17, align: 'left' }, { w: 24, align: 'left' }, { w: 9, align: 'left' }, { w: 9, align: 'left' }, { w: 19, align: 'right' }];
+    headerRows = [
+      [
+        { text: 'Date', span: 1, align: 'left' },
+        { text: 'Person', span: 1, align: 'left' },
+        { text: 'Category', span: 1, align: 'left' },
+        { text: 'Note', span: 1, align: 'left' },
+        { text: 'Channel', span: 2, align: 'center' },
+        { text: 'Amount', span: 1, align: 'right' },
+      ],
+      [
+        { text: '', span: 1, align: 'left' },
+        { text: '', span: 1, align: 'left' },
+        { text: '', span: 1, align: 'left' },
+        { text: '', span: 1, align: 'left' },
+        { text: 'From', span: 1, align: 'left' },
+        { text: 'To', span: 1, align: 'left' },
+        { text: '', span: 1, align: 'left' },
+      ],
+    ];
+    rows = data.entriesRows.map(r => [fmtDMY(r.date), r.person || '', r.category || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]);
+    const tot = data.entriesRows.reduce((s, r) => s + Math.abs(r.amount || 0), 0);
+    totalRow = [
+      { text: 'Total (' + data.entriesRows.length + ' records)', span: 6, align: 'left' },
+      { text: fmt(tot), span: 1, align: 'right' },
+    ];
+    emptyRow = [{ text: t('noData'), span: 7, align: 'center' }];
+  }
+  const colW = cols.map(c => c.w / 100 * CW);
+  const sumW = colW.reduce((a, b) => a + b, 0);
+  colW[colW.length - 1] += CW - sumW;
+  const colX = [M];
+  for(let i = 0; i < colW.length; i++) colX.push(colX[i] + colW[i]);
+  const spanW = (idx, n) => { let s = 0; for(let k = idx; k < idx + n; k++) s += colW[k]; return s; };
+  const measureCells = (cells, font) => {
+    mctx.font = font;
+    let maxLines = 1, idx = 0;
+    for(let c of cells){
+      const lines = pdfWrapText(mctx, c.text, spanW(idx, c.span) - 2 * CPADX);
+      if(lines.length > maxLines) maxLines = lines.length;
+      idx += c.span;
+    }
+    return 2 * CPAD + maxLines * CLH;
+  };
+  const dataRowHeights = rows.map(r => {
+    mctx.font = F;
+    let maxLines = 1;
+    for(let i = 0; i < r.length; i++){
+      const lines = pdfWrapText(mctx, r[i], colW[i] - 2 * CPADX);
+      if(lines.length > maxLines) maxLines = lines.length;
+    }
+    return 2 * CPAD + maxLines * CLH;
+  });
+  const headerRowHeights = headerRows.map(hr => measureCells(hr, FB));
+  const headerRowsH = headerRowHeights.reduce((a, b) => a + b, 0);
+  const totalRowH = measureCells(totalRow, FB);
+  const emptyRowH = measureCells(emptyRow, F);
+  const prof = data.prof || {};
+  const userLines = [];
+  if(prof.name) userLines.push('User: ' + prof.name);
+  if(prof.designation) userLines.push('Designation: ' + prof.designation);
+  if(prof.address) userLines.push('Address: ' + prof.address);
+  if(prof.mobile) userLines.push('Mobile: ' + prof.mobile);
+  const devLines = ['\u25a0 Developer', '\uD83D\uDC64 Md. Abdus Salam', '\uD83D\uDCCD Bantra, Kalaroa, Satkhira', '\uD83D\uDCDE Mobile: +8801737265245', '\u2709\uFE0F Email: salamwgp@gmail.com'];
+  const RIGHT_W = 230;
+  const LEFT_W = CW - RIGHT_W;
+  mctx.font = F;
+  let leftH = 24;
+  const dlLines = pdfWrapText(mctx, 'Download: ' + fmtDownloadNow(), LEFT_W);
+  leftH += dlLines.length * LH;
+  for(let l of userLines){
+    const lines = pdfWrapText(mctx, l, LEFT_W);
+    leftH += lines.length * LH;
+  }
+  let rightH = 0;
+  for(let l of devLines){
+    const lines = pdfWrapText(mctx, l, RIGHT_W);
+    rightH += lines.length * LH;
+  }
+  const blockH = Math.max(leftH, rightH);
+  mctx.font = FS;
+  const titleLines = pdfWrapText(mctx, data.title, CW);
+  const headerH = blockH + 20 + titleLines.length * LH + LH + LH + 10;
+  const pages = [];
+  if(rows.length === 0){
+    pages.push({ rows: [], total: false, empty: true, first: true });
+  } else {
+    let idx = 0, first = true;
+    while(idx < rows.length){
+      const avail = first ? (PAGE_H - headerH - headerRowsH) : (PAGE_H - headerRowsH);
+      const pageRows = [];
+      let used = 0;
+      while(idx < rows.length && used + dataRowHeights[idx] <= avail){
+        pageRows.push(idx);
+        used += dataRowHeights[idx];
+        idx++;
+      }
+      if(pageRows.length === 0 && idx < rows.length){
+        pageRows.push(idx);
+        used += dataRowHeights[idx];
+        idx++;
+      }
+      pages.push({ rows: pageRows, total: false, empty: false, first: first });
+      first = false;
+    }
+    const last = pages[pages.length - 1];
+    const lastAvail = last.first ? (PAGE_H - headerH - headerRowsH) : (PAGE_H - headerRowsH);
+    const lastUsed = last.rows.reduce((s, i) => s + dataRowHeights[i], 0);
+    if(lastUsed + totalRowH <= lastAvail) last.total = true;
+    else pages.push({ rows: [], total: true, empty: false, first: false });
+  }
+  const jpegs = [];
+  for(let p = 0; p < pages.length; p++){
+    const pg = pages[p];
+    const pc = document.createElement('canvas');
+    pc.width = W * S;
+    pc.height = H * S;
+    const ctx = pc.getContext('2d');
+    ctx.scale(S, S);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, W, H);
+    let y = M;
+    if(pg.first){
+      ctx.font = FT;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#000';
+      ctx.fillText('Lifestyle', M, y);
+      y += 24;
+      ctx.font = F;
+      ctx.fillStyle = '#555';
+      for(let ln of pdfWrapText(ctx, 'Download: ' + fmtDownloadNow(), LEFT_W)){ ctx.fillText(ln, M, y); y += LH; }
+      ctx.fillStyle = '#333';
+      for(let l of userLines){
+        for(let ln of pdfWrapText(ctx, l, LEFT_W)){ ctx.fillText(ln, M, y); y += LH; }
+      }
+      let ry = M;
+      ctx.textAlign = 'right';
+      for(let i = 0; i < devLines.length; i++){
+        ctx.font = i === 0 ? FB : F;
+        ctx.fillStyle = '#333';
+        for(let ln of pdfWrapText(ctx, devLines[i], RIGHT_W)){ ctx.fillText(ln, W - M, ry); ry += LH; }
+      }
+      ctx.textAlign = 'left';
+      const divY = M + blockH + 10;
+      ctx.fillStyle = '#222';
+      ctx.fillRect(M, divY, CW, 1.5);
+      y = divY + 1.5 + 8;
+      ctx.font = FS;
+      ctx.fillStyle = '#000';
+      for(let ln of titleLines){ ctx.fillText(ln, M, y); y += LH; }
+      ctx.font = F;
+      ctx.fillStyle = '#555';
+      ctx.fillText('Total Records: ' + data.records, M, y);
+      y += LH;
+      ctx.fillText('Statement Period: ' + data.period.from + ' \u2013 ' + data.period.to, M, y);
+      y += LH + 10;
+    }
+    const tableTop = y;
+    const tableRows = [];
+    for(let hi = 0; hi < headerRows.length; hi++){
+      tableRows.push({ top: y, height: headerRowHeights[hi], kind: 'header', cells: headerRows[hi] });
+      y += headerRowHeights[hi];
+    }
+    for(let ri of pg.rows){
+      tableRows.push({ top: y, height: dataRowHeights[ri], kind: 'data', cells: rows[ri] });
+      y += dataRowHeights[ri];
+    }
+    if(pg.total){
+      tableRows.push({ top: y, height: totalRowH, kind: 'total', cells: totalRow });
+      y += totalRowH;
+    }
+    if(pg.empty){
+      tableRows.push({ top: y, height: emptyRowH, kind: 'empty', cells: emptyRow });
+      y += emptyRowH;
+    }
+    const tableBottom = y;
+    for(let tr of tableRows){
+      if(tr.kind === 'header' || tr.kind === 'total'){
+        ctx.fillStyle = '#F5EEDD';
+        ctx.fillRect(M, tr.top, CW, tr.height);
+      }
+    }
+    ctx.fillStyle = '#ccc';
+    for(let tr of tableRows) ctx.fillRect(M, tr.top, CW, 1);
+    ctx.fillRect(M, tableBottom, CW, 1);
+    for(let x of colX) ctx.fillRect(x, tableTop, 1, tableBottom - tableTop);
+    for(let tr of tableRows){
+      const font = (tr.kind === 'header' || tr.kind === 'total') ? FB : F;
+      ctx.font = font;
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#000';
+      if(tr.kind === 'data'){
+        for(let i = 0; i < tr.cells.length; i++){
+          const align = cols[i].align;
+          ctx.textAlign = align;
+          const lines = pdfWrapText(ctx, tr.cells[i], colW[i] - 2 * CPADX);
+          const tx = align === 'left' ? colX[i] + CPADX : (align === 'right' ? colX[i] + colW[i] - CPADX : colX[i] + colW[i] / 2);
+          for(let li = 0; li < lines.length; li++) ctx.fillText(lines[li], tx, tr.top + CPAD + li * CLH);
+        }
+      } else {
+        let idx = 0;
+        for(let c of tr.cells){
+          const w = spanW(idx, c.span);
+          const x0 = colX[idx];
+          ctx.textAlign = c.align;
+          const lines = pdfWrapText(ctx, c.text, w - 2 * CPADX);
+          const tx = c.align === 'left' ? x0 + CPADX : (c.align === 'right' ? x0 + w - CPADX : x0 + w / 2);
+          for(let li = 0; li < lines.length; li++) ctx.fillText(lines[li], tx, tr.top + CPAD + li * CLH);
+          idx += c.span;
+        }
+      }
+    }
+    ctx.textAlign = 'left';
+    const dataUrl = pc.toDataURL('image/jpeg', 0.92);
+    const b64 = (dataUrl.split(',')[1] || '');
+    jpegs.push({ bytes: pdfB64ToBytes(b64), w: pc.width, h: pc.height });
+  }
+  return jpegs;
+}
+function pdfMakeBlob(){
+  try{
+    const jpegs = pdfStatementJpegs();
+    if(!jpegs || !jpegs.length) return null;
+    return pdfBuildFromJpegs(jpegs);
+  }catch(e){ return null; }
+}
+function downloadPdfFile(){
+  if(pdfBusy) return;
+  pdfBusy = true;
+  const html = pdfDocHtml();
+  showStatementPreview(html);
+  const blob = pdfMakeBlob();
+  pdfBusy = false;
+  if(!blob){ showToast(t('pdfFail')); return; }
+  const fname = 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { try{ URL.revokeObjectURL(url); a.remove(); }catch(e){} }, 1500);
+  }catch(e){ showToast(t('pdfFail')); }
 }
 function sharePdf(){
-  const text = pdfTextForMode();
-  if(navigator.share){ navigator.share({ title: 'Lifestyle', text: text }).catch(() => {}); }
-  else { printPdf(); }
+  if(pdfBusy) return;
+  pdfBusy = true;
+  const html = pdfDocHtml();
+  showStatementPreview(html);
+  const blob = pdfMakeBlob();
+  pdfBusy = false;
+  if(!blob){ showToast(t('pdfFail')); return; }
+  const fname = 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
+  let file = null;
+  try{ file = new File([blob], fname, { type: 'application/pdf' }); }catch(e){ file = null; }
+  if(file && navigator.canShare && navigator.canShare({ files: [file] })){
+    navigator.share({ title: 'Lifestyle', text: 'Lifestyle - Statement', files: [file] }).catch(() => {});
+  } else if(navigator.share){
+    navigator.share({ title: 'Lifestyle', text: pdfTextForMode() }).catch(() => {});
+  }
 }
 
 
