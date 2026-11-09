@@ -169,12 +169,12 @@
       <label class="text-[12px] font-bold text-[#8B7355]" data-t="nameLbl">Name</label>
       <div class="flex gap-2 items-center mt-1 mb-3">
         <input id="lePersonName" type="text" maxlength="80" placeholder="New person name" oninput="updatePersonSaveBtn()" class="flex-1 min-w-0 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px]">
-        <button onclick="openLoanPersonPicker()" class="w-[46px] h-[46px] shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center" title="Contacts">📒</button>
+        <button onclick="pickFromPhoneContacts()" class="w-[46px] h-[46px] shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center" title="Contacts">📒</button>
       </div>
       <label class="text-[12px] font-bold text-[#8B7355]" data-t="mobileContactLbl">Mobile / Contact Number</label>
       <div class="flex gap-2 items-center mt-1 mb-3">
         <input id="lePersonMobile" type="tel" maxlength="20" placeholder="Type manually or pick from contacts" class="flex-1 min-w-0 bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[14px]">
-        <button onclick="openLoanPersonPicker()" class="w-[46px] h-[46px] shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center" title="Contacts">📞</button>
+        <button onclick="pickFromPhoneContacts()" class="w-[46px] h-[46px] shrink-0 rounded-full border border-[#F3E8D3] bg-white text-[20px] flex items-center justify-center" title="Contacts">📞</button>
       </div>
       <label class="text-[12px] font-bold text-[#8B7355]" data-t="amount">Amount (৳)</label>
       <input id="leAmount" oninput="updatePersonSaveBtn()" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[16px] mt-1 mb-3">
@@ -1690,6 +1690,26 @@ function openLoanPersonPicker(){
   renderPickerList();
   document.getElementById('pickerSheet').classList.remove('hidden');
   document.getElementById('pickerOverlay').classList.remove('hidden');
+}
+async function pickFromPhoneContacts(){
+  const nav = (typeof navigator !== 'undefined') ? navigator : {};
+  if(nav.contacts && typeof nav.contacts.select === 'function'){
+    try{
+      const contacts = await nav.contacts.select(['name', 'tel'], {multiple: false});
+      if(!contacts || !contacts.length) return; // user cancelled the phone contact picker
+      const c = contacts[0];
+      const name = (c.name && c.name[0]) || '';
+      const tel = (c.tel && c.tel[0]) || '';
+      const cleanTel = tel.replace(/[\s\-\(\)\.]/g, '');
+      if(name) document.getElementById('lePersonName').value = name;
+      if(cleanTel) document.getElementById('lePersonMobile').value = cleanTel;
+      updatePersonSaveBtn();
+      return;
+    }catch(e){
+      // permission denied / API error -> fall through to the app's own picker
+    }
+  }
+  openLoanPersonPicker();
 }
 function openLoanEntryForm(mode, kind, pi){
   editingLoanKey = 'add:' + mode + ':' + kind + ':' + (pi === '' || pi == null ? '' : pi);
