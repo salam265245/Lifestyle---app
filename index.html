@@ -141,12 +141,6 @@
 <div id="pdfPreviewSheet" class="sheet hidden">
   <div class="sticky top-0 z-10 bg-white px-5 pt-5 pb-3">
     <div class="flex justify-between items-center mb-3"><h2 class="text-[17px] font-extrabold">PDF Preview</h2><button onclick="closePdfPreview()" class="text-xl px-2">✕</button></div>
-    <div class="flex items-center justify-center gap-2">
-      <button onclick="pdfZoomOut()" class="w-9 h-9 rounded-full border-2 border-[#F3E8D3] font-bold text-[16px]">−</button>
-      <span id="pdfZoomLabel" class="text-[13px] font-bold w-12 text-center">100%</span>
-      <button onclick="pdfZoomIn()" class="w-9 h-9 rounded-full border-2 border-[#F3E8D3] font-bold text-[16px]">+</button>
-      <button onclick="pdfZoomReset()" class="px-3 h-9 rounded-full border-2 border-[#F3E8D3] font-bold text-[13px]">Fit</button>
-    </div>
   </div>
   <div class="px-5 pb-5">
     <div id="pdfPreviewBody" style="overflow-x:auto;touch-action:pan-x pan-y"></div>
@@ -869,7 +863,7 @@ function renderProfileView(){
   const email = authEmail();
   let h = '<div style="position:sticky;top:0;z-index:20;background:#FFFBF7;border-bottom:1px solid #F3E8D3;padding-bottom:8px">' + pageHeaderHtml() + '</div>';
   h += '<div class="px-4 pt-4 pb-6">';
-  h += '<div class="flex justify-center mb-4"><div class="relative w-28 h-28 rounded-full bg-[#F3E8D3] overflow-hidden flex items-center justify-center text-[40px]">' + (photo ? '<img src="' + photo + '" class="w-full h-full object-cover">' : '👤') + '<button onclick="document.getElementById(\'photoPicker\').click()" class="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-[#C9A86A] text-white text-[16px] flex items-center justify-center">📷</button></div></div>';
+  h += '<div class="flex justify-center items-end gap-2 mb-4"><div class="w-28 h-28 rounded-full bg-[#F3E8D3] overflow-hidden flex items-center justify-center text-[40px]">' + (photo ? '<img src="' + photo + '" class="w-full h-full object-cover">' : '👤') + '</div><button onclick="document.getElementById(\'photoPicker\').click()" class="w-9 h-9 rounded-full bg-[#C9A86A] text-white text-[16px] flex items-center justify-center shrink-0">📷</button></div>';
   h += '<input type="file" id="photoPicker" accept="image/*" class="hidden" onchange="changeProfilePhoto(this)">';
   if(email){
     h += '<div class="bg-[#E6F4EA] rounded-[18px] p-4 text-center mb-4"><div class="text-[#1E7B34] font-bold text-[15px]">✓ ' + escA(email) + '</div><button onclick="authLogout()" class="text-[#C0392B] font-bold underline text-[14px] mt-1">' + t('logout') + '</button></div>';
@@ -2211,7 +2205,7 @@ function fitStatementPreview(){
   const page = document.getElementById('stmtPage');
   if(!body || !wrap || !page) return;
   const avail = body.clientWidth || 360;
-  const PAD = 16; // 8px grey border around the A4 page
+  const PAD = 0; // no border around the A4 page
   const fitScale = Math.min(1, (avail - PAD) / 794);
   const scale = fitScale * pdfZoom;
   page.style.transform = 'scale(' + scale + ')';
@@ -2227,7 +2221,7 @@ let stmtFitBound = false;
 function showStatementPreview(html){
   pdfZoom = 1;
   document.getElementById('pdfPreviewBody').innerHTML =
-    '<div id="stmtScaleWrap" style="overflow:hidden;background:#D9D9D9;padding:8px"><div id="stmtPage" style="width:794px;min-height:1123px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.25);padding:10px">' + html + '</div></div>';
+    '<div id="stmtScaleWrap" style="overflow:hidden;background:#fff;padding:0"><div id="stmtPage" style="width:794px;min-height:1123px;background:#fff;padding:10px">' + html + '</div></div>';
   document.getElementById('pdfPreviewSheet').classList.remove('hidden');
   document.getElementById('pdfOverlay').classList.remove('hidden');
   setTimeout(fitStatementPreview, 30);
