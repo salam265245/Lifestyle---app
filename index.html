@@ -953,7 +953,15 @@ function restoreViewState(){
   let r = null;
   try{ r = JSON.parse(localStorage.getItem(VIEW_STATE_KEY) || 'null'); }catch(e){ r = null; }
   if(!r || typeof r !== 'object') return;
-  // App entry always starts on Home; the last page is never restored.
+  // Refresh keeps the current page; fresh app entry always starts on Home.
+  let navType = '';
+  try{ navType = (performance.getEntriesByType('navigation')[0] || {}).type; }catch(e){}
+  if(!navType && performance.navigation) navType = performance.navigation.type;
+  const isReload = navType === 'reload' || navType === 'back_forward' || navType === 1 || navType === 2;
+  if(isReload){
+    const views = ['home','history','catdetail','loans','person','profile','reports'];
+    if(views.includes(r.v)) currentView = r.v;
+  }
   if(['given','taken','bank'].includes(r.lk)) loansKind = r.lk;
   if(['given','taken'].includes(r.pk)) personKind = r.pk;
   if(typeof r.pi === 'number' && r.pi >= 0) personIdx = Math.floor(r.pi);
