@@ -728,7 +728,7 @@ function developerCardHtml(){
   const d = devInfo();
   return '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-5">' +
     '<div class="flex items-center gap-3 mb-0.5 leading-tight"><span class="text-[20px]">💻</span><span class="font-extrabold text-[16px]">' + d.title + '</span></div>' +
-    '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">👤</span><span class="font-bold text-[15px]">' + d.name + '</span></div>' +
+    '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">👤</span><span class="text-[15px]">' + d.name + '</span></div>' +
     '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">📍</span><span class="text-[14px]">' + d.address + '</span></div>' +
     '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">📞</span><span class="text-[14px]">' + d.phoneLabel + ': ' + DEV_PHONE + '</span></div>' +
     '<div class="flex items-center gap-3 py-0.5 leading-tight"><span class="text-[20px]">✉️</span><span class="text-[14px]">' + d.emailLabel + ': ' + DEV_EMAIL + '</span></div>' +
@@ -1157,7 +1157,51 @@ function setNavActive(page){
     if(el) el.classList.toggle('active', p === page);
   });
 }
+/* ---------- Back navigation: true step-by-step stack ---------- */
+let navStack = [];
+let _navGoingBack = false;
+function navSnapshot(){
+  return { view: currentView, loansKind: loansKind, personKind: personKind, personIdx: personIdx,
+    histFilter: histFilter, histCat: histCat, histFrom: histFrom, histTo: histTo,
+    loansFrom: loansFrom, loansTo: loansTo, loansSearch: loansSearch,
+    personFrom: personFrom, personTo: personTo };
+}
+function navPush(){
+  if(_navGoingBack) return;
+  try{
+    const s = navSnapshot();
+    const last = navStack[navStack.length - 1];
+    if(last && JSON.stringify(last) === JSON.stringify(s)) return;
+    navStack.push(s);
+    if(navStack.length > 50) navStack.shift();
+  }catch(e){}
+}
+function navRestore(s){
+  _navGoingBack = true;
+  try{
+    currentView = s.view; loansKind = s.loansKind; personKind = s.personKind; personIdx = s.personIdx;
+    histFilter = s.histFilter; histCat = s.histCat; histFrom = s.histFrom; histTo = s.histTo;
+    loansFrom = s.loansFrom; loansTo = s.loansTo; loansSearch = s.loansSearch;
+    personFrom = s.personFrom; personTo = s.personTo;
+    if(s.view === 'home') setNavActive('home');
+    else if(s.view === 'history') setNavActive('history');
+    else if(s.view === 'profile') setNavActive('profile');
+    else if(s.view === 'reports') setNavActive('reports');
+    else setNavActive('');
+    render();
+  }finally{ _navGoingBack = false; }
+}
+function goBackStep(){
+  if(navStack.length){ navRestore(navStack.pop()); return true; }
+  if(currentView && currentView !== 'home'){
+    _navGoingBack = true;
+    try{ navGo('home'); }finally{ _navGoingBack = false; }
+    return true;
+  }
+  return true;
+}
 function navGo(page){
+  if(page !== currentView) navPush();
   if(page === 'home'){ currentView = 'home'; setNavActive('home'); render(); return; }
   if(page === 'history'){ currentView = 'history'; setNavActive('history'); render(); return; }
   if(page === 'profile'){ currentView = 'profile'; setNavActive('profile'); render(); return; }
@@ -1262,7 +1306,7 @@ function autoTrimStoredSignature(dataURL){
     }
   });
 }
-function sigTodayStr(){ const n = new Date(); return String(n.getDate()).padStart(2,'0') + '/' + String(n.getMonth()+1).padStart(2,'0') + '/' + n.getFullYear(); }
+function sigTodayStr(){ const n = new Date(); return String(n.getDate()).padStart(2,'0') + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + n.getFullYear(); }
 function getPdfSignature(){ const d = getSignatureData(); if(!d) return null; if(_sigImgSrc !== d.img){ _sigImgSrc = d.img; _sigImg = new Image(); _sigImg.onload = function(){ autoTrimStoredSignature(d.img); }; _sigImg.src = d.img; } let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} return { img: _sigImg, name: nm, date: sigTodayStr() }; }
 function sigPreviewHtml(){ const d = getSignatureData(); let nm = ''; try{ nm = ((typeof loadProfile === 'function' ? loadProfile() : {}) || {}).name || ''; }catch(e){} if(!d) return '<div class="text-[13px] text-[#8B7355] text-center py-4 border border-dashed border-[#F3E8D3] rounded-[14px]">' + t('signatureEmpty') + '</div>'; return '<div class="border border-[#F3E8D3] rounded-[14px] p-3 bg-white text-right"><img src="' + d.img + '" style="max-width:230px;max-height:95px;margin-left:auto;display:block"><div class="font-bold text-[14px] mt-1">' + escA(nm) + '</div><div class="text-[12px] text-[#8B7355]">' + sigTodayStr() + '</div></div>'; }
 function openSigPicker(){ const el = document.getElementById('sigFileInput'); if(el) el.click(); }
@@ -1493,7 +1537,7 @@ function renderBazarList(){
   box.innerHTML = list.map(it => {
     const bought = it.status === 'bought';
     const priceTxt = it.price ? fmt(it.price) : '৳0 (' + t('bzPricePending') + ')';
-    const meta = priceTxt + ' • ' + (it.date || '');
+    const meta = priceTxt + ' • ' + (fmtDMY(it.date) || '');
     /* All 4 buttons ALWAYS shown: No on a bought item undoes the Yes (removes its expense) */
     const btns = '<button onclick="bazarEdit(\'' + it.id + '\')" class="px-3 py-2 rounded-full bg-white text-[13px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
       '<button onclick="bazarNo(\'' + it.id + '\')" class="px-3 py-2 rounded-full text-[13px] font-bold whitespace-nowrap ' + (bought ? 'bg-white text-black' : 'bg-[#D32F2F] text-white') + '">' + t('noBtn') + '</button>' +
@@ -1736,7 +1780,7 @@ function histClearDates(){ histFrom = ''; histTo = ''; render(); }
 function histAddNew(){
   if(histFilter === 'income' || histFilter === 'expense'){ openForm(histFilter); return; }
   if(histFilter === 'all'){ openAddSheet(); return; }
-  if(histFilter === 'given' || histFilter === 'taken'){ openAddPerson(histFilter); return; }
+  if(histFilter === 'given' || histFilter === 'taken'){ openLoanEntryForm('addloan', histFilter, ''); return; }
   if(histFilter === 'return'){ openPersonPicker('given', 'payment'); return; }
   if(histFilter === 'repayment'){ openPersonPicker('taken', 'payment'); return; }
   if(histFilter === 'bank'){ openLoanEntryForm('addbank', 'bank', ''); return; }
@@ -1746,13 +1790,13 @@ function renderHistoryView(){
   const rows = filteredHistoryRows();
   const tabs = [['all','fAll'],['income','fIncome'],['expense','fExpense'],['given','fGiven'],['taken','fTaken'],['return','fReturn'],['repayment','fRepay'],['bank','fBank']];
   const listHtml = rows.length ? rows.map(r => {
-    const sub = [r.date, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
+    const _dp = String(r.date || '').split('-'); const _dmy = (_dp.length === 3 && _dp[0].length === 4) ? _dp[2] + '-' + _dp[1] + '-' + _dp[0] : r.date; const sub = [_dmy, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
     const catEsc = String(r.catEn || r.title || '').replace(/'/g, "\\'");
     const rowClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : (r.kind === 'income' || r.kind === 'expense') ? ' onclick="histGoCat(\'' + r.kind + '\',\'' + catEsc + '\')" style="cursor:pointer"' : '';
-    return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"' + rowClick + '><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
+    return '<div class="flex gap-2 py-2.5 mb-2 bg-white border-b border-[#F3E8D3]"' + rowClick + '><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
       '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (r.sign >= 0 ? 'text-green-700' : 'text-red-600') + '">' + (r.sign >= 0 ? '+' : '-') + fmt(r.amount) + '</div>' +
-      '<div class="flex gap-1 flex-nowrap"><button onclick="event.stopPropagation();editHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-      '<button onclick="event.stopPropagation();deleteHistoryRow(\'' + r.key + '\')" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
+      '<div class="flex gap-1 flex-nowrap"><button onclick="event.stopPropagation();editHistoryRow(\'' + r.key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
+      '<button onclick="event.stopPropagation();deleteHistoryRow(\'' + r.key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
   }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
   document.getElementById('app').innerHTML =
     '<div class="px-4 pt-4">' +
@@ -1773,7 +1817,7 @@ function renderHistoryView(){
         '<button onclick="histClearDates()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">✕ <span data-t="dateClear">Date Clear</span></button>' +
       '</div>' +
       ((histFilter === 'expense' || histFilter === 'income') ? '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-2"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(histCat) + '" placeholder="' + escA(t('filterByCat')) + ' (English/Bangla)…' + '" oninput="histSetCat(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0">' + (histCat ? '<button onclick="histClearCat()" class="shrink-0 w-6 h-6 rounded-full bg-[#F3E8D3] text-[12px] font-bold leading-none">✕</button>' : '') + '</div>' : '') +
-      '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + histFilterLabel() + ' • ' + (histFrom || '…') + t('fromToSep') + (histTo || '…') + ' • ' + rows.length + ' ' + t('records') + ' • User, Date, Time included</div>' +
+      '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + histFilterLabel() + ' • ' + (fmtDMY(histFrom) || '…') + t('fromToSep') + (fmtDMY(histTo) || '…') + ' • ' + rows.length + ' ' + t('records') + ' • User, Date, Time included</div>' +
       '</div>' +
       '<div>' + listHtml + '</div>' +
     '</div>';
@@ -2103,7 +2147,7 @@ function emiTableHtml(entry, toggleFn){
     '<tbody>' + rows.map(r =>
       '<tr class="' + (r.paid ? 'bg-[#EAF7EE]' : 'bg-[#FFF0F0]') + ' border-t border-[#F3E8D3]">' +
       '<td class="px-2 py-2">' + r.sl + '</td>' +
-      '<td class="px-2 py-2">' + r.date + '</td>' +
+      '<td class="px-2 py-2">' + fmtDMY(r.date) + '</td>' +
       '<td class="px-2 py-2 text-right font-bold">' + fmt(r.emi) + '</td>' +
       '<td class="px-2 py-2 text-center"><input type="checkbox" ' + (r.paid ? 'checked' : '') + ' onchange="' + toggleFn + '(' + (r.sl - 1) + ')" class="w-5 h-5 accent-[#C0392B]"></td>' +
       '</tr>').join('') + '</tbody></table>';
@@ -2341,13 +2385,13 @@ function fmtDMY(iso){
   const d = normDate(iso || '');
   if(!d) return '';
   const p = d.split('-');
-  return p[2] + '/' + p[1] + '/' + p[0];
+  return p[2] + '-' + p[1] + '-' + p[0];
 }
 function fmtDownloadNow(){
   const n = new Date();
   const dd = String(n.getDate()).padStart(2,'0'), mm = String(n.getMonth()+1).padStart(2,'0'), yy = n.getFullYear();
   let h = n.getHours(); const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
-  return dd + '/' + mm + '/' + yy + ' ' + String(h).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + ':' + String(n.getSeconds()).padStart(2,'0') + ' ' + ampm;
+  return dd + '-' + mm + '-' + yy + ' ' + String(h).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + ':' + String(n.getSeconds()).padStart(2,'0') + ' ' + ampm;
 }
 function statementFilterName(){
   return { all:'All', income:'Income', expense:'Expense', given:'Given', taken:'Taken', return:'Return', repayment:'Repayment', bank:'Bank Loan' }[histFilter] || 'All';
@@ -3532,10 +3576,12 @@ let homeBankFrom = firstOfMonth(), homeBankTo = today();
 let addPersonKind = 'given', pickerKind = 'given', pickerAction = 'payment', pickerSearch = '';
 function loansPageTitle(){ return loansKind === 'given' ? t('loansGivenPage') : loansKind === 'taken' ? t('loansTakenPage') : t('bankLoansPage'); }
 function openLoansPage(kind){
+  if(!(currentView === 'loans' && loansKind === kind)) navPush();
   loansKind = kind; currentView = 'loans'; setNavActive('');
   render();
 }
 function openPersonDetail(kind, pi){
+  if(!(currentView === 'person' && personKind === kind && personIdx === pi)) navPush();
   personKind = kind; personIdx = pi;
   if(currentView === 'history'){ personFrom = histFrom; personTo = histTo; }
   else if(currentView === 'loans'){ personFrom = loansFrom; personTo = loansTo; }
@@ -3571,7 +3617,7 @@ function loansPeopleFiltered(){
 }
 function renderLoansView(){
   const title = loansPageTitle();
-  const backBtn = '<button onclick="navGo(\'home\')" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>';
+  const backBtn = '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>';
   const controls = '<div class="flex gap-2 mb-3">' +
     '<button onclick="' + (loansKind === 'bank' ? 'openLoanEntryForm(\'addbank\',\'bank\',\'\')' : 'openAddPerson(\'' + loansKind + '\')') + '" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] font-bold text-[13px]">' + (loansKind === 'bank' ? t('addBankLoanBtn') : t('addPerson')) + '</button>' +
     '<button onclick="loansDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
@@ -3592,18 +3638,18 @@ function renderLoansView(){
       const ti = state.bankLoans.indexOf(e);
       const emi = Math.round(calcEmi(e.amount, e.rate, e.months));
       const paid = (e.emiPaid || []).filter(Boolean).length;
-      const sub = [e.date, (e.months ? e.months + ' ' + t('monthsLbl') : ''), (e.rate ? e.rate + '%' : ''), e.note].filter(Boolean).join(' • ');
+      const sub = [fmtDMY(e.date), (e.months ? e.months + ' ' + t('monthsLbl') : ''), (e.rate ? e.rate + '%' : ''), e.note].filter(Boolean).join(' • ');
       return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px] cursor-pointer" onclick="openEmiChecklist(' + ti + ')">🏦 ' + escA(e.bank || e.name || '') + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div>' +
         '<div class="text-[12px] text-[#8B7355]">' + fmt(emi) + '/mo • ' + paid + '/' + (e.months || 0) + ' Paid</div></div>' +
         '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] text-red-600">-' + fmt(e.amount) + '</div>' +
         '<div class="flex gap-1 flex-nowrap"><button onclick="openEmiChecklist(' + ti + ')" class="px-3 py-1.5 rounded-full bg-[#FFF7EA] text-[12px] font-bold whitespace-nowrap">✓ ' + t('emiChecklist') + '</button>' +
-        '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-        '<button onclick="deleteLoanEntry(\'bank:0:l:' + ti + '\')" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
+        '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
+        '<button onclick="deleteLoanEntry(\'bank:0:l:' + ti + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
     }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
     document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' + backBtn + '<h2 class="font-extrabold text-[18px] mb-3">' + title + '</h2>' +
       '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(loansSearch) + '" placeholder="' + escA(t('searchPeople')) + '" oninput="loansSearch=this.value;renderLoansView()" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
       controls + dates +
-      '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + title + ' • ' + (loansFrom || '…') + t('fromToSep') + (loansTo || '…') + ' • ' + loans.length + ' ' + t('entriesLbl') + ' • User, Date, Time included</div>' +
+      '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + title + ' • ' + (fmtDMY(loansFrom) || '…') + t('fromToSep') + (fmtDMY(loansTo) || '…') + ' • ' + loans.length + ' ' + t('entriesLbl') + ' • User, Date, Time included</div>' +
       '<div>' + rowsHtml + '</div></div>';
     document.querySelectorAll('[data-t]').forEach(el => { const k = el.getAttribute('data-t'); if(T[lang][k]) el.textContent = T[lang][k]; });
     return;
@@ -3619,7 +3665,7 @@ function renderLoansView(){
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' + backBtn + '<h2 class="font-extrabold text-[18px] mb-3">' + title + '</h2>' +
     '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(loansSearch) + '" placeholder="' + escA(t('searchPeople')) + '" oninput="loansSearch=this.value;renderLoansView()" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
     controls + dates +
-    '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + title + ' • ' + (loansFrom || '…') + t('fromToSep') + (loansTo || '…') + ' • ' + people.length + ' ' + t('peopleLbl') + ' • User, Date, Time included</div>' +
+    '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + title + ' • ' + (fmtDMY(loansFrom) || '…') + t('fromToSep') + (fmtDMY(loansTo) || '…') + ' • ' + people.length + ' ' + t('peopleLbl') + ' • User, Date, Time included</div>' +
     '<div>' + cardsHtml + '</div></div>';
   document.querySelectorAll('[data-t]').forEach(el => { const k = el.getAttribute('data-t'); if(T[lang][k]) el.textContent = T[lang][k]; });
 }
@@ -3634,13 +3680,13 @@ function renderPersonView(){
   const loanKey = personKind === 'given' ? 'given' : 'taken';
   const payKey = personKind === 'given' ? 'return' : 'repayment';
   const entryRow = (e, key) => {
-    const sub = [e.date, e.medium, (e.note || '').slice(0, 20)].filter(Boolean).join(' • ');
+    const sub = [fmtDMY(e.date), e.medium, (e.note || '').slice(0, 20)].filter(Boolean).join(' • ');
     const amt = (key.indexOf(':p:') >= 0) ? '+' + fmt(e.amount) : '-' + fmt(e.amount);
     const col = (key.indexOf(':p:') >= 0) ? 'text-green-700' : 'text-red-600';
-    return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(e.date || '') + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
+    return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(fmtDMY(e.date) || '') + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
       '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + col + '">' + amt + '</div>' +
-      '<div class="flex gap-1 flex-nowrap"><button onclick="editLoanEntry(\'' + key + '\')" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-      '<button onclick="deleteLoanEntry(\'' + key + '\')" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
+      '<div class="flex gap-1 flex-nowrap"><button onclick="editLoanEntry(\'' + key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
+      '<button onclick="deleteLoanEntry(\'' + key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
   };
   const loansHtml = loansShown.length ? loansShown.map((e, i) => {
     const realIdx = (person.loans || []).indexOf(e);
@@ -3651,11 +3697,11 @@ function renderPersonView(){
     return entryRow(e, payKey + ':' + personIdx + ':p:' + realIdx);
   }).join('') : '<div class="text-[13px] text-[#8B7355] py-3">' + t('noData') + '</div>';
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="openLoansPage(\'' + personKind + '\')" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
     '<div class="flex justify-between items-start gap-2"><div style="min-width:0"><div class="font-extrabold text-[20px]">' + escA(person.name || '') + '</div><div class="text-[13px] text-[#8B7355]">' + escA(person.mobile || '') + '</div></div>' +
-    '<div class="flex gap-1 shrink-0 flex-nowrap"><button onclick="openEditPerson()" class="px-3 py-1.5 rounded-full bg-[#E3F2FD] text-[12px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-    '<button onclick="deletePerson()" class="px-3 py-1.5 rounded-full bg-[#FDECEC] text-[12px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div>' +
-    '<div class="card p-4 mt-3" style="background:#E3F2FD"><div class="text-[13px] opacity-80">' + (personKind === 'given' ? t('youWillGet') : t('youWillPay')) + '</div>' +
+    '<div class="flex gap-1 shrink-0 flex-nowrap"><button onclick="openEditPerson()" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
+    '<button onclick="deletePerson()" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div>' +
+    '<div class="card p-4 mt-3" style="background:#C8E6C9"><div class="text-[13px] opacity-80">' + (personKind === 'given' ? t('youWillGet') : t('youWillPay')) + '</div>' +
     '<div class="font-extrabold text-[26px]">' + fmt(tot.balance) + '</div>' +
     '<div class="text-[12px] opacity-80 mt-1">' + t('totalLbl') + ': ' + fmt(tot.loans) + ' • ' + (personKind === 'given' ? t('returned') : t('repaid')) + ': ' + fmt(tot.pays) + '</div></div>' +
     '<div class="flex gap-2 mt-3">' +
@@ -3667,7 +3713,7 @@ function renderPersonView(){
       '<button onclick="openPersonPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
       '<button onclick="personSharePdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
     '</div>' +
-    '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + escA(person.name || '') + ' • ' + (personFrom || '…') + t('fromToSep') + (personTo || '…') + ' • ' + (loansShown.length + paysShown.length) + ' ' + t('entriesLbl') + ' • User, Date, Time included</div>' +
+    '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + escA(person.name || '') + ' • ' + (fmtDMY(personFrom) || '…') + t('fromToSep') + (fmtDMY(personTo) || '…') + ' • ' + (loansShown.length + paysShown.length) + ' ' + t('entriesLbl') + ' • User, Date, Time included</div>' +
     '<h3 class="font-extrabold text-[15px] mt-3 mb-1">' + t('loanEntries') + '</h3><div>' + loansHtml + '</div>' +
     '<h3 class="font-extrabold text-[15px] mt-4 mb-1">' + t('paymentsSec') + '</h3><div>' + paysHtml + '</div>' +
     '</div>';
@@ -3792,7 +3838,7 @@ function loansPdfHtml(){
 }
 
 function loansPdfText(){
-  if(loansKind === 'bank') return (state.bankLoans || []).map(e => (e.date || '') + ' | ' + (e.bank || e.name || '') + ' | ' + fmt(e.amount)).join('\n');
+  if(loansKind === 'bank') return (state.bankLoans || []).map(e => (fmtDMY(e.date) || '') + ' | ' + (e.bank || e.name || '') + ' | ' + fmt(e.amount)).join('\n');
   return loansPeopleFiltered().map(x => x.person.name + ' | ' + t('totalLbl') + ': ' + fmt(x.loans) + ' | ' + t('balanceLbl') + ': ' + fmt(x.balance)).join('\n');
 }
 function openLoansPdf(){
@@ -3860,8 +3906,8 @@ function personPdfText(){
   const person = arr[personIdx] || { name: '', loans: [], payments: [] };
   const tot = personTotals(person);
   const lines = [
-    ...(person.loans || []).map(e => (e.date || '') + ' | ' + t('addLoanTitle') + ' | ' + fmt(-e.amount)),
-    ...(person.payments || []).map(e => (e.date || '') + ' | ' + t('addPaymentTitle') + ' | ' + fmt(e.amount))
+    ...(person.loans || []).map(e => (fmtDMY(e.date) || '') + ' | ' + t('addLoanTitle') + ' | ' + fmt(-e.amount)),
+    ...(person.payments || []).map(e => (fmtDMY(e.date) || '') + ' | ' + t('addPaymentTitle') + ' | ' + fmt(e.amount))
   ];
   return (person.name || '') + '\n' + t('balanceLbl') + ': ' + fmt(tot.balance) + '\n' + lines.join('\n');
 }
@@ -3945,7 +3991,7 @@ function appGoBack(){
   if(sheetOpen('bazarSheet')){ closeBazar(); return true; }
   if(sheetOpen('addSheet')){ closeAddSheet(); return true; }
   if(currentView === 'history' && histCat){ histCat = ''; renderHistoryView(); return true; }
-  if(currentView === 'person'){ loansKind = personKind; currentView = 'loans'; render(); return true; }
+  if(navStack.length){ goBackStep(); return true; }
   if(currentView && currentView !== 'home'){ navGo('home'); return true; }
   return true; // Home, nothing open -> stay on Home, never exit the app
 }
@@ -5170,7 +5216,7 @@ function renderReportPages(o){
 
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-  const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+  const dateStr = dd+'-'+mm+'-'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
@@ -5485,7 +5531,7 @@ function renderPersonLoanPages(o){
 
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-  const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+  const dateStr = dd+'-'+mm+'-'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
@@ -5890,7 +5936,7 @@ function renderAllLoansPages(o){
 
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-  const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+  const dateStr = dd+'-'+mm+'-'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
@@ -6156,7 +6202,7 @@ function renderHistoryPages(o){
 
   const genDateObj = (o.generatedAt instanceof Date) ? o.generatedAt : new Date();
   const dd = String(genDateObj.getDate()).padStart(2,'0'); const mm = String(genDateObj.getMonth()+1).padStart(2,'0'); const yyyy = genDateObj.getFullYear();
-  const dateStr = dd+'/'+mm+'/'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+  const dateStr = dd+'-'+mm+'-'+yyyy; const timeStr = genDateObj.toLocaleTimeString((o.lang||'en')==='en'?'en-US':'bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
   const isEn = (o.lang||'en')==='en';
   let profileLinesCache=[]; try{ const lsN=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_name'))||''; const lsD=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_designation'))||''; const lsA=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_address'))||''; const lsM=(typeof localStorage!=='undefined' && localStorage.getItem('lifestyle_user_mobile'))||''; if(o.userName||lsN) profileLinesCache.push((isEn?'User: ':'ব্যবহারকারী: ')+(o.userName||lsN)); if(o.userDesignation||lsD) profileLinesCache.push((isEn?'Designation: ':'পদবী: ')+(o.userDesignation||lsD)); if(o.userAddress||lsA) profileLinesCache.push((isEn?'Address: ':'ঠিকানা: ')+(o.userAddress||lsA)); if(o.userMobile||lsM) profileLinesCache.push((isEn?'Mobile: ':'মোবাইল: ')+(o.userMobile||lsM)); }catch(e){}
   const devLines = ['💻 Developer','👤 Md. Abdus Salam','📍 Bantra, Kalaroa, Satkhira','📞 Mobile: +8801737265245','✉️ Email: salamwgp@gmail.com'];
@@ -7025,50 +7071,81 @@ const BD_DIVISIONS = [
   {id:'dhaka', bn:'ঢাকা', en:'Dhaka', districts:[
     {id:'dhaka', bn:'ঢাকা', en:'Dhaka', upazilas:['Dhamrai','Dohar','Keraniganj','Nawabganj','Savar']},
     {id:'gazipur', bn:'গাজীপুর', en:'Gazipur', upazilas:['Gazipur Sadar','Kaliakair','Kaliganj','Kapasia','Sreepur']},
+    {id:'kishoreganj', bn:'কিশোরগঞ্জ', en:'Kishoreganj', upazilas:['Kishoreganj Sadar','Austagram','Bajitpur','Bhairab','Hossainpur','Itna','Karimganj','Katiadi','Kuliarchar','Mithamain','Nikli','Pakundia','Tarail']},
+    {id:'manikganj', bn:'মানিকগঞ্জ', en:'Manikganj', upazilas:['Manikganj Sadar','Daulatpur','Ghior','Harirampur','Saturia','Shibalaya','Singair']},
+    {id:'munshiganj', bn:'মুন্সিগঞ্জ', en:'Munshiganj', upazilas:['Munshiganj Sadar','Gazaria','Lohajang','Sirajdikhan','Sreenagar','Tongibari']},
     {id:'narayanganj', bn:'নারায়ণগঞ্জ', en:'Narayanganj', upazilas:['Araihazar','Bandar','Narayanganj Sadar','Rupganj','Sonargaon']},
-    {id:'tangail', bn:'টাঙ্গাইল', en:'Tangail', upazilas:['Tangail Sadar','Kalihati','Madhupur','Mirzapur','Nagarpur']},
-    {id:'kishoreganj', bn:'কিশোরগঞ্জ', en:'Kishoreganj', upazilas:['Kishoreganj Sadar','Bhairab','Kuliarchar','Pakundia']},
+    {id:'narsingdi', bn:'নরসিংদী', en:'Narsingdi', upazilas:['Narsingdi Sadar','Belabo','Monohardi','Palash','Raipura','Shibpur']},
+    {id:'tangail', bn:'টাঙ্গাইল', en:'Tangail', upazilas:['Tangail Sadar','Basail','Bhuapur','Delduar','Dhanbari','Ghatail','Gopalpur','Kalihati','Madhupur','Mirzapur','Nagarpur','Sakhipur']},
+    {id:'faridpur', bn:'ফরিদপুর', en:'Faridpur', upazilas:['Faridpur Sadar','Alfadanga','Bhanga','Boalmari','Charbhadrasan','Madhukhali','Nagarkanda','Sadarpur','Saltha']},
+    {id:'gopalganj', bn:'গোপালগঞ্জ', en:'Gopalganj', upazilas:['Gopalganj Sadar','Kashiani','Kotalipara','Muksudpur','Tungipara']},
+    {id:'madaripur', bn:'মাদারীপুর', en:'Madaripur', upazilas:['Madaripur Sadar','Dasar','Kalkini','Rajoir','Shibchar']},
+    {id:'rajbari', bn:'রাজবাড়ী', en:'Rajbari', upazilas:['Rajbari Sadar','Baliakandi','Goalandaghat','Kalukhali','Pangsha']},
+    {id:'shariatpur', bn:'শরীয়তপুর', en:'Shariatpur', upazilas:['Shariatpur Sadar','Bhedarganj','Damudya','Gosairhat','Naria','Zajira']},
   ]},
   {id:'chattogram', bn:'চট্টগ্রাম', en:'Chattogram', districts:[
-    {id:'chattogram', bn:'চট্টগ্রাম', en:'Chattogram', upazilas:['Anwara','Banshkhali','Boalkhali','Patiya','Rangunia']},
-    {id:'coxsbazar', bn:'কক্সবাজার', en:"Cox's Bazar", upazilas:['Coxs Bazar Sadar','Chakaria','Maheshkhali','Teknaf','Ukhia']},
-    {id:'cumilla', bn:'কুমিল্লা', en:'Cumilla', upazilas:['Cumilla Sadar','Chandina','Daudkandi','Laksam','Muradnagar']},
-    {id:'feni', bn:'ফেনী', en:'Feni', upazilas:['Feni Sadar','Chhagalnaiya','Daganbhuiyan','Parshuram','Sonagazi']},
+    {id:'chattogram', bn:'চট্টগ্রাম', en:'Chattogram', upazilas:['Anwara','Banshkhali','Boalkhali','Chandanaish','Fatikchhari','Hathazari','Karnaphuli','Lohagara','Mirsarai','Patiya','Rangunia','Raozan','Sandwip','Satkania','Sitakunda']},
+    {id:'coxsbazar', bn:'কক্সবাজার', en:"Cox's Bazar", upazilas:['Chakaria','Coxs Bazar Sadar','Eidgaon','Kutubdia','Maheshkhali','Pekua','Ramu','Teknaf','Ukhia']},
+    {id:'cumilla', bn:'কুমিল্লা', en:'Cumilla', upazilas:['Barura','Brahmanpara','Burichang','Chandina','Chauddagram','Cumilla Adarsha Sadar','Cumilla Sadar Dakshin','Daudkandi','Debidwar','Homna','Laksam','Lalmai','Meghna','Monoharganj','Muradnagar','Nangalkot','Titas']},
+    {id:'brahmanbaria', bn:'ব্রাহ্মণবাড়িয়া', en:'Brahmanbaria', upazilas:['Brahmanbaria Sadar','Akhaura','Ashuganj','Bancharampur','Bijoynagar','Kasba','Nabinagar','Nasirnagar','Sarail']},
+    {id:'chandpur', bn:'চাঁদপুর', en:'Chandpur', upazilas:['Chandpur Sadar','Faridganj','Haimchar','Hajiganj','Kachua','Matlab Dakshin','Matlab Uttar','Shahrasti']},
+    {id:'feni', bn:'ফেনী', en:'Feni', upazilas:['Feni Sadar','Chhagalnaiya','Daganbhuiyan','Fulgazi','Parshuram','Sonagazi']},
+    {id:'khagrachhari', bn:'খাগড়াছড়ি', en:'Khagrachhari', upazilas:['Khagrachhari Sadar','Dighinala','Guimara','Lakshmichhari','Mahalchhari','Manikchhari','Matiranga','Panchhari','Ramgarh']},
+    {id:'lakshmipur', bn:'লক্ষ্মীপুর', en:'Lakshmipur', upazilas:['Lakshmipur Sadar','Kamalnagar','Raipur','Ramganj','Ramgati']},
+    {id:'noakhali', bn:'নোয়াখালী', en:'Noakhali', upazilas:['Noakhali Sadar','Begumganj','Chatkhil','Companiganj','Hatiya','Kabirhat','Senbagh','Sonaimuri','Subarnachar']},
+    {id:'rangamati', bn:'রাঙামাটি', en:'Rangamati', upazilas:['Rangamati Sadar','Baghaichhari','Barkal','Belaichhari','Juraichhari','Kaptai','Kawkhali','Langadu','Naniarchar','Rajasthali']},
+    {id:'bandarban', bn:'বান্দরবান', en:'Bandarban', upazilas:['Bandarban Sadar','Alikadam','Lama','Naikhongchhari','Rowangchhari','Ruma','Thanchi']},
   ]},
   {id:'rajshahi', bn:'রাজশাহী', en:'Rajshahi', districts:[
-    {id:'rajshahi', bn:'রাজশাহী', en:'Rajshahi', upazilas:['Rajshahi Sadar','Bagha','Charghat','Puthia','Tanore']},
-    {id:'bogra', bn:'বগুড়া', en:'Bogura', upazilas:['Bogura Sadar','Adamdighi','Dhunat','Gabtali','Sherpur']},
-    {id:'pabna', bn:'পাবনা', en:'Pabna', upazilas:['Pabna Sadar','Bera','Bhangura','Chatmohar','Sujanagar']},
+    {id:'rajshahi', bn:'রাজশাহী', en:'Rajshahi', upazilas:['Bagha','Bagmara','Charghat','Durgapur','Godagari','Mohanpur','Paba','Puthia','Tanore']},
+    {id:'bogra', bn:'বগুড়া', en:'Bogura', upazilas:['Bogura Sadar','Adamdighi','Dhunat','Dhupchanchia','Gabtali','Kahaloo','Nandigram','Sariakandi','Shajahanpur','Sherpur','Shibganj','Sonatola']},
+    {id:'chapainawabganj', bn:'চাঁপাইনবাবগঞ্জ', en:'Chapainawabganj', upazilas:['Chapainawabganj Sadar','Bholahat','Gomostapur','Nachole','Shibganj']},
+    {id:'joypurhat', bn:'জয়পুরহাট', en:'Joypurhat', upazilas:['Joypurhat Sadar','Akkelpur','Kalai','Khetlal','Panchbibi']},
+    {id:'naogaon', bn:'নওগাঁ', en:'Naogaon', upazilas:['Naogaon Sadar','Atrai','Badalgachhi','Dhamoirhat','Manda','Mahadebpur','Niamatpur','Patnitala','Porsha','Raninagar','Sapahar']},
+    {id:'natore', bn:'নাটোর', en:'Natore', upazilas:['Natore Sadar','Bagatipara','Baraigram','Gurudaspur','Lalpur','Singra','Naldanga']},
+    {id:'pabna', bn:'পাবনা', en:'Pabna', upazilas:['Pabna Sadar','Atgharia','Bera','Bhangura','Chatmohar','Faridpur','Ishwardi','Santhia','Sujanagar']},
+    {id:'sirajganj', bn:'সিরাজগঞ্জ', en:'Sirajganj', upazilas:['Sirajganj Sadar','Belkuchi','Chauhali','Kamarkhanda','Kazipur','Raiganj','Shahjadpur','Tarash','Ullapara']},
   ]},
   {id:'khulna', bn:'খুলনা', en:'Khulna', districts:[
-    {id:'khulna', bn:'খুলনা', en:'Khulna', upazilas:['Khulna Sadar','Batiaghata','Dacope','Dumuria','Rupsa']},
-    {id:'bagerhat', bn:'বাগেরহাট', en:'Bagerhat', upazilas:['Bagerhat Sadar','Chitalmari','Fakirhat','Kachua','Mongla']},
-    {id:'jashore', bn:'যশোর', en:'Jashore', upazilas:['Jashore Sadar','Abhaynagar','Bagherpara','Chaugachha','Keshabpur']},
-    {id:'satkhira', bn:'সাতক্ষীরা', en:'Satkhira', upazilas:['Satkhira Sadar','Assasuni','Debhata','Kalaroa','Tala']},
+    {id:'khulna', bn:'খুলনা', en:'Khulna', upazilas:['Batiaghata','Dacope','Dumuria','Dighalia','Fultala','Koyra','Paikgachha','Phultala','Rupsa','Terokhada']},
+    {id:'bagerhat', bn:'বাগেরহাট', en:'Bagerhat', upazilas:['Bagerhat Sadar','Chitalmari','Fakirhat','Kachua','Mollahat','Mongla','Morrelganj','Rampal','Sarankhola']},
+    {id:'chuadanga', bn:'চুয়াডাঙ্গা', en:'Chuadanga', upazilas:['Chuadanga Sadar','Alamdanga','Damurhuda','Jibannagar']},
+    {id:'jashore', bn:'যশোর', en:'Jashore', upazilas:['Jashore Sadar','Abhaynagar','Bagherpara','Chaugachha','Jhikargachha','Keshabpur','Manirampur','Sharsha']},
+    {id:'jhenaidah', bn:'ঝিনাইদহ', en:'Jhenaidah', upazilas:['Jhenaidah Sadar','Harinakunda','Kaliganj','Kotchandpur','Maheshpur','Shailkupa']},
+    {id:'kushtia', bn:'কুষ্টিয়া', en:'Kushtia', upazilas:['Kushtia Sadar','Bheramara','Daulatpur','Khoksa','Kumarkhali','Mirpur']},
+    {id:'magura', bn:'মাগুরা', en:'Magura', upazilas:['Magura Sadar','Mohammadpur','Shalikha','Sreepur']},
+    {id:'meherpur', bn:'মেহেরপুর', en:'Meherpur', upazilas:['Meherpur Sadar','Gangni','Mujibnagar']},
+    {id:'narail', bn:'নড়াইল', en:'Narail', upazilas:['Narail Sadar','Kalia','Lohagara']},
+    {id:'satkhira', bn:'সাতক্ষীরা', en:'Satkhira', upazilas:['Satkhira Sadar','Assasuni','Debhata','Kalaroa','Kaliganj','Shyamnagar','Tala']},
   ]},
   {id:'barishal', bn:'বরিশাল', en:'Barishal', districts:[
-    {id:'barishal', bn:'বরিশাল', en:'Barishal', upazilas:['Barishal Sadar','Agailjhara','Babuganj','Bakerganj','Banaripara']},
-    {id:'bhola', bn:'ভোলা', en:'Bhola', upazilas:['Bhola Sadar','Borhanuddin','Char Fasson','Daulatkhan','Lalmohan']},
-    {id:'pirojpur', bn:'পিরোজপুর', en:'Pirojpur', upazilas:['Pirojpur Sadar','Bhandaria','Kawkhali','Mathbaria','Nazirpur']},
-    {id:'patuakhali', bn:'পটুয়াখালী', en:'Patuakhali', upazilas:['Patuakhali Sadar','Bauphal','Dashmina','Galachipa','Kalapara']},
-    {id:'barguna', bn:'বরগুনা', en:'Barguna', upazilas:['Barguna Sadar','Amtali','Bamna','Betagi','Patharghata']},
+    {id:'barishal', bn:'বরিশাল', en:'Barishal', upazilas:['Barishal Sadar','Agailjhara','Babuganj','Bakerganj','Banaripara','Gournadi','Hizla','Mehendiganj','Muladi','Wazirpur']},
+    {id:'barguna', bn:'বরগুনা', en:'Barguna', upazilas:['Barguna Sadar','Amtali','Bamna','Betagi','Patharghata','Taltali']},
+    {id:'bhola', bn:'ভোলা', en:'Bhola', upazilas:['Bhola Sadar','Borhanuddin','Char Fasson','Daulatkhan','Lalmohan','Manpura','Tazumuddin']},
     {id:'jhalokati', bn:'ঝালকাঠি', en:'Jhalokati', upazilas:['Jhalokati Sadar','Kathalia','Nalchity','Rajapur']},
+    {id:'patuakhali', bn:'পটুয়াখালী', en:'Patuakhali', upazilas:['Patuakhali Sadar','Bauphal','Dashmina','Dumki','Galachipa','Kalapara','Mirzaganj','Rangabali']},
+    {id:'pirojpur', bn:'পিরোজপুর', en:'Pirojpur', upazilas:['Pirojpur Sadar','Bhandaria','Kawkhali','Mathbaria','Nazirpur','Nesarabad','Zianagar']},
   ]},
   {id:'sylhet', bn:'সিলেট', en:'Sylhet', districts:[
-    {id:'sylhet', bn:'সিলেট', en:'Sylhet', upazilas:['Sylhet Sadar','Beanibazar','Bishwanath','Companiganj','Golapganj']},
-    {id:'moulvibazar', bn:'মৌলভীবাজার', en:'Moulvibazar', upazilas:['Moulvibazar Sadar','Barlekha','Kamalganj','Kulaura','Sreemangal']},
-    {id:'habiganj', bn:'হবিগঞ্জ', en:'Habiganj', upazilas:['Habiganj Sadar','Ajmiriganj','Bahubal','Baniachong','Chunarughat']},
-    {id:'sunamganj', bn:'সুনামগঞ্জ', en:'Sunamganj', upazilas:['Sunamganj Sadar','Bishwamvarpur','Chhatak','Derai','Jagannathpur']},
+    {id:'sylhet', bn:'সিলেট', en:'Sylhet', upazilas:['Sylhet Sadar','Balaganj','Beanibazar','Bishwanath','Companiganj','Dakshin Surma','Fenchuganj','Golapganj','Gowainghat','Jaintiapur','Kanaighat','Osmani Nagar','Zakiganj']},
+    {id:'habiganj', bn:'হবিগঞ্জ', en:'Habiganj', upazilas:['Habiganj Sadar','Ajmiriganj','Bahubal','Baniachong','Chunarughat','Lakhai','Madhabpur','Nabiganj','Shayestaganj']},
+    {id:'moulvibazar', bn:'মৌলভীবাজার', en:'Moulvibazar', upazilas:['Moulvibazar Sadar','Barlekha','Juri','Kamalganj','Kulaura','Rajnagar','Sreemangal']},
+    {id:'sunamganj', bn:'সুনামগঞ্জ', en:'Sunamganj', upazilas:['Sunamganj Sadar','Bishwamvarpur','Chhatak','Derai','Dharamapasha','Dowarabazar','Jagannathpur','Jamalganj','Shalla','Shantiganj','Tahirpur']},
   ]},
   {id:'rangpur', bn:'রংপুর', en:'Rangpur', districts:[
-    {id:'rangpur', bn:'রংপুর', en:'Rangpur', upazilas:['Rangpur Sadar','Badarganj','Gangachara','Kaunia','Pirgachha']},
-    {id:'dinajpur', bn:'দিনাজপুর', en:'Dinajpur', upazilas:['Dinajpur Sadar','Birampur','Birganj','Chirirbandar','Phulbari']},
-    {id:'kurigram', bn:'কুড়িগ্রাম', en:'Kurigram', upazilas:['Kurigram Sadar','Bhurungamari','Char Rajibpur','Chilmari','Nageshwari']},
+    {id:'rangpur', bn:'রংপুর', en:'Rangpur', upazilas:['Rangpur Sadar','Badarganj','Gangachara','Kaunia','Mithapukur','Pirgachha','Pirganj','Taraganj']},
+    {id:'dinajpur', bn:'দিনাজপুর', en:'Dinajpur', upazilas:['Dinajpur Sadar','Birampur','Birganj','Biral','Bochaganj','Chirirbandar','Fulbari','Ghoraghat','Hakimpur','Kaharole','Khansama','Nawabganj','Parbatipur']},
+    {id:'gaibandha', bn:'গাইবান্ধা', en:'Gaibandha', upazilas:['Gaibandha Sadar','Fulchhari','Gobindaganj','Palashbari','Sadullapur','Saghata','Sundarganj']},
+    {id:'kurigram', bn:'কুড়িগ্রাম', en:'Kurigram', upazilas:['Kurigram Sadar','Bhurungamari','Char Rajibpur','Chilmari','Nageshwari','Phulbari','Rajarhat','Rowmari','Ulipur']},
+    {id:'lalmonirhat', bn:'লালমনিরহাট', en:'Lalmonirhat', upazilas:['Lalmonirhat Sadar','Aditmari','Hatibandha','Kaliganj','Patgram']},
+    {id:'nilphamari', bn:'নীলফামারী', en:'Nilphamari', upazilas:['Nilphamari Sadar','Dimla','Domar','Jaldhaka','Kishoreganj','Saidpur']},
+    {id:'panchagarh', bn:'পঞ্চগড়', en:'Panchagarh', upazilas:['Panchagarh Sadar','Atwari','Boda','Debiganj','Tetulia']},
+    {id:'thakurgaon', bn:'ঠাকুরগাঁও', en:'Thakurgaon', upazilas:['Thakurgaon Sadar','Baliadangi','Haripur','Pirganj','Ranisankail']},
   ]},
   {id:'mymensingh', bn:'ময়মনসিংহ', en:'Mymensingh', districts:[
-    {id:'mymensingh', bn:'ময়মনসিংহ', en:'Mymensingh', upazilas:['Mymensingh Sadar','Bhaluka','Gaffargaon','Trishal','Muktagachha']},
-    {id:'jamalpur', bn:'জামালপুর', en:'Jamalpur', upazilas:['Jamalpur Sadar','Bakshiganj','Dewanganj','Islampur','Madarganj']},
-    {id:'netrokona', bn:'নেত্রকোণা', en:'Netrokona', upazilas:['Netrokona Sadar','Atpara','Barhatta','Durgapur','Kalmakanda']},
+    {id:'mymensingh', bn:'ময়মনসিংহ', en:'Mymensingh', upazilas:['Mymensingh Sadar','Bhaluka','Dhobaura','Fulbaria','Gaffargaon','Gauripur','Haluaghat','Ishwarganj','Muktagachha','Nandail','Phulpur','Tarakanda','Trishal']},
+    {id:'jamalpur', bn:'জামালপুর', en:'Jamalpur', upazilas:['Jamalpur Sadar','Bakshiganj','Dewanganj','Islampur','Madarganj','Melandaha','Sarishabari']},
+    {id:'netrokona', bn:'নেত্রকোণা', en:'Netrokona', upazilas:['Netrokona Sadar','Atpara','Barhatta','Durgapur','Kalmakanda','Kendua','Khaliajuri','Madan','Mohanganj','Purbadhala']},
     {id:'sherpur', bn:'শেরপুর', en:'Sherpur', upazilas:['Sherpur Sadar','Jhenaigati','Nakla','Nalitabari','Sreebardi']},
   ]},
 ];
@@ -7528,7 +7605,7 @@ function MarketSurveyManager({t, lang, setToast}){
           surveyList.map(p=> h('div', {key:p.id, className:'flex items-center justify-between bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2 '+(editingId===p.id?'border-[#C9A86A] bg-[#FFF6E8]':'')},
             h('div', {className:'flex-1 min-w-0 cursor-pointer', onClick:()=>loadPerson(p.id)},
               h('p', {className:'font-bold text-[12px] truncate'}, p.ownerName||p.businessName||'Unnamed'),
-              h('p', {className:'text-[10px] text-[#8B7355] truncate'}, (p.mobileNo||'')+' • '+(p.businessName||'')+' • '+(p.updatedAt? new Date(p.updatedAt).toLocaleDateString() : ''))
+              h('p', {className:'text-[10px] text-[#8B7355] truncate'}, (p.mobileNo||'')+' • '+(p.businessName||'')+' • '+(p.updatedAt? fmtDMY(p.updatedAt) : ''))
             ),
             h('div', {className:'flex gap-1.5 ml-2'},
               h('button', {onClick:()=>loadPerson(p.id), className:'px-2.5 py-1 rounded-full bg-white border border-[#F3E8D3] text-[10px] font-bold'}, 'Load'),
@@ -8117,26 +8194,26 @@ function TravelManager({t, lang, setToast, onClose}){
           filteredGroups.map(g=>
             h('div', {key:g.id, className:'border border-[#F3E8D3] rounded-[12px] overflow-hidden'},
               h('button', {onClick:()=>setOpenGroups(prev=>({...prev, [g.id]:!prev[g.id]})), className:'w-full flex justify-between items-center p-4 py-4 bg-[#FFFEF7]'},
-                h('span', {className:'text-[21px] font-extrabold leading-tight'}, g.icon+' '+g.name+' ('+g.items.filter(it=>selected.includes(it.id)).length+'/'+g.items.length+')'),
+                h('span', {className:'text-[18px] font-extrabold leading-tight'}, g.icon+' '+g.name+' ('+g.items.filter(it=>selected.includes(it.id)).length+'/'+g.items.length+')'),
                 h('span', {className:'text-[11px]'}, openGroups[g.id] ? '▲' : '▼')
               ),
-              openGroups[g.id] ? h('div', {className:'p-3 grid grid-cols-1 gap-3 bg-white'},
+              openGroups[g.id] ? h('div', {className:'p-3 grid grid-cols-1 gap-1 bg-white'},
                 g.items.map(it=>{
                   const sel=selected.includes(it.id);
                   if(it.id.indexOf('custom:')===0){
-                    return h('div', {key:it.id, className:'flex items-center gap-2 mb-1'},
-                      h('button', {onClick:()=>handleSelect(it.id), className:'flex-1 flex items-center gap-3 p-3 py-3 rounded-[12px] border-2 text-left transition-colors '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
+                    return h('div', {key:it.id, className:'flex items-center gap-2'},
+                      h('button', {onClick:()=>handleSelect(it.id), className:'flex-1 flex items-center gap-2 p-2 py-1.5 rounded-[12px] border-2 text-left transition-colors '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
                         h('div', {className:'w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 '+(sel ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, h('span', {className:'text-white text-[12px] font-bold'}, sel ? '✓' : '✕')),
                         h('span', {className:'text-[18px]'}, it.icon),
-                        h('span', {className:'text-[14px] font-extrabold flex-1 leading-relaxed py-1'}, it.label)
+                        h('span', {className:'text-[16px] font-extrabold flex-1 leading-relaxed py-0'}, it.label)
                       ),
                       h('button', {onClick:()=>deleteCustomItem(it.id), className:'shrink-0 w-[38px] h-[38px] rounded-[10px] bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[15px] font-bold'}, '✕')
                     );
                   }
-                  return h('button', {key:it.id, onClick:()=>handleSelect(it.id), className:'flex items-center gap-3 p-3 py-3 rounded-[12px] border-2 text-left transition-colors mb-1 '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
+                  return h('button', {key:it.id, onClick:()=>handleSelect(it.id), className:'flex items-center gap-2 p-2 py-1.5 rounded-[12px] border-2 text-left transition-colors '+(sel ? 'bg-[#E8F5E9] border-[#2E7D32] text-[#1B4D3E]' : 'bg-[#FFEBEE] border-[#FFCDD2] text-[#B71C1C]')},
                     h('div', {className:'w-[24px] h-[24px] rounded-[6px] flex items-center justify-center shrink-0 '+(sel ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, h('span', {className:'text-white text-[12px] font-bold'}, sel ? '✓' : '✕')),
                     h('span', {className:'text-[18px]'}, it.icon),
-                    h('span', {className:'text-[14px] font-extrabold flex-1 leading-relaxed py-1'}, it.label)
+                    h('span', {className:'text-[16px] font-extrabold flex-1 leading-relaxed py-0'}, it.label)
                   );
                 }).concat(g.id==='others' ? [h('div', {key:'others-note-box', className:'mt-4 p-4 bg-[#FFF8E1] rounded-[14px] border-2 border-[#FFE082]'},
                   h('label', {className:'text-[14px] font-extrabold text-[#5D4037] mb-2 block'}, '📝 Write other travel items / notes'),
