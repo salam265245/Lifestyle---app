@@ -526,7 +526,7 @@ function mergeById(localArr, cloudArr){
     if(!it || !it.id) return;
     const prev = map.get(it.id);
     if(!prev){ map.set(it.id, it); return; }
-    const a = Date.parse(prev.updatedAt || '') || 0, b = Date.parse(it.updatedAt || '') || 0;
+    const a = Date.parse(prev.updatedAt || prev.createdAt || '') || 0, b = Date.parse(it.updatedAt || it.createdAt || '') || 0;
     if(b >= a) map.set(it.id, it); // newer wins; tie -> local wins
   });
   return Array.from(map.values());
@@ -576,7 +576,7 @@ function mergeProfile(lp, cp){
   return out;
 }
 function mergeCloudState(local, cloud){
-  if(!cloud) return { transactions: local.transactions || [], peopleGiven: local.peopleGiven || [], peopleTaken: local.peopleTaken || [], bankLoans: local.bankLoans || [], bazar: local.bazar || [], profile: local.profile || {}, deleted: local.deleted || [] };
+  if(!cloud) return { transactions: local.transactions || [], peopleGiven: local.peopleGiven || [], peopleTaken: local.peopleTaken || [], bankLoans: local.bankLoans || [], bazar: local.bazar || [], profile: local.profile || {}, deleted: local.deleted || [], dailyTasks: local.dailyTasks || [], travelList: local.travelList || [] };
   const del = new Set([...(local.deleted || []).map(d => d.id), ...(cloud.deleted || []).map(d => d.id)]);
     getRestoreIds().forEach(id => del.delete(id));
   const dropDeleted = arr => (arr || []).filter(it => it && it.id && !del.has(it.id));
@@ -587,6 +587,8 @@ function mergeCloudState(local, cloud){
     bankLoans: dropDeleted(mergeById(local.bankLoans || [], cloud.bankLoans || [])),
     bazar: dropDeleted(mergeById(local.bazar || [], cloud.bazar || [])),
     profile: mergeProfile(local.profile || {}, cloud.profile || {}),
+    dailyTasks: dropDeleted(mergeById(local.dailyTasks || [], cloud.dailyTasks || [])),
+    travelList: dropDeleted(mergeById(local.travelList || [], cloud.travelList || [])),
     deleted: Array.from(del).map(id => ({ id: id, at: new Date().toISOString() }))
   };
   [merged.peopleGiven, merged.peopleTaken].forEach(list => list.forEach(pr => {
@@ -596,6 +598,9 @@ function mergeCloudState(local, cloud){
   return merged;
 }
 function applyMerged(m){
+  try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(m.dailyTasks || [])); }catch(e){}
+  try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(m.travelList || [])); }catch(e){}
+  try{ window.dispatchEvent(new CustomEvent('lifestyle-cloud-routine', { detail: { dailyTasks: m.dailyTasks || [], travelList: m.travelList || [] } })); }catch(e){}
   state.transactions = m.transactions || [];
   state.peopleGiven = m.peopleGiven || [];
   state.peopleTaken = m.peopleTaken || [];
@@ -670,7 +675,10 @@ async function cloudSync(mode, quiet){
   cloudBusy = false;
 }
 /* ---------- Cloud sync (Gmail login = same data on every device) ---------- */
-function cloudDocData(){ return { transactions: state.transactions, peopleGiven: state.peopleGiven, peopleTaken: state.peopleTaken, bankLoans: state.bankLoans, bazar: bazar, profile: profile, deleted: state.deleted }; }
+function readRoutineLS(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; } }
+function routineLocal(){ return { dailyTasks: readRoutineLS('lifestyle_daily_tasks'), travelList: readRoutineLS('lifestyle_travel_list') }; }
+function queueRoutineCloudUpload(){ if(!applyingCloud) queueCloudUpload(); }
+function cloudDocData(){ var rt = routineLocal(); return { transactions: state.transactions, peopleGiven: state.peopleGiven, peopleTaken: state.peopleTaken, bankLoans: state.bankLoans, bazar: bazar, profile: profile, deleted: state.deleted, dailyTasks: rt.dailyTasks, travelList: rt.travelList }; }
 function queueCloudUpload(){
   if(!cloudUser) return;
   if(cloudUploadTimer) clearTimeout(cloudUploadTimer);
@@ -3683,7 +3691,7 @@ function renderPersonView(){
     const sub = [fmtDMY(e.date), e.medium, (e.note || '').slice(0, 20)].filter(Boolean).join(' • ');
     const amt = (key.indexOf(':p:') >= 0) ? '+' + fmt(e.amount) : '-' + fmt(e.amount);
     const col = (key.indexOf(':p:') >= 0) ? 'text-green-700' : 'text-red-600';
-    return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(fmtDMY(e.date) || '') + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
+    return '<div class="flex gap-2 py-2.5 mb-2 bg-white border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(fmtDMY(e.date) || '') + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
       '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + col + '">' + amt + '</div>' +
       '<div class="flex gap-1 flex-nowrap"><button onclick="editLoanEntry(\'' + key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
       '<button onclick="deleteLoanEntry(\'' + key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
@@ -6692,6 +6700,10 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
   const [officeGroupsOpen, setOfficeGroupsOpen] = React.useState({general:true});
   const [customOfficeTask, setCustomOfficeTask] = React.useState('');
   const [whereVisit, setWhereVisit] = React.useState('');
+   const [personalNote, setPersonalNote] = React.useState('');
+   const [personalItems, setPersonalItems] = React.useState([]);
+   const [personalSaved, setPersonalSaved] = React.useState(false);
+   const personalNoteRef = React.useRef(null);
   const [visitPurpose, setVisitPurpose] = React.useState('');
   const [editingDailyTaskId, setEditingDailyTaskId] = React.useState(null);
 
@@ -6700,7 +6712,8 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
   const dailyTasks = propDailyTasks || internalDailyTasks;
   const setDailyTasks = propSetDailyTasks || setInternalDailyTasks;
 
-  React.useEffect(()=>{ try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(dailyTasks)); }catch(e){} }, [dailyTasks]);
+  React.useEffect(()=>{ var prevLS = null; try{ prevLS = localStorage.getItem('lifestyle_daily_tasks'); }catch(e){} try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(dailyTasks)); }catch(e){} if(prevLS !== null && prevLS !== JSON.stringify(dailyTasks)){ try{ if(typeof queueRoutineCloudUpload==='function') queueRoutineCloudUpload(); }catch(e){} } }, [dailyTasks]);
+   React.useEffect(()=>{ function onCloudRoutine(ev){ try{ var d = (ev && ev.detail) || {}; if(Array.isArray(d.dailyTasks)) setDailyTasks(d.dailyTasks); }catch(e){} } window.addEventListener('lifestyle-cloud-routine', onCloudRoutine); return function(){ window.removeEventListener('lifestyle-cloud-routine', onCloudRoutine); }; }, []);
 
   // LIVE DATE: every time component mounts or tab changes, set to today
   React.useEffect(()=>{ 
@@ -6732,6 +6745,16 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
   });
   function toggleOfficeItem(id){ setOfficeSelected(prev=> prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); }
   function toggleOfficeGroup(gid){ setOfficeGroupsOpen(prev=> ({...prev, [gid]: !prev[gid]})); }
+   function addPersonalItem(){
+     const txt = (personalNote || '').trim();
+     if(!txt) return;
+     setPersonalItems(prev=> [...prev, {id: (typeof uid==='function' ? uid() : Date.now().toString()+Math.random().toString(36).slice(2,6)), text: txt, done:false}]);
+     setPersonalNote('');
+     setPersonalSaved(false);
+     try{ if(personalNoteRef && personalNoteRef.current){ personalNoteRef.current.style.height='auto'; } }catch(e){}
+   }
+   function togglePersonalItem(id){ setPersonalItems(prev=> prev.map(it=> it.id===id ? {...it, done:!it.done} : it)); setPersonalSaved(false); }
+   function removePersonalItem(id){ setPersonalItems(prev=> prev.filter(it=> it.id!==id)); setPersonalSaved(false); }
   const filteredOfficeGroups = OFFICE_GROUPS.map(g=>{
     if(!officeSearch) return g;
     const s = officeSearch.toLowerCase();
@@ -6749,11 +6772,16 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
       setToast && setToast(lang==='en' ? 'Please enter visit location' : 'ভিজিটের স্থান লিখুন');
       return;
     }
-    if(activeTab==='office' && officeSelected.length===0 && !customOfficeTask.trim()){
+    if(activeTab==='personal' && personalItems.length===0 && !personalNote.trim()){
+       setToast && setToast(lang==='en' ? 'Please write a personal note' : 'পার্সোনাল নোট লিখুন');
+       return;
+     }
+     if(activeTab==='office' && officeSelected.length===0 && !customOfficeTask.trim()){
       setToast && setToast(lang==='en' ? 'Please select office tasks or enter custom task' : 'অফিস টাস্ক সিলেক্ট করুন');
       return;
     }
     const isOffice = activeTab==='office';
+     const isPersonal = activeTab==='personal';
     const isVisit = activeTab==='visit';
     const newTask = {
       id: editingDailyTaskId || (typeof uid==='function' ? uid() : Date.now().toString()),
@@ -6767,13 +6795,15 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
       timeMinute: minute,
       ampm: amPm,
       time: hour+':'+minute+' '+amPm,
-      subject: isOffice ? (officeSelected.join(', ') || customOfficeTask) : isVisit ? (whereVisit || visitPurpose) : (taskTitle || selectedSubjects.join(', ') || personName),
-      subjects: isOffice ? officeSelected : selectedSubjects,
+      subject: isPersonal ? (personalItems.map(it=>it.text).join(', ') || personalNote) : isOffice ? (officeSelected.join(', ') || customOfficeTask) : isVisit ? (whereVisit || visitPurpose) : (taskTitle || selectedSubjects.join(', ') || personName),
+      subjects: isPersonal ? personalItems.map(it=>it.text) : isOffice ? officeSelected : selectedSubjects,
+       personalItems: isPersonal ? personalItems : [],
       whereVisit: isVisit ? whereVisit : '',
       visitPurpose: isVisit ? visitPurpose : '',
       customTask: isOffice ? customOfficeTask : '',
-      note: notes,
+      note: isPersonal ? personalItems.map(it=> (it.done ? '✓ ' : '') + it.text).join('\n') : notes,
       done: false,
+      updatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };
     if(editingDailyTaskId){
@@ -6783,9 +6813,10 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
       setDailyTasks(prev=> [newTask, ...prev]);
       setToast && setToast('Task Saved');
     }
+    if(isPersonal) setPersonalSaved(true);
     setEditingDailyTaskId(null);
     // Clear form after save but keep live date
-    // setPersonName(''); setPhone(''); setTaskTitle(''); setNotes(''); setSelectedSubjects([]); setOfficeSelected([]); setCustomOfficeTask(''); setWhereVisit(''); setVisitPurpose('');
+    // setPersonName(''); setPhone(''); setTaskTitle(''); setNotes(''); setSelectedSubjects([]); setOfficeSelected([]); setCustomOfficeTask(''); setWhereVisit(''); setVisitPurpose(''); setPersonalNote(''); setPersonalItems([]); setPersonalSaved(false);
     const t = today();
     setDailyDate(t);
     setDateInput(t);
@@ -6820,7 +6851,11 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
     setAmPm(task.ampm || 'PM');
     setTaskTitle(task.subject || '');
     setNotes(task.note || '');
-    if(task.category==='call'){
+    if(task.category==='personal'){
+      setPersonalItems(task.personalItems || (task.subject ? String(task.subject).split(', ').filter(Boolean).map(txt=>({id:(typeof uid==='function'?uid():Date.now().toString()+Math.random().toString(36).slice(2,6)), text:txt.trim(), done:false})) : []));
+      setPersonalNote('');
+      setPersonalSaved(false);
+    } else if(task.category==='call'){
       setSelectedSubjects(task.subjects || []);
     } else if(task.category==='office'){
       setOfficeSelected(task.subjects || []);
@@ -6898,19 +6933,20 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
     ),
     h('div', {className:'p-4 border-b border-[#F3E8D3]/50 bg-[#FFFEF7] mt-3'},
       h('h2', {className:'text-[20px] font-bold text-[#1A1A1A] flex items-center gap-3'},
-        h('span', {className:'w-10 h-10 rounded-full bg-[#F5F1E8] flex items-center justify-center text-[18px]'}, activeTab==='call' ? '📞' : activeTab==='visit' ? '📍' : '🏢'),
-        h('span', {style:{color:'#1A1A1A'}}, activeTab==='call' ? 'Add Call Task' : activeTab==='visit' ? 'Add Visit Task' : 'Add Office Work'),
+        h('span', {className:'w-10 h-10 rounded-full bg-[#F5F1E8] flex items-center justify-center text-[18px]'}, activeTab==='call' ? '📞' : activeTab==='visit' ? '📍' : activeTab==='personal' ? '📝' : '🏢'),
+        h('span', {style:{color:'#1A1A1A'}}, activeTab==='call' ? 'Add Call Task' : activeTab==='visit' ? 'Add Visit Task' : activeTab==='personal' ? 'Add Personal Task' : 'Add Office Work'),
         h('span', {className:'text-[11px] font-normal text-[#8B7355] ml-1'}, 'Fill category specific details')
       )
     ),
     h('div', {className:'p-4 bg-[#FFFEF7] space-y-5'},
-      h('div', {className:'flex gap-2 overflow-x-auto pb-1'},
+      h('div', {className:'flex gap-1 pb-1'},
         [
           {k:'call', l:'Call', i:'📞'},
           {k:'visit', l:'Visit', i:'📍'},
           {k:'office', l:'Office Work', i:'🏢'},
+          {k:'personal', l:'Personal', i:'📝'},
         ].map(tb=>
-          h('button', {key:tb.k, onClick:()=>setActiveTab(tb.k), style: activeTab===tb.k ? {color:'white', backgroundColor:'#1B4D3E', borderColor:'#1B4D3E'} : {color:'#2D2A26', backgroundColor:'white', borderColor:'#E8E6DC'}, className: 'whitespace-nowrap px-5 py-2.5 rounded-full text-[13px] font-bold border flex items-center gap-2'},
+          h('button', {key:tb.k, onClick:()=>setActiveTab(tb.k), style: activeTab===tb.k ? {color:'white', backgroundColor:'#1B4D3E', borderColor:'#1B4D3E'} : {color:'#2D2A26', backgroundColor:'white', borderColor:'#E8E6DC'}, className: 'flex-1 justify-center px-2 py-2 rounded-full text-[11px] font-bold border flex items-center gap-1'},
             h('span', {style: activeTab===tb.k ? {color:'white'} : {color:'#2D2A26'}}, tb.i),
             h('span', {style: activeTab===tb.k ? {color:'white'} : {color:'#2D2A26'}}, tb.l)
           )
@@ -7045,6 +7081,38 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
           )
         ),
         h('div', null, h('label', {className:labelClass}, '📝 NOTE'), h('textarea', {value:notes, onChange:e=>setNotes(e.target.value), placeholder:'Office work notes...', className: inputClass + ' h-[80px]'}))
+      ) : null,
+      activeTab==='personal' ? h('div', {className:'space-y-5'},
+        h('div', null,
+          h('label', {className:labelClass}, '📝 NOTE / নোট'),
+          h('textarea', {ref:personalNoteRef, value:personalNote, onChange:e=>{ setPersonalNote(e.target.value); setPersonalSaved(false); try{ e.target.style.height='auto'; e.target.style.height=e.target.scrollHeight+'px'; }catch(err){} }, onKeyDown:e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); addPersonalItem(); } }, placeholder:'Write a personal note...', rows:1, className: inputClass + ' resize-none overflow-hidden min-h-[48px]'}),
+          h('button', {onClick:addPersonalItem, className:'mt-2 px-4 py-2.5 rounded-full bg-[#1B4D3E] text-white text-[13px] font-bold'}, '+ Add')
+        ),
+        personalItems.length>0 ? h('div', {className:'space-y-2'},
+          personalItems.map(it=>
+            h('div', {key:it.id, className:'flex items-center gap-2 p-3 rounded-[14px] border ' + (it.done ? 'bg-[#E8F5E9] border-[#A5D6A7]' : 'bg-[#FFEBEE] border-[#FFCDD2]')},
+              h('button', {onClick:()=>togglePersonalItem(it.id), className:'shrink-0 w-[32px] h-[32px] rounded-[8px] flex items-center justify-center text-white text-[16px] font-bold ' + (it.done ? 'bg-[#2E7D32]' : 'bg-[#B71C1C]')}, it.done ? '✓' : '✕'),
+              h('span', {className:'text-[16px]'}, '📝'),
+              h('span', {className:'flex-1 text-[14px] font-bold ' + (it.done ? 'text-[#1B4D3E]' : 'text-[#B71C1C]')}, it.text),
+              h('button', {onClick:()=>removePersonalItem(it.id), className:'shrink-0 w-[48px] h-[48px] rounded-[12px] bg-[#FFCDD2] text-[#B71C1C] font-bold text-[28px] flex items-center justify-center'}, '×')
+            )
+          )
+        ) : null,
+        personalSaved ? h('p', {className:'text-[13px] font-bold text-[#2E7D32]'}, '✓ Saved') : null,
+        h('div', null, h('label', {className:labelClass}, '📅 DATE / তারিখ'), h('input', {type:'date', value:dateInput, onChange:e=>{ setDateInput(e.target.value); setDailyDate(e.target.value); try{ const d=new Date(e.target.value); const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); const yy=d.getFullYear(); setDate(dd+'/'+mm+'/'+yy); }catch(err){} }, className:inputClass})),
+        h('div', null,
+          h('label', {className:labelClass}, '🕒 TIME / সময়'),
+          h('div', {className:'flex items-center gap-2 bg-white border border-[#E8E6DC] rounded-[16px] p-2'},
+            h('select', {value:hour, onChange:e=>setHour(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')).map(hh=> h('option', {key:hh, value:hh}, hh))),
+            h('span', {className:'font-bold text-[#1A1A1A]'}, ':'),
+            h('select', {value:minute, onChange:e=>setMinute(e.target.value), className:'flex-1 bg-[#F9F6F0] border border-[#E8E6DC] rounded-[12px] px-2 py-2.5 text-[16px] font-bold text-center text-[#1A1A1A]'}, Array.from({length:60}, (_,i)=> String(i).padStart(2,'0')).map(mm=> h('option', {key:mm, value:mm}, mm))),
+            h('div', {className:'flex rounded-[14px] overflow-hidden border-2 border-[#E8E6DC]'},
+              h('button', {onClick:()=>setAmPm('AM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='AM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'AM'),
+              h('button', {onClick:()=>setAmPm('PM'), className:'px-5 py-3 text-[13px] font-extrabold transition-colors ' + (amPm==='PM' ? 'bg-[#2E7D32] text-white' : 'bg-white text-[#8B7355]')}, 'PM')
+            )
+          ),
+          h('p', {className:'text-[11px] text-[#8B7355] mt-2'}, 'ঘণ্টা ও মিনিট স্ক্রল করে সিলেক্ট করুন, AM/PM সেট করুন')
+        )
       ) : null,
 
       h('div', {className:'p-4 mt-4 -mx-4 -mb-5 bg-[#FFFEF7] rounded-b-[32px] space-y-3'},
@@ -8027,7 +8095,8 @@ function TravelManager({t, lang, setToast, onClose}){
   const [othersNote, setOthersNote] = React.useState(()=>{ try{ return localStorage.getItem('travel_others_note')||''; }catch(e){ return ''; } });
   function parseOthersNote(txt){ const seen={}; const out=[]; (txt||'').split(/[,\r\n]+/).forEach(function(part){ const nm=part.trim(); if(nm && !seen[nm]){ seen[nm]=1; out.push(nm); } }); return out; }
 
-  React.useEffect(()=>{ try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(travelList)); }catch(e){} }, [travelList]);
+  React.useEffect(()=>{ var prevLS = null; try{ prevLS = localStorage.getItem('lifestyle_travel_list'); }catch(e){} try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(travelList)); }catch(e){} if(prevLS !== null && prevLS !== JSON.stringify(travelList)){ try{ if(typeof queueRoutineCloudUpload==='function') queueRoutineCloudUpload(); }catch(e){} } }, [travelList]);
+   React.useEffect(()=>{ function onCloudRoutine(ev){ try{ var d = (ev && ev.detail) || {}; if(Array.isArray(d.travelList)) setTravelList(d.travelList); }catch(e){} } window.addEventListener('lifestyle-cloud-routine', onCloudRoutine); return function(){ window.removeEventListener('lifestyle-cloud-routine', onCloudRoutine); }; }, []);
 
   const getDistricts = (divId)=>{ const d=BD_DIVISIONS.find(x=>x.id===divId); return d? d.districts: []; };
   const getUpazilas = (divId, distId)=>{ const dists=getDistricts(divId); const di=dists.find(x=>x.id===distId); return di? di.upazilas: []; };
@@ -8056,6 +8125,7 @@ function TravelManager({t, lang, setToast, onClose}){
       fromDate, toDate,
       selected,
       packed: editingId ? (travelList.find(x=>x.id===editingId)?.packed || []) : [],
+      updatedAt: new Date().toISOString(),
       travelStatus: 'Saved',
       createdAt: new Date().toISOString()
     };
