@@ -2833,6 +2833,33 @@ function pdfPersonSectionsJpegs(data){
   const blockH = Math.max(leftH, rightH);
   mctx.font = FS;
   const titleLines = pdfWrapText(mctx, data.title, CW);
+  // Person mode (single section): the summary block (name / balance / total)
+  // is drawn on the RIGHT of the title, exactly like the HTML View
+  // (statementHeaderHtml + personSummaryBlockHtml). Multi-person lists keep
+  // the old stacked layout below.
+  const _secs0 = (data.personSections || []);
+  const _singlePerson = _secs0.length === 1 && !data.loansKind;
+  let _sumLines = null, _sumW = 0, _sumH = 0, _pageCount = 0, _headerTitleY = M;
+  let titleLinesFirst = titleLines;
+  if(_singlePerson){
+    const _s0 = _secs0[0];
+    const _balL = _s0.kind === 'given' ? t('youWillGet') : t('youWillPay');
+    const _retL = _s0.kind === 'given' ? t('returned') : t('repaid');
+    const _balC = _s0.balance >= 0 ? '#0a7a2f' : '#c0392b';
+    const _raw = [
+      { text: _s0.name || '', font: FS, color: '#000' },
+      { text: _balL + ': ' + fmt(_s0.balance), font: FB, color: _balC },
+      { text: t('totalLbl') + ': ' + fmt(_s0.totalLoans) + ' \u2022 ' + _retL + ': ' + fmt(_s0.totalPays), font: F, color: '#555' },
+    ];
+    let _maxW = 0;
+    for(const _r of _raw){ mctx.font = _r.font; _maxW = Math.max(_maxW, mctx.measureText(_r.text).width); }
+    _sumW = Math.min(Math.ceil(_maxW) + 2, 340);
+    _sumLines = [];
+    for(const _r of _raw){ mctx.font = _r.font; const _wl = pdfWrapText(mctx, _r.text, _sumW); for(const _ln of _wl) _sumLines.push({ text: _ln, font: _r.font, color: _r.color }); }
+    _sumH = _sumLines.length * LH;
+    mctx.font = FS;
+    titleLinesFirst = pdfWrapText(mctx, data.title, Math.max(120, CW - _sumW - 12));
+  }
   const jpegs = [];
   let pc = null, ctx = null, y = M;
   const drawPageHeader = () => {
@@ -2851,13 +2878,16 @@ function pdfPersonSectionsJpegs(data){
     const divY = M + blockH + 10;
     ctx.fillStyle = '#222'; ctx.fillRect(M, divY, CW, 1.5);
     y = divY + 1.5 + 8;
+    _headerTitleY = y;
     ctx.font = FS; ctx.fillStyle = '#000';
-    for(let ln of titleLines){ ctx.fillText(ln, M, y); y += LH; }
+    const _tl = (_pageCount === 1 && _singlePerson) ? titleLinesFirst : titleLines;
+    for(let ln of _tl){ ctx.fillText(ln, M, y); y += LH; }
     ctx.font = F; ctx.fillStyle = '#555';
     ctx.fillText('Total Records: ' + data.records, M, y); y += LH;
     ctx.fillText('Statement Period: ' + data.period.from + ' \u2013 ' + data.period.to, M, y); y += LH + 10;
   };
   const startPage = () => {
+    _pageCount++;
     pc = document.createElement('canvas'); pc.width = W * S; pc.height = H * S;
     ctx = pc.getContext('2d'); ctx.scale(S, S);
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
@@ -2975,9 +3005,21 @@ function pdfPersonSectionsJpegs(data){
     if(si > 0){ ensureSpace(14); ctx.fillStyle = '#ccc'; ctx.fillRect(M, y + 5, CW, 1); y += 14; }
     const balLabel = sec.kind === 'given' ? t('youWillGet') : t('youWillPay');
     const retLabel = sec.kind === 'given' ? t('returned') : t('repaid');
-    drawTextLine(sec.name || '', FS, '#000');
-    drawTextLine(balLabel + ': ' + fmt(sec.balance), FB, sec.balance >= 0 ? '#0a7a2f' : '#c0392b');
-    drawTextLine(t('totalLbl') + ': ' + fmt(sec.totalLoans) + ' \u2022 ' + retLabel + ': ' + fmt(sec.totalPays), F, '#555');
+    if(si === 0 && _singlePerson && _sumLines){
+      // Summary block on the RIGHT of the title (same as HTML View).
+      // The title block already advanced y; only push y down if the
+      // summary is taller than the title block.
+      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      let _sy = _headerTitleY;
+      for(const _ln of _sumLines){ ctx.font = _ln.font; ctx.fillStyle = _ln.color; ctx.fillText(_ln.text, W - M, _sy); _sy += LH; }
+      ctx.textAlign = 'left';
+      const _needY = _headerTitleY + _sumH + 10;
+      if(y < _needY) y = _needY;
+    } else {
+      drawTextLine(sec.name || '', FS, '#000');
+      drawTextLine(balLabel + ': ' + fmt(sec.balance), FB, sec.balance >= 0 ? '#0a7a2f' : '#c0392b');
+      drawTextLine(t('totalLbl') + ': ' + fmt(sec.totalLoans) + ' \u2022 ' + retLabel + ': ' + fmt(sec.totalPays), F, '#555');
+    }
     y += 4;
     drawTextLine(t('loanEntries'), FB, '#000');
     drawTable(entryCols, entryHeader, sec.loans.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]), [{ text: t('totalLbl') + ' ' + t('loanEntries'), span: 5, align: 'left' }, { text: fmt(sec.totalLoans), span: 1, align: 'right' }], t('noData'));
