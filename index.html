@@ -1188,6 +1188,10 @@ function navPush(){
     if(last && JSON.stringify(last) === JSON.stringify(s)) return;
     navStack.push(s);
     if(navStack.length > 50) navStack.shift();
+    // Every app step = one browser history entry, so the phone's Back button
+    // steps back exactly one app step. The popstate handler re-pushes after
+    // each Back, so Back can never run out of history and leave the app.
+    try{ history.pushState({app: true}, ''); }catch(e){}
   }catch(e){}
 }
 function navRestore(s){
