@@ -1035,6 +1035,7 @@ function restoreViewState(){
   if(typeof r.hbt === 'string' && r.hbt) homeBankTo = r.hbt;
   if(r.cd && typeof r.cd === 'object' && r.cd.catEn) catDetail = { catEn: r.cd.catEn || '', catBn: r.cd.catBn || '', type: r.cd.type === 'income' ? 'income' : 'expense', icon: r.cd.icon || '' };
   if(currentView === 'person'){
+    personFrom = ''; personTo = ''; // stale saved filter must not cut the person statement
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
     if(!arr.length){ currentView = 'loans'; loansKind = personKind; }
     else if(personIdx >= arr.length) personIdx = arr.length - 1;
@@ -1778,9 +1779,9 @@ function filteredHistoryRows(){
   return rows;
 }
 function histSetFilter(f){ histFilter = f; render(); }
-function histSetSearch(v){ histSearch = v || ''; renderHistoryView(); }
-function histSetCat(v){ histCat = v || ''; renderHistoryView(); }
-function histClearCat(){ histCat = ''; renderHistoryView(); }
+function histSetSearch(v){ histSearch = v || ''; renderHistoryList(); }
+function histSetCat(v){ histCat = v || ''; renderHistoryList(); }
+function histClearCat(){ histCat = ''; var ci = document.getElementById('histCatInput'); if(ci) ci.value = ''; renderHistoryList(); }
 function histGoCat(kind, cat){ histFilter = kind; histCat = cat || ''; histSearch = ''; render(); }
 function histSetFrom(v){ histFrom = v || ''; render(); }
 function histSetTo(v){ histTo = v || ''; render(); }
@@ -1794,9 +1795,8 @@ function histAddNew(){
   if(histFilter === 'bank'){ openLoanEntryForm('addbank', 'bank', ''); return; }
   openAddSheet();
 }
-function renderHistoryView(){
+function historyListHtml(){
   const rows = filteredHistoryRows();
-  const tabs = [['all','fAll'],['income','fIncome'],['expense','fExpense'],['given','fGiven'],['taken','fTaken'],['return','fReturn'],['repayment','fRepay'],['bank','fBank']];
   const listHtml = rows.length ? rows.map(r => {
     const _dp = String(r.date || '').split('-'); const _dmy = (_dp.length === 3 && _dp[0].length === 4) ? _dp[2] + '-' + _dp[1] + '-' + _dp[0] : r.date; const sub = [_dmy, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
     const catEsc = String(r.catEn || r.title || '').replace(/'/g, "\\'");
@@ -1806,11 +1806,23 @@ function renderHistoryView(){
       '<div class="flex gap-1 flex-nowrap"><button onclick="event.stopPropagation();editHistoryRow(\'' + r.key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
       '<button onclick="event.stopPropagation();deleteHistoryRow(\'' + r.key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
   }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
+  return '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + histFilterLabel() + ' • ' + (fmtDMY(histFrom) || '…') + t('fromToSep') + (fmtDMY(histTo) || '…') + ' • ' + rows.length + ' ' + t('records') + ' • User, Date, Time included</div>' + '<div>' + listHtml + '</div>';
+}
+// Typing in History search must NOT rebuild the whole view: that destroys the
+// focused input and dismisses the keyboard. Only the list below updates.
+function renderHistoryList(){
+  const wrap = document.getElementById('histListWrap');
+  if(!wrap){ renderHistoryView(); return; }
+  wrap.innerHTML = historyListHtml();
+}
+function renderHistoryView(){
+
+  const tabs = [['all','fAll'],['income','fIncome'],['expense','fExpense'],['given','fGiven'],['taken','fTaken'],['return','fReturn'],['repayment','fRepay'],['bank','fBank']];
   document.getElementById('app').innerHTML =
     '<div class="px-4 pt-4">' +
       '<div style="position:sticky;top:0;z-index:20;background:#FFFBF7;border-bottom:1px solid #F3E8D3;padding-bottom:8px">' +
       '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span>' +
-      '<input type="text" value="' + escA(histSearch) + '" placeholder="' + escA(t('histSearchPh')) + '" oninput="histSetSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
+      '<input id="histSearchInput" type="text" value="' + escA(histSearch) + '" placeholder="' + escA(t('histSearchPh')) + '" oninput="histSetSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
       '<div class="grid grid-cols-4 gap-2 mb-3">' + tabs.map(x =>
         '<button onclick="histSetFilter(\'' + x[0] + '\')" class="px-1 py-2 rounded-full text-[12px] font-bold text-center leading-tight ' + (histFilter === x[0] ? 'bg-[#E3F2FD]' : 'bg-white border border-[#F3E8D3]') + '">' + t(x[1]) + '</button>').join('') + '</div>' +
       '<div class="flex gap-2 mb-3">' +
@@ -1824,10 +1836,9 @@ function renderHistoryView(){
         '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(histTo) + '" onchange="histSetTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
         '<button onclick="histClearDates()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">✕ <span data-t="dateClear">Date Clear</span></button>' +
       '</div>' +
-      ((histFilter === 'expense' || histFilter === 'income') ? '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-2"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(histCat) + '" placeholder="' + escA(t('filterByCat')) + ' (English/Bangla)…' + '" oninput="histSetCat(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0">' + (histCat ? '<button onclick="histClearCat()" class="shrink-0 w-6 h-6 rounded-full bg-[#F3E8D3] text-[12px] font-bold leading-none">✕</button>' : '') + '</div>' : '') +
-      '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + histFilterLabel() + ' • ' + (fmtDMY(histFrom) || '…') + t('fromToSep') + (fmtDMY(histTo) || '…') + ' • ' + rows.length + ' ' + t('records') + ' • User, Date, Time included</div>' +
+      ((histFilter === 'expense' || histFilter === 'income') ? '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-2"><span class="text-[13px]">🔍</span><input id="histCatInput" type="text" value="' + escA(histCat) + '" placeholder="' + escA(t('filterByCat')) + ' (English/Bangla)…' + '" oninput="histSetCat(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0">' + (histCat ? '<button onclick="histClearCat()" class="shrink-0 w-6 h-6 rounded-full bg-[#F3E8D3] text-[12px] font-bold leading-none">✕</button>' : '') + '</div>' : '') +
       '</div>' +
-      '<div>' + listHtml + '</div>' +
+      '<div id="histListWrap">' + historyListHtml() + '</div>' +
     '</div>';
   document.querySelectorAll('[data-t]').forEach(el => { const k = el.getAttribute('data-t'); if(T[lang][k]) el.textContent = T[lang][k]; });
 }
@@ -3591,8 +3602,7 @@ function openLoansPage(kind){
 function openPersonDetail(kind, pi){
   if(!(currentView === 'person' && personKind === kind && personIdx === pi)) navPush();
   personKind = kind; personIdx = pi;
-  if(currentView === 'history'){ personFrom = histFrom; personTo = histTo; }
-  else if(currentView === 'loans'){ personFrom = loansFrom; personTo = loansTo; }
+  personFrom = ''; personTo = ''; // Person statement = full history, always. Date filter stays only on the Home/History lists.
   currentView = 'person'; setNavActive('');
   render();
 }
@@ -3700,6 +3710,7 @@ function renderPersonView(){
     const realIdx = (person.loans || []).indexOf(e);
     return entryRow(e, loanKey + ':' + personIdx + ':l:' + realIdx);
   }).join('') : '<div class="text-[13px] text-[#8B7355] py-3">' + t('noData') + '</div>';
+  const periodAll = statementPeriod('', '', (person.loans || []).concat(person.payments || []));
   const paysHtml = paysShown.length ? paysShown.map((e, i) => {
     const realIdx = (person.payments || []).indexOf(e);
     return entryRow(e, payKey + ':' + personIdx + ':p:' + realIdx);
@@ -3721,7 +3732,7 @@ function renderPersonView(){
       '<button onclick="openPersonPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
       '<button onclick="personSharePdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button>' +
     '</div>' +
-    '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + escA(person.name || '') + ' • ' + (fmtDMY(personFrom) || '…') + t('fromToSep') + (fmtDMY(personTo) || '…') + ' • ' + (loansShown.length + paysShown.length) + ' ' + t('entriesLbl') + ' • User, Date, Time included</div>' +
+    '<div class="text-[12px] text-[#8B7355] mb-2">' + (lang === 'bn' ? 'সব ইতিহাস' : 'Full history') + ': ' + escA(person.name || '') + ' • ' + periodAll.from + t('fromToSep') + periodAll.to + ' • ' + (loansShown.length + paysShown.length) + ' ' + t('entriesLbl') + ' • User, Date, Time included</div>' +
     '<h3 class="font-extrabold text-[15px] mt-3 mb-1">' + t('loanEntries') + '</h3><div>' + loansHtml + '</div>' +
     '<h3 class="font-extrabold text-[15px] mt-4 mb-1">' + t('paymentsSec') + '</h3><div>' + paysHtml + '</div>' +
     '</div>';
