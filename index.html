@@ -1779,7 +1779,7 @@ function filteredHistoryRows(){
   return rows;
 }
 function histSetFilter(f){ histFilter = f; render(); }
-function histSetSearch(v){ histSearch = v || ''; renderHistoryView(); }
+function histSetSearch(v){ histSearch = v || ''; renderHistoryList(); }
 function histSetCat(v){ histCat = v || ''; renderHistoryView(); }
 function histClearCat(){ histCat = ''; renderHistoryView(); }
 function histGoCat(kind, cat){ histFilter = kind; histCat = cat || ''; histSearch = ''; render(); }
@@ -1795,9 +1795,8 @@ function histAddNew(){
   if(histFilter === 'bank'){ openLoanEntryForm('addbank', 'bank', ''); return; }
   openAddSheet();
 }
-function renderHistoryView(){
-  const rows = filteredHistoryRows();
-  const tabs = [['all','fAll'],['income','fIncome'],['expense','fExpense'],['given','fGiven'],['taken','fTaken'],['return','fReturn'],['repayment','fRepay'],['bank','fBank']];
+let histShownCount = 0;
+function historyListHtml(rows){
   // One person = one row in History: all of their transactions in the shown
   // period collapse into a single row. Clicking it opens their full statement.
   const personSideOf = r => (r.kind === 'given' || r.kind === 'return') ? 'given' : (r.kind === 'taken' || r.kind === 'repayment') ? 'taken' : '';
@@ -1827,7 +1826,28 @@ function renderHistoryView(){
     return '<div class="flex gap-2 py-2.5 mb-2 bg-white border-b border-[#F3E8D3]" onclick="openPersonDetail(\'' + g.side + '\',' + g.personIdx + ')" style="cursor:pointer"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(g.icon ? g.icon + ' ' + g.title : g.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
       '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (net >= 0 ? 'text-green-700' : 'text-red-600') + '">' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net)) + '</div></div></div>';
   };
-  const listHtml = displayRows.length ? displayRows.map(d => d.g ? groupRowHtml(d.g) : singleRowHtml(d.r)).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
+  histShownCount = displayRows.length;
+  return displayRows.length ? displayRows.map(d => d.g ? groupRowHtml(d.g) : singleRowHtml(d.r)).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
+}
+function histCountText(){
+  return t('filtered') + ': ' + histFilterLabel() + ' • ' + (fmtDMY(histFrom) || '…') + t('fromToSep') + (fmtDMY(histTo) || '…') + ' • ' + histShownCount + ' ' + t('records') + ' • User, Date, Time included';
+}
+function renderHistoryList(){
+  // Typing in the search box must NOT rebuild the whole History view:
+  // rebuilding destroys the search input itself, so focus (and the
+  // keyboard) is lost on every keystroke. Only the list + count update.
+  const wrap = document.getElementById('histListWrap');
+  if(!wrap){ renderHistoryView(); return; }
+  wrap.innerHTML = historyListHtml(filteredHistoryRows());
+  const count = document.getElementById('histCountLine');
+  if(count) count.textContent = histCountText();
+}
+function renderHistoryView(){
+  const rows = filteredHistoryRows();
+  const listHtml = historyListHtml(rows);
+  const tabs = [['all','fAll'],['income','fIncome'],['expense','fExpense'],['given','fGiven'],['taken','fTaken'],['return','fReturn'],['repayment','fRepay'],['bank','fBank']];
+
+
   document.getElementById('app').innerHTML =
     '<div class="px-4 pt-4">' +
       '<div style="position:sticky;top:0;z-index:20;background:#FFFBF7;border-bottom:1px solid #F3E8D3;padding-bottom:8px">' +
@@ -1847,9 +1867,9 @@ function renderHistoryView(){
         '<button onclick="histClearDates()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">✕ <span data-t="dateClear">Date Clear</span></button>' +
       '</div>' +
       ((histFilter === 'expense' || histFilter === 'income') ? '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-2"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(histCat) + '" placeholder="' + escA(t('filterByCat')) + ' (English/Bangla)…' + '" oninput="histSetCat(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0">' + (histCat ? '<button onclick="histClearCat()" class="shrink-0 w-6 h-6 rounded-full bg-[#F3E8D3] text-[12px] font-bold leading-none">✕</button>' : '') + '</div>' : '') +
-      '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + histFilterLabel() + ' • ' + (fmtDMY(histFrom) || '…') + t('fromToSep') + (fmtDMY(histTo) || '…') + ' • ' + displayRows.length + ' ' + t('records') + ' • User, Date, Time included</div>' +
+      '<div class="text-[12px] text-[#8B7355] mb-2" id="histCountLine">' + histCountText() + '</div>' +
       '</div>' +
-      '<div>' + listHtml + '</div>' +
+      '<div id="histListWrap">' + listHtml + '</div>' +
     '</div>';
   document.querySelectorAll('[data-t]').forEach(el => { const k = el.getAttribute('data-t'); if(T[lang][k]) el.textContent = T[lang][k]; });
 }
