@@ -1172,6 +1172,7 @@ let _navGoingBack = false;
 function navSnapshot(){
   return { view: currentView, loansKind: loansKind, personKind: personKind, personIdx: personIdx,
     histFilter: histFilter, histCat: histCat, histFrom: histFrom, histTo: histTo,
+    histSearch: histSearch, homeBankFrom: homeBankFrom, homeBankTo: homeBankTo,
     loansFrom: loansFrom, loansTo: loansTo, loansSearch: loansSearch,
     personFrom: personFrom, personTo: personTo };
 }
@@ -1192,6 +1193,9 @@ function navRestore(s){
     histFilter = s.histFilter; histCat = s.histCat; histFrom = s.histFrom; histTo = s.histTo;
     loansFrom = s.loansFrom; loansTo = s.loansTo; loansSearch = s.loansSearch;
     personFrom = s.personFrom; personTo = s.personTo;
+    histSearch = s.histSearch || '';
+    if(s.homeBankFrom) homeBankFrom = s.homeBankFrom;
+    if(s.homeBankTo) homeBankTo = s.homeBankTo;
     if(s.view === 'home') setNavActive('home');
     else if(s.view === 'history') setNavActive('history');
     else if(s.view === 'profile') setNavActive('profile');
@@ -1778,13 +1782,13 @@ function filteredHistoryRows(){
   if(histTo) rows = rows.filter(r => normDate(r.date) <= histTo);
   return rows;
 }
-function histSetFilter(f){ histFilter = f; render(); }
-function histSetSearch(v){ histSearch = v || ''; renderHistoryList(); }
-function histSetCat(v){ histCat = v || ''; renderHistoryView(); }
-function histClearCat(){ histCat = ''; renderHistoryView(); }
-function histGoCat(kind, cat){ histFilter = kind; histCat = cat || ''; histSearch = ''; render(); }
-function histSetFrom(v){ histFrom = v || ''; render(); }
-function histSetTo(v){ histTo = v || ''; render(); }
+function histSetFilter(f){ if(f !== histFilter) navPush(); histFilter = f; render(); }
+function histSetSearch(v){ const nv = v || ''; if((histSearch === '') !== (nv === '')) navPush(); histSearch = nv; renderHistoryList(); }
+function histSetCat(v){ const nv = v || ''; if((histCat === '') !== (nv === '')) navPush(); histCat = nv; renderHistoryView(); }
+function histClearCat(){ if(histCat) navPush(); histCat = ''; renderHistoryView(); }
+function histGoCat(kind, cat){ if(kind !== histFilter || (cat || '') !== histCat || histSearch !== '') navPush(); histFilter = kind; histCat = cat || ''; histSearch = ''; render(); }
+function histSetFrom(v){ if((v || '') !== histFrom) navPush(); histFrom = v || ''; render(); }
+function histSetTo(v){ if((v || '') !== histTo) navPush(); histTo = v || ''; render(); }
 function histClearDates(){ histFrom = ''; histTo = ''; render(); }
 function histAddNew(){
   if(histFilter === 'income' || histFilter === 'expense'){ openForm(histFilter); return; }
@@ -2305,8 +2309,8 @@ function homeBankLoansHtml(){
   }).join('');
   return '<div class="card p-3 mb-2 mt-4">' +
     '<div class="flex gap-2 items-end mb-2">' +
-    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(homeBankFrom) + '" onchange="homeBankFrom=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
-    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(homeBankTo) + '" onchange="homeBankTo=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div></div>' +
+    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(homeBankFrom) + '" onchange="homeBankSetFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
+    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(homeBankTo) + '" onchange="homeBankSetTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div></div>' +
     '<div class="flex gap-2 mb-2">' +
     '<button onclick="downloadHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('downloadPdf') + '</button>' +
     '<button onclick="openHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
@@ -2323,6 +2327,8 @@ function homeBankPdfHtml(){
 }
 function openHomeBankPdf(){ pdfMode = 'homeBank'; showStatementPreview(homeBankPdfHtml()); }
 function downloadHomeBankPdf(){ pdfMode = 'homeBank'; downloadPdfFile(); }
+function homeBankSetFrom(v){ if((v || '') !== homeBankFrom) navPush(); homeBankFrom = v || ''; render(); }
+function homeBankSetTo(v){ if((v || '') !== homeBankTo) navPush(); homeBankTo = v || ''; render(); }
 function shareHomeBankPdf(){ pdfMode = 'homeBank'; sharePdf(); }
 let catDetail = null;
 function saveLoanEntry(){
@@ -3667,6 +3673,7 @@ let loansSearch = '', loansFrom = firstOfMonth(), loansTo = today(), personFrom 
 let homeBankFrom = firstOfMonth(), homeBankTo = today();
 let addPersonKind = 'given', pickerKind = 'given', pickerAction = 'payment', pickerSearch = '';
 function loansPageTitle(){ return loansKind === 'given' ? t('loansGivenPage') : loansKind === 'taken' ? t('loansTakenPage') : t('bankLoansPage'); }
+function loansSetSearch(v){ const nv = v || ''; if((loansSearch === '') !== (nv === '')) navPush(); loansSearch = nv; renderLoansView(); }
 function openLoansPage(kind){
   if(!(currentView === 'loans' && loansKind === kind)) navPush();
   loansKind = kind; currentView = 'loans'; setNavActive('');
@@ -3741,7 +3748,7 @@ function renderLoansView(){
         '<button onclick="deleteLoanEntry(\'bank:0:l:' + ti + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
     }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
     document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' + backBtn + '<h2 class="font-extrabold text-[18px] mb-3">' + title + '</h2>' +
-      '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(loansSearch) + '" placeholder="' + escA(t('searchPeople')) + '" oninput="loansSearch=this.value;renderLoansView()" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
+      '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(loansSearch) + '" placeholder="' + escA(t('searchPeople')) + '" oninput="loansSetSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
       controls + dates +
       '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + title + ' • ' + (fmtDMY(loansFrom) || '…') + t('fromToSep') + (fmtDMY(loansTo) || '…') + ' • ' + loans.length + ' ' + t('entriesLbl') + ' • User, Date, Time included</div>' +
       '<div>' + rowsHtml + '</div></div>';
@@ -3760,7 +3767,7 @@ function renderLoansView(){
     '<div class="text-right"><div class="text-[11px] text-[#8B7355]">' + resultLbl + '</div><div class="font-extrabold text-[15px] ' + (net > 0 ? 'text-red-600' : 'text-green-700') + '">' + fmt(Math.abs(net)) + '</div></div></div></div>';
   }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noPeople') + '</div>';
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' + backBtn + '<h2 class="font-extrabold text-[18px] mb-3">' + title + '</h2>' +
-    '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(loansSearch) + '" placeholder="' + escA(t('searchPeople')) + '" oninput="loansSearch=this.value;renderLoansView()" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
+    '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(loansSearch) + '" placeholder="' + escA(t('searchPeople')) + '" oninput="loansSetSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
     controls + dates +
     '<div class="text-[12px] text-[#8B7355] mb-2">' + t('filtered') + ': ' + title + ' • ' + (fmtDMY(loansFrom) || '…') + t('fromToSep') + (fmtDMY(loansTo) || '…') + ' • ' + people.length + ' ' + t('peopleLbl') + ' • User, Date, Time included</div>' +
     '<div>' + cardsHtml + '</div></div>';
@@ -3769,7 +3776,7 @@ function renderLoansView(){
 function renderPersonView(){
   const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
   const person = arr[personIdx];
-  if(!person){ navGo('home'); return; }
+  if(!person){ _navGoingBack = true; try{ navGo('home'); }finally{ _navGoingBack = false; } return; }
   const inR = e => (!personFrom || normDate(e.date) >= personFrom) && (!personTo || normDate(e.date) <= personTo);
   const tot = personTotals(person);
   const byDateDesc = (a, b) => (normDate(b.date) || '').localeCompare(normDate(a.date) || '');
@@ -4089,9 +4096,9 @@ function appGoBack(){
   if(sheetOpen('bazarFormSheet')){ closeBazarForm(); return true; }
   if(sheetOpen('bazarSheet')){ closeBazar(); return true; }
   if(sheetOpen('addSheet')){ closeAddSheet(); return true; }
-  if(currentView === 'history' && histCat){ histCat = ''; renderHistoryView(); return true; }
+  if(currentView === 'history' && histCat){ if(navStack.length) goBackStep(); else { histCat = ''; renderHistoryView(); } return true; }
   if(navStack.length){ goBackStep(); return true; }
-  if(currentView && currentView !== 'home'){ navGo('home'); return true; }
+  if(currentView && currentView !== 'home'){ goBackStep(); return true; }
   return true; // Home, nothing open -> stay on Home, never exit the app
 }
 if(typeof window !== 'undefined' && window.addEventListener){
