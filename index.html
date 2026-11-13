@@ -3084,6 +3084,56 @@ function pdfPersonSectionsJpegs(data){
     drawVLines(tableTop, y);
     y += 2;
   };
+  // Keep-together: measure a table's full height (header + rows + total)
+  // so a whole block (label + table) can move to the next page instead of
+  // being cut in half at a page break.
+  const measureTableHeight = (cols, headerRows, rows, totalRow, emptyText) => {
+    const colW = cols.map(c => c.w / 100 * CW);
+    const sumW = colW.reduce((a, b) => a + b, 0);
+    colW[colW.length - 1] += CW - sumW;
+    const spanW = (idx, n) => { let s = 0; for(let k = idx; k < idx + n; k++) s += colW[k]; return s; };
+    const measureCells = (cells, font) => {
+      mctx.font = font;
+      let maxLines = 1, idx = 0;
+      for(let c of cells){
+        const lines = pdfWrapText(mctx, c.text, spanW(idx, c.span) - 2 * CPADX);
+        if(lines.length > maxLines) maxLines = lines.length;
+        idx += c.span;
+      }
+      return 2 * CPAD + maxLines * CLH;
+    };
+    let h = 0;
+    for(let hr of headerRows) h += measureCells(hr, FB);
+    if(rows.length){
+      for(let r of rows){
+        mctx.font = F;
+        let maxLines = 1;
+        for(let i = 0; i < r.length; i++){
+          const lines = pdfWrapText(mctx, r[i], colW[i] - 2 * CPADX);
+          if(lines.length > maxLines) maxLines = lines.length;
+        }
+        h += 2 * CPAD + maxLines * CLH;
+      }
+    } else {
+      h += measureCells([{ text: emptyText, span: cols.length, align: 'center' }], F);
+    }
+    if(totalRow) h += measureCells(totalRow, FB);
+    return h + 2;
+  };
+  // Content starts here on a fresh page (same steps as drawPageHeader).
+  const freshContentY = M + blockH + 10 + 1.5 + 8 + titleLines.length * LH + LH + (LH + 10);
+  // Draw a label + table as one block: if the whole block fits on a fresh
+  // page but not in the remaining space here, move it to the next page.
+  // A block taller than a whole page still splits (it has to).
+  const drawBlock = (gap, labelText, cols, headerRows, rows, totalRow, emptyText) => {
+    mctx.font = FB;
+    const labelH = pdfWrapText(mctx, labelText, CW).length * LH;
+    const blkH = gap + labelH + measureTableHeight(cols, headerRows, rows, totalRow, emptyText);
+    if(blkH <= (M + PAGE_H - freshContentY) && y + blkH > M + PAGE_H){ finishPage(); startPage(); }
+    y += gap;
+    drawTextLine(labelText, FB, '#000');
+    drawTable(cols, headerRows, rows, totalRow, emptyText);
+  };
   startPage();
   const entryCols = [{ w: 13, align: 'left' }, { w: 15, align: 'left' }, { w: 30, align: 'left' }, { w: 12, align: 'left' }, { w: 12, align: 'left' }, { w: 18, align: 'right' }];
   const entryHeader = [
@@ -3114,14 +3164,9 @@ function pdfPersonSectionsJpegs(data){
       drawTextLine(t('totalLbl') + ': ' + fmt(sec.totalLoans) + ' \u2022 ' + retLabel + ': ' + fmt(sec.totalPays), F, '#555');
     }
     y += 4;
-    drawTextLine(t('loanEntries'), FB, '#000');
-    drawTable(entryCols, entryHeader, sec.loans.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]), [{ text: t('totalLbl') + ' ' + t('loanEntries'), span: 5, align: 'left' }, { text: fmt(sec.totalLoans), span: 1, align: 'right' }], t('noData'));
-    y += 6;
-    drawTextLine(t('paymentsSec'), FB, '#000');
-    drawTable(entryCols, entryHeader, sec.pays.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]), [{ text: t('totalLbl') + ' ' + t('paymentsSec'), span: 5, align: 'left' }, { text: fmt(sec.totalPays), span: 1, align: 'right' }], t('noData'));
-    y += 6;
-    drawTextLine(t('summaryLbl'), FB, '#000');
-    drawTable(sumCols, sumHeader, [[t('totalLbl') + ' ' + t('loanEntries'), fmt(sec.totalLoans)], [t('totalLbl') + ' ' + t('paymentsSec'), fmt(sec.totalPays)]], [{ text: t('overdueLbl'), span: 1, align: 'left' }, { text: fmt(sec.balance), span: 1, align: 'right' }], t('noData'));
+    drawBlock(0, t('loanEntries'), entryCols, entryHeader, sec.loans.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]), [{ text: t('totalLbl') + ' ' + t('loanEntries'), span: 5, align: 'left' }, { text: fmt(sec.totalLoans), span: 1, align: 'right' }], t('noData'));
+    drawBlock(6, t('paymentsSec'), entryCols, entryHeader, sec.pays.map(r => [fmtDMY(r.date), r.person || '', r.note || '', r.from || '', r.to || '', fmt(Math.abs(r.amount || 0))]), [{ text: t('totalLbl') + ' ' + t('paymentsSec'), span: 5, align: 'left' }, { text: fmt(sec.totalPays), span: 1, align: 'right' }], t('noData'));
+    drawBlock(6, t('summaryLbl'), sumCols, sumHeader, [[t('totalLbl') + ' ' + t('loanEntries'), fmt(sec.totalLoans)], [t('totalLbl') + ' ' + t('paymentsSec'), fmt(sec.totalPays)]], [{ text: t('overdueLbl'), span: 1, align: 'left' }, { text: fmt(sec.balance), span: 1, align: 'right' }], t('noData'));
     y += 8;
   }
   try{
