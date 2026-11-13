@@ -363,12 +363,12 @@ const T = {
     repShare:'শেয়ার',
     recycleBin:'রিসাইকেল বিন',
     recycleItems:'টি',
-    recycleEmpty:'রিসাইকেল বিন খালি। ডিলিট করা লোকেরা এখানে আসবে — এখান থেকে ফিরিয়ে আনতে পারবে।',
+    recycleEmpty:'রিসাইকেল বিন খালি। ডিলিট করা জিনিসগুলো এখানে থাকবে — যতদিন না নিজে মুছবে।',
     restoreBtn:'ফিরিয়ে আনো',
     permDelete:'চিরতরে মুছো',
     personMovedToBin:'লোকটি Recycle Bin-এ গেছে',
     personRestored:'লোকটি ফিরে এসেছে',
-    personPermDeleted:'লোকটি চিরতরে মুছে গেছে',
+    personPermDeleted:'লোকটি চিরতরে মুছে গেছে', itemRestored:'জিনিসটা ফিরে এসেছে', itemDeleted:'আইটেম ডিলিট হয়েছে', restoreFailedPerson:'লোকটা আর নেই — ফেরানো গেল না', restoreFailedTask:'টাস্কটা সেভ করা ছিল না — ফেরানো গেল না', undoBtn:'Undo',
     noExpense:'এই সময়ে কোনো খরচ নেই',
     time:'সময়',
     date:'তারিখ',
@@ -430,12 +430,12 @@ const T = {
     repShare:'Share',
     recycleBin:'Recycle Bin',
     recycleItems:'items',
-    recycleEmpty:'Recycle Bin is empty. Deleted people will appear here for restore.',
+    recycleEmpty:'Recycle Bin is empty. Deleted items stay here until you delete them yourself.',
     restoreBtn:'Restore',
     permDelete:'Delete Forever',
     personMovedToBin:'Person moved to Recycle Bin',
     personRestored:'Person restored',
-    personPermDeleted:'Person permanently deleted',
+    personPermDeleted:'Person permanently deleted', itemRestored:'Item restored', itemDeleted:'Item deleted', restoreFailedPerson:'Person no longer exists — could not restore', restoreFailedTask:'Task was not saved — could not restore', undoBtn:'Undo',
     noExpense:'No expense in this period',
     time:'Time',
     date:'Date',
@@ -510,6 +510,81 @@ function persist(){
   saveLS('lifestyle_deleted', state.deleted || []);
   saveLS('lifestyle_recycle', state.recycle || []);
   if(!applyingCloud) queueCloudUpload();
+}
+
+/* ---------- Undo + Recycle Bin: every delete goes to the bin, nothing auto-expires ---------- */
+let _undoTimer = null, _undoFn = null;
+function showUndoToast(msg, onUndo){
+  const box = document.getElementById('toastBox'); if(!box) return;
+  _undoFn = onUndo || null;
+  box.innerHTML = '<div class="toast" style="display:flex;align-items:center;gap:10px;justify-content:space-between;max-width:94vw"><span style="overflow:hidden;text-overflow:ellipsis">' + msg + '</span><button onclick="doUndoDelete()" style="background:#fff;color:#1E7B34;font-weight:800;padding:4px 12px;border-radius:999px;border:0;cursor:pointer;flex:none">' + t('undoBtn') + '</button></div>';
+  if(_undoTimer) clearTimeout(_undoTimer);
+  _undoTimer = setTimeout(function(){ box.innerHTML = ''; _undoFn = null; }, 5000);
+}
+function doUndoDelete(){ const f = _undoFn; _undoFn = null; if(_undoTimer) clearTimeout(_undoTimer); const box = document.getElementById('toastBox'); if(box) box.innerHTML = ''; if(f) f(); }
+function recyclePush(entry){ state.recycle = state.recycle || []; state.recycle.push(Object.assign({ recycledAt: new Date().toISOString() }, entry)); }
+function recycleRemove(rid){ state.recycle = (state.recycle || []).filter(function(x){ return x.id !== rid; }); }
+function unmarkDeleted(id){ if(!id) return; state.deleted = (state.deleted || []).filter(function(d){ return d.id !== id; }); }
+function recycleLabel(e){
+  if(e.recycleKind === 'tx'){ const tx = e.tx || {}; const typeLbl = tx.type === 'income' ? t('fIncome') : t('fExpense'); const cat = tx.category || tx.cat || tx.sub || ''; return typeLbl + (cat ? ' — ' + cat : ''); }
+  if(e.recycleKind === 'loanEntry'){ if(e.kind === 'bank') return t('fBank'); const what = e.lp === 'p' ? (e.kind === 'return' ? t('fReturn') : t('fRepay')) : (e.kind === 'given' ? t('fGiven') : t('fTaken')); return (e.personName || '') + ' — ' + what; }
+  if(e.recycleKind === 'routinePersonal') return (e.item && e.item.text) || '';
+  if(e.recycleKind === 'routineTask') return (e.item && (e.item.subject || e.item.title)) || '';
+  return '';
+}
+function recycleSub(e){
+  if(e.recycleKind === 'tx'){ const tx = e.tx || {}; return (fmtDMY(tx.date) || '') + ' · ' + fmt(tx.amount); }
+  if(e.recycleKind === 'loanEntry'){ const en = e.entry || {}; return (fmtDMY(en.date) || '') + ' · ' + fmt(en.amount); }
+  if(e.recycleKind === 'routinePersonal') return fmtDMY(e.date) || '';
+  if(e.recycleKind === 'routineTask') return fmtDMY((e.item || {}).date) || '';
+  return '';
+}
+function restoreRecycleEntry(rid, quiet){
+  const idx = (state.recycle || []).findIndex(function(x){ return x.id === rid; });
+  if(idx < 0) return;
+  const e = state.recycle[idx];
+  if(!e.recycleKind){ restorePerson(e.id); return; }
+  if(e.recycleKind === 'tx'){
+    const tx = e.tx || {};
+    if(!(state.transactions || []).some(function(x){ return x.id === tx.id; })) state.transactions.push(tx);
+    (e.bazarSnap || []).forEach(function(snap){ const bi = bazar.findIndex(function(b){ return b.id === snap.id; }); if(bi >= 0) bazar[bi] = snap; else bazar.push(snap); });
+    unmarkDeleted(e.origId); addRestoreId(e.origId); (e.bazarSnap || []).forEach(function(s){ addRestoreId(s.id); });
+    state.recycle.splice(idx, 1); persist(); if(!quiet) showToast(t('itemRestored')); render(); return;
+  }
+  if(e.recycleKind === 'loanEntry'){
+    const entry = e.entry || {};
+    if(e.kind === 'bank'){ if(!(state.bankLoans || []).some(function(x){ return x.id === entry.id; })) state.bankLoans.push(entry); }
+    else {
+      const arr = (e.kind === 'given' || e.kind === 'return') ? state.peopleGiven : state.peopleTaken;
+      const person = (arr || []).find(function(pp){ return pp.id === e.personId; });
+      if(!person){ if(!quiet) showToast(t('restoreFailedPerson')); return; }
+      const list = e.lp === 'p' ? (person.payments = person.payments || []) : (person.loans = person.loans || []);
+      if(!list.some(function(x){ return x.id === entry.id; })) list.push(entry);
+    }
+    unmarkDeleted(e.origId); addRestoreId(e.origId);
+    state.recycle.splice(idx, 1); persist(); if(!quiet) showToast(t('itemRestored')); render(); return;
+  }
+  if(e.recycleKind === 'routinePersonal'){
+    let tasks = []; try{ tasks = JSON.parse(localStorage.getItem('lifestyle_daily_tasks') || '[]'); }catch(err){ tasks = []; }
+    const task = tasks.find(function(tk){ return tk.id === e.taskId; });
+    if(!task){ if(!quiet) showToast(t('restoreFailedTask')); return; }
+    task.personalItems = task.personalItems || [];
+    if(!task.personalItems.some(function(x){ return x.id === e.item.id; })) task.personalItems.push(e.item);
+    try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(tasks)); }catch(err){}
+    state.recycle.splice(idx, 1); persist(); if(!quiet) showToast(t('itemRestored')); render(); return;
+  }
+  if(e.recycleKind === 'routineTask'){
+    let tasks = []; try{ tasks = JSON.parse(localStorage.getItem('lifestyle_daily_tasks') || '[]'); }catch(err){ tasks = []; }
+    if(!tasks.some(function(tk){ return tk.id === e.item.id; })) tasks.push(e.item);
+    try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(tasks)); }catch(err){}
+    state.recycle.splice(idx, 1); persist(); if(!quiet) showToast(t('itemRestored')); render(); return;
+  }
+}
+function permDeleteRecycleEntry(rid){
+  const idx = (state.recycle || []).findIndex(function(x){ return x.id === rid; });
+  if(idx < 0) return;
+  if(!confirmTwice(t('confirmDelete'))) return;
+  state.recycle.splice(idx, 1); persist(); showToast(t('personPermDeleted')); render();
 }
 /* ---------- ONE merge rule (Phase 2+ sync will reuse this) ---------- */
 
@@ -975,9 +1050,7 @@ function renderReportsView(){
     '<label class="py-3 rounded-[10px] border border-[#F3E8D3] font-bold text-[13px] text-center cursor-pointer">' + t('importBackupBtn') + '<input type="file" accept=".json,application/json" class="hidden" onchange="importBackupFile(this)"></label></div></div>';
   h += '<div class="bg-white rounded-[22px] border border-[#FDE8E8] p-4"><h3 class="font-extrabold text-[15px] mb-1">♻️ ' + t('recycleBin') + ' <span class="text-[11px] font-bold text-[#C0392B] bg-[#FDE8E8] px-2 py-0.5 rounded-full">' + recycle.length + ' ' + t('recycleItems') + '</span></h3>';
   if(!recycle.length){ h += '<p class="text-[12px] text-[#8B7355] mt-2">' + t('recycleEmpty') + '</p>'; }
-  recycle.forEach(p => {
-    h += '<div class="flex items-center gap-2 py-2 border-b border-[#F3E8D3] last:border-0"><div class="flex-1 min-w-0"><div class="font-bold text-[14px] truncate">' + escA(p.name || '') + '</div><div class="text-[11px] text-[#8B7355]">' + escA(p.mobile || '') + '</div></div><button onclick="restorePerson(\'' + p.id + '\')" class="px-3 py-2 rounded-full bg-[#E6F4EA] text-[#1E7B34] font-bold text-[12px]">' + t('restoreBtn') + '</button><button onclick="permDeletePerson(\'' + p.id + '\')" class="px-3 py-2 rounded-full bg-[#FDE8E8] text-[#C0392B] font-bold text-[12px]">' + t('permDelete') + '</button></div>';
-  });
+  recycle.forEach(p => { const isPerson = !p.recycleKind; const rLabel = isPerson ? (p.name || '') : recycleLabel(p); const rSub = isPerson ? (p.mobile || '') : recycleSub(p); const rFn = isPerson ? "restorePerson('" + p.id + "')" : "restoreRecycleEntry('" + p.id + "')"; const dFn = isPerson ? "permDeletePerson('" + p.id + "')" : "permDeleteRecycleEntry('" + p.id + "')"; h += '<div class="flex items-center gap-2 py-2 border-b border-[#F3E8D3] last:border-0"><div class="flex-1 min-w-0"><div class="font-bold text-[14px] truncate">' + escA(rLabel) + '</div><div class="text-[11px] text-[#8B7355]">' + escA(rSub) + '</div></div><button onclick="' + rFn + '" class="px-3 py-2 rounded-full bg-[#E6F4EA] text-[#1E7B34] font-bold text-[12px]">' + t('restoreBtn') + '</button><button onclick="' + dFn + '" class="px-3 py-2 rounded-full bg-[#FDE8E8] text-[#C0392B] font-bold text-[12px]">' + t('permDelete') + '</button></div>'; });
   h += '</div></div>';
   document.getElementById('app').innerHTML = h;
 }
@@ -1050,6 +1123,8 @@ function restoreViewState(){
   else setNavActive('');
 }
 function openHomeCard(card){
+  if(!['todayIncome','todayExpense','todayBalance','monthIncome','monthExpense','monthBalance'].includes(card)) return;
+  navGo('history'); // Push the PRE-click state first, so Back restores the previous History filter.
   const td = today();
   const m1 = td.slice(0, 7) + '-01';
   const mEnd = td.slice(0, 7) + '-' + String(new Date(+td.slice(0, 4), +td.slice(5, 7), 0).getDate()).padStart(2, '0');
@@ -1059,9 +1134,8 @@ function openHomeCard(card){
   else if(card === 'monthIncome'){ histFilter = 'income'; histFrom = m1; histTo = mEnd; }
   else if(card === 'monthExpense'){ histFilter = 'expense'; histFrom = m1; histTo = mEnd; }
   else if(card === 'monthBalance'){ histFilter = 'all'; histFrom = m1; histTo = mEnd; }
-  else { return; }
   histSearch = ''; histCat = '';
-  navGo('history');
+  render();
 }
 
 function routineWorkHtml(){
@@ -1797,7 +1871,7 @@ function histClearCat(){ if(histCat) navPush(); histCat = ''; renderHistoryView(
 function histGoCat(kind, cat){ if(kind !== histFilter || (cat || '') !== histCat || histSearch !== '') navPush(); histFilter = kind; histCat = cat || ''; histSearch = ''; render(); }
 function histSetFrom(v){ if((v || '') !== histFrom) navPush(); histFrom = v || ''; render(); }
 function histSetTo(v){ if((v || '') !== histTo) navPush(); histTo = v || ''; render(); }
-function histClearDates(){ histFrom = ''; histTo = ''; render(); }
+function histClearDates(){ if(histFrom || histTo) navPush(); histFrom = ''; histTo = ''; render(); }
 function histAddNew(){
   if(histFilter === 'income' || histFilter === 'expense'){ openForm(histFilter); return; }
   if(histFilter === 'all'){ openAddSheet(); return; }
@@ -1916,12 +1990,15 @@ function editTransaction(id){
 }
 function deleteTransaction(id){
   if(!confirmTwice(t('confirmDeleteTx'))) return;
+  const tx = (state.transactions || []).find(function(x){ return x.id === id; });
+  const bazarSnap = bazar.filter(function(it){ return it.expenseId === id; }).map(function(it){ return Object.assign({}, it); });
   markDeleted(id);
+  if(tx) recyclePush({ id: 'tx:' + id, recycleKind: 'tx', tx: Object.assign({}, tx), bazarSnap: bazarSnap, origId: id });
   state.transactions = (state.transactions || []).filter(x => x.id !== id);
   bazar.forEach(it => { if(it.expenseId === id){ it.expenseId = null; it.status = 'pending'; } });
   persist();
   render();
-  showToast(t('deletedTx'));
+  showUndoToast(t('deletedTx'), function(){ restoreRecycleEntry('tx:' + id); });
 }
 function loanEntryByKey(key){
   const parts = key.split(':');
@@ -2424,7 +2501,9 @@ function deleteLoanEntry(key){
   const r = loanEntryByKey(key);
   if(!r.entry) return;
   if(!confirmTwice(t('confirmDeleteTx'))) return;
+  const eid = (r.entry && r.entry.id) || ('le' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
   markDeleted(r.entry && r.entry.id);
+  recyclePush({ id: 'le:' + eid, recycleKind: 'loanEntry', entry: Object.assign({}, r.entry), kind: r.kind, lp: r.lp, personId: r.person ? r.person.id : null, personName: r.person ? r.person.name : '', origId: r.entry && r.entry.id });
   if(r.kind === 'bank'){ state.bankLoans = (state.bankLoans || []).filter((e, i) => i !== r.ei); }
   else {
     const arr = r.kind === 'given' || r.kind === 'return' ? state.peopleGiven : state.peopleTaken;
@@ -2433,7 +2512,7 @@ function deleteLoanEntry(key){
   }
   persist();
   render();
-  showToast(t('deletedTx'));
+  showUndoToast(t('deletedTx'), function(){ restoreRecycleEntry('le:' + eid); });
 }
 function pdfStatementRows(){
   return filteredHistoryRows().map(r => ({
@@ -3682,6 +3761,9 @@ let homeBankFrom = firstOfMonth(), homeBankTo = today();
 let addPersonKind = 'given', pickerKind = 'given', pickerAction = 'payment', pickerSearch = '';
 function loansPageTitle(){ return loansKind === 'given' ? t('loansGivenPage') : loansKind === 'taken' ? t('loansTakenPage') : t('bankLoansPage'); }
 function loansSetSearch(v){ const nv = v || ''; if((loansSearch === '') !== (nv === '')) navPush(); loansSearch = nv; renderLoansView(); }
+function loansSetFrom(v){ if((v || '') !== loansFrom) navPush(); loansFrom = v || ''; render(); }
+function loansSetTo(v){ if((v || '') !== loansTo) navPush(); loansTo = v || ''; render(); }
+function loansClearDates(){ if(loansFrom || loansTo) navPush(); loansFrom = ''; loansTo = ''; render(); }
 function openLoansPage(kind){
   if(!(currentView === 'loans' && loansKind === kind)) navPush();
   loansKind = kind; currentView = 'loans'; setNavActive('');
@@ -3832,9 +3914,9 @@ function renderLoansView(){
     '<button onclick="openLoansPdf()" class="px-4 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
     '<button onclick="loansSharePdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">🔗 ' + t('shareBtn') + '</button></div>';
   const dates = '<div class="flex gap-2 items-end mb-2">' +
-    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(loansFrom) + '" onchange="loansFrom=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
-    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(loansTo) + '" onchange="loansTo=this.value;render()" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
-    '<button onclick="loansFrom=\'\';loansTo=\'\';render()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">✕ <span data-t="dateClear">Date Clear</span></button></div>';
+    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(loansFrom) + '" onchange="loansSetFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
+    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(loansTo) + '" onchange="loansSetTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
+    '<button onclick="loansClearDates()" class="px-3 py-2 rounded-full bg-white border border-[#F3E8D3] font-bold text-[12px] whitespace-nowrap">✕ <span data-t="dateClear">Date Clear</span></button></div>';
   if(loansKind === 'bank'){
     // Bank cards always show ALL loans (date filter would hide loans taken in earlier months).
     // Only the search text filters the cards; the PDF is a period report.
@@ -3971,7 +4053,7 @@ function deletePerson(){
   state.recycle.push(Object.assign({}, doomed, { recycledAt: new Date().toISOString(), kind: personKind }));
   arr.splice(personIdx, 1);
   persist();
-  showToast(t('personMovedToBin'));
+  showUndoToast(t('personMovedToBin'), function(){ restorePerson(doomed.id); });
   openLoansPage(personKind);
 }
 function savePerson(){
@@ -6969,7 +7051,7 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
      try{ if(personalNoteRef && personalNoteRef.current){ personalNoteRef.current.style.height='auto'; } }catch(e){}
    }
    function togglePersonalItem(id){ setPersonalItems(prev=> prev.map(it=> it.id===id ? {...it, done:!it.done} : it)); setPersonalSaved(false); }
-   function removePersonalItem(id){ setPersonalItems(prev=> prev.filter(it=> it.id!==id)); setPersonalSaved(false); }
+   function removePersonalItem(id){ const item = (personalItems || []).find(function(it){ return it.id === id; }); if(item){ const rid = 'rp:' + item.id; recyclePush({ id: rid, recycleKind: 'routinePersonal', item: Object.assign({}, item), taskId: (typeof editingDailyTaskId !== 'undefined' ? editingDailyTaskId : null) || null, date: (typeof dailyDate !== 'undefined' ? dailyDate : '') || '', origId: item.id }); persist(); showUndoToast(t('itemDeleted'), function(){ setPersonalItems(function(prev){ return prev.some(function(x){ return x.id === item.id; }) ? prev : prev.concat([item]); }); restoreRecycleEntry(rid, true); }); } setPersonalItems(prev=> prev.filter(it=> it.id!==id)); setPersonalSaved(false); }
   const filteredOfficeGroups = OFFICE_GROUPS.map(g=>{
     if(!officeSearch) return g;
     const s = officeSearch.toLowerCase();
@@ -7086,6 +7168,8 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
   }
 
   function handleDeleteDailyTask(id){
+    const task = (dailyTasks || []).find(function(t){ return t.id === id; });
+    if(task){ const rid = 'rt:' + task.id; recyclePush({ id: rid, recycleKind: 'routineTask', item: Object.assign({}, task), origId: task.id }); persist(); showUndoToast(t('itemDeleted'), function(){ setDailyTasks(function(prev){ return prev.some(function(x){ return x.id === task.id; }) ? prev : prev.concat([task]); }); restoreRecycleEntry(rid, true); }); }
     setDailyTasks(prev=> prev.filter(t=> t.id!==id));
     if(editingDailyTaskId===id) setEditingDailyTaskId(null);
   }
