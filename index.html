@@ -3062,10 +3062,10 @@ function pdfPersonSectionsJpegs(data){
     };
     const drawVLines = (top, bottom) => { for(let x of colX) ctx.fillRect(x, top, 1, bottom - top); };
     drawHeader();
-    const tableTop = y - headerHs.reduce((a, b) => a + b, 0);
+    let tableTop = y - headerHs.reduce((a, b) => a + b, 0);
     if(rows.length){
       for(let ri = 0; ri < rows.length; ri++){
-        if(y + dataHs[ri] > M + PAGE_H){ finishPage(); startPage(); drawHeader(); }
+        if(y + dataHs[ri] > M + PAGE_H){ drawVLines(tableTop, y); finishPage(); startPage(); drawHeader(); tableTop = y - headerHs.reduce((a, b) => a + b, 0); }
         drawRow(y, dataHs[ri], 'data', rows[ri]);
         y += dataHs[ri];
       }
@@ -3076,7 +3076,7 @@ function pdfPersonSectionsJpegs(data){
       y += eh;
     }
     if(totalRow){
-      if(y + totalH > M + PAGE_H){ finishPage(); startPage(); drawHeader(); }
+      if(y + totalH > M + PAGE_H){ drawVLines(tableTop, y); finishPage(); startPage(); drawHeader(); tableTop = y - headerHs.reduce((a, b) => a + b, 0); }
       drawRow(y, totalH, 'total', totalRow);
       y += totalH;
     }
@@ -3718,6 +3718,17 @@ function pdfMakeBlob(){
     return pdfBuildFromJpegs(jpegs);
   }catch(e){ return null; }
 }
+function pdfPersonFileName(){
+  const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
+  const nm = (((arr || [])[personIdx] || {}).name || '').trim();
+  const clean = nm.replace(/[\\\/:*?"<>|]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+  const kindLbl = personKind === 'given' ? 'Given' : 'Taken';
+  return 'Lifestyle-' + (clean || 'person') + '-' + kindLbl + '-History-' + today() + '.pdf';
+}
+function pdfFileName(){
+  if(pdfMode === 'person') return pdfPersonFileName();
+  return 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
+}
 function downloadPdfFile(){
   if(pdfBusy) return;
   pdfBusy = true;
@@ -3725,7 +3736,7 @@ function downloadPdfFile(){
   const blob = pdfMakeBlob();
   pdfBusy = false;
   if(!blob){ showToast(t('pdfFail')); return; }
-  const fname = 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
+  const fname = pdfFileName();
   try{
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -3743,7 +3754,7 @@ function sharePdf(){
   const blob = pdfMakeBlob();
   pdfBusy = false;
   if(!blob){ showToast(t('pdfFail')); return; }
-  const fname = 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
+  const fname = pdfFileName();
   let file = null;
   try{ file = new File([blob], fname, { type: 'application/pdf' }); }catch(e){ file = null; }
   if(file && navigator.canShare && navigator.canShare({ files: [file] })){
