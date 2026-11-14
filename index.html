@@ -3351,7 +3351,22 @@ function pdfPersonSectionsJpegs(data){
         y += headerHs[hi];
       }
     };
-    const drawVLines = (top, bottom) => { for(let x of colX) ctx.fillRect(x, top, 1, bottom - top); };
+    const headerH = headerHs.reduce((a, b) => a + b, 0);
+    // Vertical lines must respect header spans: the merged Channel cell
+    // (span 2) gets NO divider in header row 1; From/To get their divider
+    // only in header row 2. Full column lines run through the body only.
+    const drawVLines = (top, bottom) => {
+      let ht = top;
+      for(let hi = 0; hi < headerRows.length; hi++){
+        const hh = headerHs[hi];
+        let idx = 0; const xs = [M];
+        for(let c of headerRows[hi]){ idx += c.span; xs.push(colX[idx]); }
+        for(let x of xs) ctx.fillRect(x, ht, 1, hh);
+        ht += hh;
+      }
+      const bodyTop = top + headerH;
+      if(bottom > bodyTop) for(let x of colX) ctx.fillRect(x, bodyTop, 1, bottom - bodyTop);
+    };
     drawHeader();
     let tableTop = y - headerHs.reduce((a, b) => a + b, 0);
     if(rows.length){
