@@ -30,8 +30,297 @@
   .stmt-table td,.stmt-table th{overflow-wrap:break-word;}
 #leBankSaveBtn:disabled{background:#A8A29E;}
 </style>
+<style id="offlineFallback">
+.-mt-1\.5{margin-top:-6.0px}
+.-mt-2{margin-top:-8.0px}
+.-mt-6{margin-top:-24.0px}
+.absolute{position:absolute}
+.bg-\[\#1B4D3E\]{background:#1B4D3E}
+.bg-\[\#1E4538\]{background:#1E4538}
+.bg-\[\#2D2A26\]{background:#2D2A26}
+.bg-\[\#2E7D32\]{background:#2E7D32}
+.bg-\[\#616161\]{background:#616161}
+.bg-\[\#9E9E9E\]{background:#9E9E9E}
+.bg-\[\#A5D6A7\]{background:#A5D6A7}
+.bg-\[\#B71C1C\]{background:#B71C1C}
+.bg-\[\#C9A86A\]{background:#C9A86A}
+.bg-\[\#E3F2FD\]{background:#E3F2FD}
+.bg-\[\#E6F4EA\]{background:#E6F4EA}
+.bg-\[\#E8F5E9\]{background:#E8F5E9}
+.bg-\[\#EAF7EA\]{background:#EAF7EA}
+.bg-\[\#F3E5F5\]{background:#F3E5F5}
+.bg-\[\#F3E8D3\]{background:#F3E8D3}
+.bg-\[\#F5EEDD\]{background:#F5EEDD}
+.bg-\[\#F5F1E8\]{background:#F5F1E8}
+.bg-\[\#F9F5EB\]{background:#F9F5EB}
+.bg-\[\#F9F6F0\]{background:#F9F6F0}
+.bg-\[\#FBF6EC\]{background:#FBF6EC}
+.bg-\[\#FDE8E8\]{background:#FDE8E8}
+.bg-\[\#FDECEC\]{background:#FDECEC}
+.bg-\[\#FFCDD2\]{background:#FFCDD2}
+.bg-\[\#FFEBEE\]{background:#FFEBEE}
+.bg-\[\#FFF3D6\]{background:#FFF3D6}
+.bg-\[\#FFF7EA\]{background:#FFF7EA}
+.bg-\[\#FFF7ED\]{background:#FFF7ED}
+.bg-\[\#FFF8E1\]{background:#FFF8E1}
+.bg-\[\#FFFBF7\]{background:#FFFBF7}
+.bg-\[\#FFFEF7\]{background:#FFFEF7}
+.bg-transparent{background:transparent}
+.bg-white{background:#fff}
+.block{display:block}
+.border{border-width:1px;border-style:solid}
+.border-2{border-width:2px;border-style:solid}
+.border-\[\#1E4538\]{border-color:#1E4538}
+.border-\[\#81C784\]{border-color:#81C784}
+.border-\[\#8B7355\]{border-color:#8B7355}
+.border-\[\#A5D6A7\]{border-color:#A5D6A7}
+.border-\[\#E3F2FD\]{border-color:#E3F2FD}
+.border-\[\#E8DCC6\]{border-color:#E8DCC6}
+.border-\[\#E8E6DC\]{border-color:#E8E6DC}
+.border-\[\#EDE6D6\]{border-color:#EDE6D6}
+.border-\[\#EF9A9A\]{border-color:#EF9A9A}
+.border-\[\#F3E8D3\]{border-color:#F3E8D3}
+.border-\[\#FADBD8\]{border-color:#FADBD8}
+.border-\[\#FDE8E8\]{border-color:#FDE8E8}
+.border-\[\#FED7AA\]{border-color:#FED7AA}
+.border-\[\#FFCDD2\]{border-color:#FFCDD2}
+.border-\[\#FFE082\]{border-color:#FFE082}
+.border-\[\#FFE0B2\]{border-color:#FFE0B2}
+.border-b{border-bottom-width:1px;border-bottom-style:solid}
+.border-t{border-top-width:1px;border-top-style:solid}
+.bottom-0{bottom:0}
+.cursor-pointer{cursor:pointer}
+.fixed{position:fixed}
+.flex{display:flex}
+.flex-1{flex:1 1 0%}
+.flex-col{flex-direction:column}
+.font-bold{font-weight:700}
+.font-extrabold{font-weight:800}
+.font-medium{font-weight:500}
+.font-semibold{font-weight:600}
+.gap-1{gap:4.0px}
+.gap-1\.5{gap:6.0px}
+.gap-2{gap:8.0px}
+.gap-3{gap:12.0px}
+.grid{display:grid}
+.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}
+.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.h-10{height:40.0px}
+.h-12{height:48.0px}
+.h-14{height:56.0px}
+.h-2{height:8.0px}
+.h-2\.5{height:10.0px}
+.h-28{height:112.0px}
+.h-3{height:12.0px}
+.h-3\.5{height:14.0px}
+.h-4{height:16.0px}
+.h-5{height:20.0px}
+.h-6{height:24.0px}
+.h-7{height:28.0px}
+.h-8{height:32.0px}
+.h-9{height:36.0px}
+.h-\[120px\]{height:120px}
+.h-\[20px\]{height:20px}
+.h-\[24px\]{height:24px}
+.h-\[32px\]{height:32px}
+.h-\[38px\]{height:38px}
+.h-\[42px\]{height:42px}
+.h-\[46px\]{height:46px}
+.h-\[48px\]{height:48px}
+.h-full{height:100%}
+.hidden{display:none}
+.inset-0{top:0;right:0;bottom:0;left:0}
+.items-center{align-items:center}
+.items-end{align-items:flex-end}
+.items-start{align-items:flex-start}
+.justify-between{justify-content:space-between}
+.justify-center{justify-content:center}
+.justify-end{justify-content:flex-end}
+.leading-tight{line-height:1.25}
+.left-0{left:0}
+.m-4{margin:16.0px}
+.max-w-md{max-width:28rem}
+.mb-0{margin-bottom:0.0px}
+.mb-0\.5{margin-bottom:2.0px}
+.mb-1{margin-bottom:4.0px}
+.mb-1\.5{margin-bottom:6.0px}
+.mb-2{margin-bottom:8.0px}
+.mb-3{margin-bottom:12.0px}
+.mb-4{margin-bottom:16.0px}
+.min-h-screen{min-height:100vh}
+.ml-1{margin-left:4.0px}
+.ml-2{margin-left:8.0px}
+.mt-0\.5{margin-top:2.0px}
+.mt-1{margin-top:4.0px}
+.mt-1\.5{margin-top:6.0px}
+.mt-2{margin-top:8.0px}
+.mt-2\.5{margin-top:10.0px}
+.mt-3{margin-top:12.0px}
+.mt-4{margin-top:16.0px}
+.mt-5{margin-top:20.0px}
+.mt-6{margin-top:24.0px}
+.mx-auto{margin-left:auto;margin-right:auto}
+.overflow-hidden{overflow:hidden}
+.overflow-y-auto{overflow-y:auto}
+.p-0{padding:0.0px}
+.p-1{padding:4.0px}
+.p-1\.5{padding:6.0px}
+.p-2{padding:8.0px}
+.p-2\.5{padding:10.0px}
+.p-3{padding:12.0px}
+.p-3\.5{padding:14.0px}
+.p-4{padding:16.0px}
+.p-5{padding:20.0px}
+.p-8{padding:32.0px}
+.pb-1{padding-bottom:4.0px}
+.pb-10{padding-bottom:40.0px}
+.pb-2{padding-bottom:8.0px}
+.pb-28{padding-bottom:112.0px}
+.pb-3{padding-bottom:12.0px}
+.pb-5{padding-bottom:20.0px}
+.pb-6{padding-bottom:24.0px}
+.pr-11{padding-right:44.0px}
+.pt-1\.5{padding-top:6.0px}
+.pt-2{padding-top:8.0px}
+.pt-3{padding-top:12.0px}
+.pt-4{padding-top:16.0px}
+.pt-5{padding-top:20.0px}
+.px-1{padding-left:4.0px;padding-right:4.0px}
+.px-2{padding-left:8.0px;padding-right:8.0px}
+.px-2\.5{padding-left:10.0px;padding-right:10.0px}
+.px-3{padding-left:12.0px;padding-right:12.0px}
+.px-4{padding-left:16.0px;padding-right:16.0px}
+.px-5{padding-left:20.0px;padding-right:20.0px}
+.px-6{padding-left:24.0px;padding-right:24.0px}
+.py-0{padding-top:0.0px;padding-bottom:0.0px}
+.py-0\.5{padding-top:2.0px;padding-bottom:2.0px}
+.py-1{padding-top:4.0px;padding-bottom:4.0px}
+.py-1\.5{padding-top:6.0px;padding-bottom:6.0px}
+.py-10{padding-top:40.0px;padding-bottom:40.0px}
+.py-2{padding-top:8.0px;padding-bottom:8.0px}
+.py-2\.5{padding-top:10.0px;padding-bottom:10.0px}
+.py-3{padding-top:12.0px;padding-bottom:12.0px}
+.py-3\.5{padding-top:14.0px;padding-bottom:14.0px}
+.py-4{padding-top:16.0px;padding-bottom:16.0px}
+.py-8{padding-top:32.0px;padding-bottom:32.0px}
+.relative{position:relative}
+.right-0{right:0}
+.rounded-2xl{border-radius:16px}
+.rounded-\[10px\]{border-radius:10px}
+.rounded-\[12px\]{border-radius:12px}
+.rounded-\[14px\]{border-radius:14px}
+.rounded-\[16px\]{border-radius:16px}
+.rounded-\[18px\]{border-radius:18px}
+.rounded-\[20px\]{border-radius:20px}
+.rounded-\[22px\]{border-radius:22px}
+.rounded-\[24px\]{border-radius:24px}
+.rounded-\[3px\]{border-radius:3px}
+.rounded-\[5px\]{border-radius:5px}
+.rounded-\[6px\]{border-radius:6px}
+.rounded-\[8px\]{border-radius:8px}
+.rounded-full{border-radius:9999px}
+.rounded-lg{border-radius:8px}
+.rounded-xl{border-radius:12px}
+.shadow-lg{box-shadow:0 10px 15px rgba(0,0,0,.1)}
+.shadow-sm{box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.shrink-0{flex-shrink:0}
+.text-\[\#1A1A1A\]{color:#1A1A1A}
+.text-\[\#1A1A1A\]{color:#1A1A1A}
+.text-\[\#1A4D8F\]{color:#1A4D8F}
+.text-\[\#1A4D8F\]{color:#1A4D8F}
+.text-\[\#1B4D3E\]{color:#1B4D3E}
+.text-\[\#1B4D3E\]{color:#1B4D3E}
+.text-\[\#1E4538\]{color:#1E4538}
+.text-\[\#1E4538\]{color:#1E4538}
+.text-\[\#1E7B34\]{color:#1E7B34}
+.text-\[\#1E7B34\]{color:#1E7B34}
+.text-\[\#2D2A26\]{color:#2D2A26}
+.text-\[\#2D2A26\]{color:#2D2A26}
+.text-\[\#2E7D32\]{color:#2E7D32}
+.text-\[\#2E7D32\]{color:#2E7D32}
+.text-\[\#5C4A32\]{color:#5C4A32}
+.text-\[\#5C4A32\]{color:#5C4A32}
+.text-\[\#5D4037\]{color:#5D4037}
+.text-\[\#5D4037\]{color:#5D4037}
+.text-\[\#6B4E2A\]{color:#6B4E2A}
+.text-\[\#6B4E2A\]{color:#6B4E2A}
+.text-\[\#8A5A00\]{color:#8A5A00}
+.text-\[\#8A5A00\]{color:#8A5A00}
+.text-\[\#8B5E3C\]{color:#8B5E3C}
+.text-\[\#8B5E3C\]{color:#8B5E3C}
+.text-\[\#8B7355\]{color:#8B7355}
+.text-\[\#8B7355\]{color:#8B7355}
+.text-\[\#8D6E63\]{color:#8D6E63}
+.text-\[\#8D6E63\]{color:#8D6E63}
+.text-\[\#9A3412\]{color:#9A3412}
+.text-\[\#9A3412\]{color:#9A3412}
+.text-\[\#B71C1C\]{color:#B71C1C}
+.text-\[\#B71C1C\]{color:#B71C1C}
+.text-\[\#C0392B\]{color:#C0392B}
+.text-\[\#C0392B\]{color:#C0392B}
+.text-\[\#C9A86A\]{color:#C9A86A}
+.text-\[\#C9A86A\]{color:#C9A86A}
+.text-\[10px\]{font-size:10px}
+.text-\[11px\]{font-size:11px}
+.text-\[12px\]{font-size:12px}
+.text-\[13px\]{font-size:13px}
+.text-\[14px\]{font-size:14px}
+.text-\[15px\]{font-size:15px}
+.text-\[16px\]{font-size:16px}
+.text-\[17px\]{font-size:17px}
+.text-\[18px\]{font-size:18px}
+.text-\[20px\]{font-size:20px}
+.text-\[22px\]{font-size:22px}
+.text-\[24px\]{font-size:24px}
+.text-\[26px\]{font-size:26px}
+.text-\[28px\]{font-size:28px}
+.text-\[40px\]{font-size:40px}
+.text-center{text-align:center}
+.text-left{text-align:left}
+.text-right{text-align:right}
+.text-white{color:#fff}
+.top-0{top:0}
+.w-10{width:40.0px}
+.w-12{width:48.0px}
+.w-14{width:56.0px}
+.w-16{width:64.0px}
+.w-24{width:96.0px}
+.w-28{width:112.0px}
+.w-3{width:12.0px}
+.w-3\.5{width:14.0px}
+.w-4{width:16.0px}
+.w-5{width:20.0px}
+.w-6{width:24.0px}
+.w-7{width:28.0px}
+.w-8{width:32.0px}
+.w-9{width:36.0px}
+.w-\[140px\]{width:140px}
+.w-\[20px\]{width:20px}
+.w-\[24px\]{width:24px}
+.w-\[32px\]{width:32px}
+.w-\[38px\]{width:38px}
+.w-\[46px\]{width:46px}
+.w-\[48px\]{width:48px}
+.w-\[50\%\]{width:50%}
+.w-full{width:100%}
+.whitespace-nowrap{white-space:nowrap}
+.z-10{z-index:10}
+.z-20{z-index:20}
+.z-40{z-index:40}
+.z-\[70\]{z-index:[70]}
+.z-\[85\]{z-index:[85]}
+.z-\[90\]{z-index:[90]}
+#offlineBadge{position:fixed;top:0;left:0;right:0;z-index:200;text-align:center;font-size:12px;font-weight:700;padding:6px;background:#FFF3CD;color:#7A5A00;display:none}
+#offlineBadge.show{display:block}
+#syncBadge{position:fixed;top:0;left:0;right:0;z-index:200;text-align:center;font-size:12px;font-weight:700;padding:6px;background:#E3F2FD;color:#333;display:none}
+#syncBadge.show{display:block}
+</style>
 </head>
 <body>
+<div id="offlineBadge">⚠️ অফলাইনে আছেন — ডাটা ফোনেই সেভ হচ্ছে, অনলাইন হলে অটো সিঙ্ক হবে</div>
+<div id="syncBadge">🔄 অনলাইন হয়েছেন — সিঙ্ক হচ্ছে...</div>
 <div id="routineRoot"></div>
 <div id="app" class="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto min-h-screen pb-28"></div>
 
@@ -695,7 +984,7 @@ function cloudCfg(){ try{ const saved = JSON.parse(localStorage.getItem('lifesty
 let cloudBusy = false, firebaseReady = null;
 function loadFirebaseSDK(){
   if(firebaseReady) return firebaseReady;
-  firebaseReady = new Promise((resolve, reject) => {
+  firebaseReady = new Promise((resolve, reject) => { if(typeof navigator!=='undefined' && !navigator.onLine){ reject(new Error('offline')); return; }
     if(typeof firebase !== 'undefined' && firebase.firestore){ resolve(); return; }
     const urls = [
       'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
@@ -726,6 +1015,7 @@ async function cloudConnect(){
   return firebase.firestore().collection('lifestyle').doc(user.uid);
 }
 async function cloudSync(mode, quiet){
+  if(typeof navigator!=='undefined' && !navigator.onLine){ try{localStorage.setItem('lifestyle_pending_sync','1');}catch(e){} try{updateOfflineUI();}catch(e){} return; }
   if(cloudBusy){ if(!quiet) showToast(t('cloudSyncing')); return; }
   if(!cloudUser){ if(!quiet) showToast(t('loginToSync')); navGo('profile'); return; }
   cloudBusy = true;
@@ -740,7 +1030,7 @@ async function cloudSync(mode, quiet){
     if(mode !== 'download'){
       await ref.set(Object.assign({}, merged, { updatedAt: new Date().toISOString() }));
     }
-    localStorage.setItem('lifestyle_cloud_lastSync', new Date().toISOString());
+    localStorage.setItem('lifestyle_cloud_lastSync', new Date().toISOString()); try{localStorage.removeItem('lifestyle_pending_sync');}catch(e){} try{updateOfflineUI();}catch(e){}
     localStorage.removeItem('lifestyle_restore_ids');
     if(!quiet) showToast(mode === 'upload' ? t('cloudUploadDone') : mode === 'download' ? t('cloudDownloadDone') : t('cloudSyncDone'));
   }catch(e){
@@ -755,7 +1045,8 @@ function routineLocal(){ return { dailyTasks: readRoutineLS('lifestyle_daily_tas
 function queueRoutineCloudUpload(){ if(!applyingCloud) queueCloudUpload(); }
 function cloudDocData(){ var rt = routineLocal(); return { transactions: state.transactions, peopleGiven: state.peopleGiven, peopleTaken: state.peopleTaken, bankLoans: state.bankLoans, bazar: bazar, profile: profile, deleted: state.deleted, dailyTasks: rt.dailyTasks, travelList: rt.travelList }; }
 function queueCloudUpload(){
-  if(!cloudUser) return;
+  try{localStorage.setItem('lifestyle_pending_sync','1');}catch(e){} try{updateOfflineUI();}catch(e){} if(!cloudUser) return;
+  if(typeof navigator!=='undefined' && !navigator.onLine) return;
   if(cloudUploadTimer) clearTimeout(cloudUploadTimer);
   cloudUploadTimer = setTimeout(() => { cloudSync('upload', true); }, 1500);
 }
@@ -8725,6 +9016,7 @@ window.__RoutineManagers = { DailyRoutineManager: DailyRoutineManager, TravelMan
 /* ---- Routine & Work opener: mounts the copied React managers as BottomSheets ---- */
 var __routineRoot = null;
 function openRoutineModule(type){
+  if(typeof React==='undefined' || !window.__RoutineManagers){ try{showToast(lang==='en'?'This section needs internet once to load. Your other data works offline.':'এই অংশটা একবার অনলাইনে লোড হতে হবে। বাকি সব ডাটা অফলাইনে চলবে।');}catch(e){} return; }
   try{
     if(typeof firebase === 'undefined'){
       window.firebase = { apps: [], initializeApp: function(){}, auth: function(){ return { currentUser: null }; }, firestore: undefined };
@@ -8763,5 +9055,42 @@ function RoutineSheet(props){
   );
 }
 </script>
+
+<script>
+/* ===== OFFLINE-FIRST + AUTO-SYNC (added, old code untouched) ===== */
+(function(){
+  function el(id){ return document.getElementById(id); }
+  window.updateOfflineUI = function(){
+    var off = el('offlineBadge'), sy = el('syncBadge');
+    var online = (typeof navigator==='undefined') ? true : navigator.onLine;
+    var pending = false; try{ pending = localStorage.getItem('lifestyle_pending_sync')==='1'; }catch(e){}
+    if(off) off.classList.toggle('show', !online);
+    if(sy) sy.classList.toggle('show', !!(online && pending));
+    if(online && pending){ setTimeout(function(){ if(sy) sy.classList.remove('show'); }, 4000); }
+  };
+  function tryAutoSync(){
+    try{ updateOfflineUI(); }catch(e){}
+    if(typeof navigator!=='undefined' && !navigator.onLine) return;
+    try{
+      if(typeof cloudUser!=='undefined' && cloudUser && typeof cloudSync==='function'){ cloudSync('sync', true); }
+      else if(typeof initCloud==='function'){ initCloud(); }
+    }catch(e){}
+  }
+  window.addEventListener('online', function(){ try{updateOfflineUI();}catch(e){} try{ var s=el('syncBadge'); if(s) s.classList.add('show'); }catch(e){} setTimeout(tryAutoSync, 800); });
+  window.addEventListener('offline', function(){ try{updateOfflineUI();}catch(e){} });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) tryAutoSync(); });
+  setInterval(function(){ try{ var p=false; try{p=localStorage.getItem('lifestyle_pending_sync')==='1';}catch(e){} if(p) tryAutoSync(); }catch(e){} }, 60000);
+  try{
+    if('serviceWorker' in navigator && (location.protocol==='http:' || location.protocol==='https:')){
+      var swCode = "self.addEventListener('install',function(e){e.waitUntil(caches.open('lifestyle-v1').then(function(c){return c.addAll(['./']);}).catch(function(){}));self.skipWaiting();});self.addEventListener('activate',function(e){e.waitUntil(self.clients.claim());});self.addEventListener('fetch',function(e){if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(function(r){var f=fetch(e.request).then(function(res){try{var cl=res.clone();caches.open('lifestyle-v1').then(function(c){c.put(e.request,cl);});}catch(err){}return res;}).catch(function(){return r;});return r||f;}).catch(function(){return fetch(e.request); }));});";
+      var blob = new Blob([swCode], {type:'text/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(function(){});
+    }
+  }catch(e){}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', updateOfflineUI); else updateOfflineUI();
+  setTimeout(updateOfflineUI, 1500);
+})();
+</script>
+
 </body>
 </html>
