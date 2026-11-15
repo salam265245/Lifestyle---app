@@ -866,7 +866,6 @@ function restoreRecycleEntry(rid, quiet){
     let tasks = []; try{ tasks = JSON.parse(localStorage.getItem('lifestyle_daily_tasks') || '[]'); }catch(err){ tasks = []; }
     if(!tasks.some(function(tk){ return tk.id === e.item.id; })) tasks.push(e.item);
     try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(tasks)); }catch(err){}
-    unmarkDeleted(e.origId); addRestoreId(e.origId);
     state.recycle.splice(idx, 1); persist(); if(!quiet) showToast(t('itemRestored')); render(); return;
   }
 }
@@ -2133,7 +2132,7 @@ function historyRows(){
     rows.push({ key: 'tx:' + tx.id, kind: tx.type, title: (lang === 'en' ? tx.category : (tx.categoryBn || tx.category)) || '', icon: tx.icon || '', date: tx.date || '', medium: tx.medium || tx.channel || '', note: tx.note || '', amount: +tx.amount || 0, sign: tx.type === 'income' ? 1 : -1, txId: tx.id, catEn: tx.category || '', catBn: tx.categoryBn || '', updatedAt: tx.updatedAt || '' });
   });
   const pushLoan = (kind, personName, entry, pi, ei, isPayment) => {
-    rows.push({ key: kind + ':' + pi + ':' + (isPayment ? 'p' : 'l') + ':' + ei, kind: kind, title: personName || '', icon: kind === 'bank' ? '🏦' : '👤', date: entry.date || '', medium: entry.medium || entry.channel || entry.fromChannel || '', note: entry.note || '', amount: +entry.amount || 0, sign: -1, personIdx: pi, entryIdx: ei, isPayment: isPayment, bankName: entry.bank || entry.name || '', updatedAt: entry.updatedAt || '' });
+    rows.push({ key: kind + ':' + pi + ':' + (isPayment ? 'p' : 'l') + ':' + ei, kind: kind, title: personName || '', icon: kind === 'bank' ? '🏦' : '👤', date: entry.date || entry.loanDate || entry.disbursementDate || '', medium: entry.medium || entry.channel || entry.fromChannel || '', note: entry.note || '', amount: +entry.amount || 0, sign: -1, personIdx: pi, entryIdx: ei, isPayment: isPayment, bankName: entry.bank || entry.name || '', updatedAt: entry.updatedAt || '' });
   };
   (state.peopleGiven || []).forEach((p, pi) => { (p.loans || []).forEach((e, ei) => pushLoan('given', p.name, e, pi, ei, false)); (p.payments || []).forEach((e, ei) => pushLoan('return', p.name, e, pi, ei, true)); });
   (state.peopleTaken || []).forEach((p, pi) => { (p.loans || []).forEach((e, ei) => pushLoan('taken', p.name, e, pi, ei, false)); (p.payments || []).forEach((e, ei) => pushLoan('repayment', p.name, e, pi, ei, true)); });
@@ -7545,7 +7544,7 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
 
   function handleDeleteDailyTask(id){
     const task = (dailyTasks || []).find(function(t){ return t.id === id; });
-    if(task){ try{ const rid = 'rt:' + task.id; recyclePush({ id: rid, recycleKind: 'routineTask', item: Object.assign({}, task), origId: task.id }); if(typeof markDeleted === 'function') markDeleted(task.id); persist(); showUndoToast(lang === 'en' ? 'Task deleted' : 'টাস্ক মুছে ফেলা হয়েছে', function(){ setDailyTasks(function(prev){ return prev.some(function(x){ return x.id === task.id; }) ? prev : prev.concat([task]); }); restoreRecycleEntry(rid, true); }); }catch(err){} }
+    if(task){ const rid = 'rt:' + task.id; recyclePush({ id: rid, recycleKind: 'routineTask', item: Object.assign({}, task), origId: task.id }); persist(); showUndoToast(t('itemDeleted'), function(){ setDailyTasks(function(prev){ return prev.some(function(x){ return x.id === task.id; }) ? prev : prev.concat([task]); }); restoreRecycleEntry(rid, true); }); }
     setDailyTasks(prev=> prev.filter(t=> t.id!==id));
     if(editingDailyTaskId===id) setEditingDailyTaskId(null);
   }
