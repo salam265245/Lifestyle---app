@@ -12,7 +12,7 @@
 
 <style>
   body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
-  .card{background:#fff;border:1px solid #F3E8D3;border-radius:16px;}
+  .card{background:#fff;border:1px solid #F3E8D3;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,0.04);}
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} #formSheet:not(.hidden){display:flex;flex-direction:column;overflow:hidden;height:92vh;} #formSheet .formSheetBody{overflow-y:auto;flex:1;min-height:0;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
   .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#E3F2FD;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:100;white-space:nowrap;}
@@ -23,7 +23,7 @@
   .grp-btn{border:1.5px solid #F3E8D3;border-radius:12px;padding:10px 6px;font-size:13px;font-weight:700;background:#fff;text-align:center;cursor:pointer;}
   .grp-btn.sel{background:#E3F2FD;border-color:#E3F2FD;}
   .nav-btn{flex:1;text-align:center;font-size:11px;font-weight:700;color:#8B7355;padding:8px 0 6px;cursor:pointer;}
-  .nav-btn.active{color:#8B5E3C;}
+  .nav-btn.active{color:#8B5E3C;background:#FFF8E1;border-radius:12px 12px 0 0;box-shadow:inset 0 3px 0 #C9A86A;}
   .nav-btn.active .nav-ico{color:#C9A86A;}
   #pdfPreviewBody{overflow-x:hidden;}
   .stmt-table{table-layout:fixed;width:100%;}
@@ -771,6 +771,7 @@ function thisMonth(){ const d = new Date(); return d.getFullYear() + '-' + Strin
 function firstOfMonth(){ return thisMonth() + '-01'; }
 function normDate(d){ try{ if(!d) return ''; d = String(d).trim(); let m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[1]).slice(-2); m = d.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/); if(m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2); return d.slice(0,10); }catch(e){ return ''; } }
 function fmt(n){ return '৳ ' + Math.round(n || 0).toLocaleString('en-US'); }
+function emptyHtml(){ return '<div style="text-align:center;padding:22px 10px"><div style="font-size:28px;line-height:1">📭</div><div style="font-size:13px;color:#8B7355;margin-top:8px">' + t('noData') + '</div></div>'; }
 function showToast(msg){ const box = document.getElementById('toastBox'); box.innerHTML = '<div class="toast">' + msg + '</div>'; const dur = String(msg).length > 80 ? 6000 : 2000; setTimeout(()=>{ box.innerHTML = ''; }, dur); }
 
 /* ---------- ONE save path ---------- */
@@ -1519,8 +1520,8 @@ function render(){
       '</div>' + routineWorkHtml() +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + t('loansTitle') + '</h3>' +
       '<div class="grid grid-cols-2 gap-2">' +
-        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'given\')"><div class="font-bold text-[13px]">' + t('totalGiven') + '</div><div class="text-[12px] text-[#8B7355]">' + t('given') + ': ' + fmt(tot.given) + '</div><div class="text-[12px] text-[#8B7355]">' + t('returned') + ': ' + fmt(tot.returned) + '</div><div class="text-[12px] font-bold text-green-700">' + t('dueLbl') + ': ' + fmt(tot.given - tot.returned) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'taken\')"><div class="font-bold text-[13px]">' + t('totalTaken') + '</div><div class="text-[12px] text-[#8B7355]">' + t('taken') + ': ' + fmt(tot.taken) + '</div><div class="text-[12px] text-[#8B7355]">' + t('repaid') + ': ' + fmt(tot.repaid) + '</div><div class="text-[12px] font-bold text-red-600">' + t('dueLbl') + ': ' + fmt(tot.taken - tot.repaid) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'given\')"><div class="font-bold text-[13px]">↗️ ' + t('totalGiven') + '</div><div class="text-[12px] text-[#8B7355]">' + t('given') + ': ' + fmt(tot.given) + '</div><div class="text-[12px] text-[#8B7355]">' + t('returned') + ': ' + fmt(tot.returned) + '</div><div class="text-[12px] font-bold text-green-700" style="display:inline-block;background:#EAF7EA;border-radius:8px;padding:2px 6px;margin-top:2px">' + t('dueLbl') + ': ' + fmt(tot.given - tot.returned) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'taken\')"><div class="font-bold text-[13px]">↙️ ' + t('totalTaken') + '</div><div class="text-[12px] text-[#8B7355]">' + t('taken') + ': ' + fmt(tot.taken) + '</div><div class="text-[12px] text-[#8B7355]">' + t('repaid') + ': ' + fmt(tot.repaid) + '</div><div class="text-[12px] font-bold text-red-600" style="display:inline-block;background:#FDECEC;border-radius:8px;padding:2px 6px;margin-top:2px">' + t('dueLbl') + ': ' + fmt(tot.taken - tot.repaid) + '</div></div>' +
       '</div>' +
     dueBoxHtml() + homeBankLoansHtml() +
     '</div>';
@@ -1923,7 +1924,7 @@ function renderBazarList(){
   if(!list.length){ box.innerHTML = '<div class="text-center text-[13px] text-[#8B7355] py-4">' + t('emptyBazar') + '</div>'; return; }
   box.innerHTML = list.map(it => {
     const bought = it.status === 'bought';
-    const priceTxt = it.price ? fmt(it.price) : '৳0 (' + t('bzPricePending') + ')';
+    const priceTxt = it.price ? fmt(it.price) : fmt(0) + ' (' + t('bzPricePending') + ')';
     const meta = priceTxt + ' • ' + (fmtDMY(it.date) || '');
     /* All 4 buttons ALWAYS shown: No on a bought item undoes the Yes (removes its expense) */
     const btns = '<button onclick="bazarEdit(\'' + it.id + '\')" class="px-3 py-2 rounded-full bg-white text-[13px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
@@ -2206,7 +2207,7 @@ function historyListHtml(rows){
       '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (net >= 0 ? 'text-green-700' : 'text-red-600') + '">' + (net >= 0 ? '+' : '-') + fmt(Math.abs(net)) + '</div></div></div>';
   };
   histShownCount = displayRows.length;
-  return displayRows.length ? displayRows.map(d => d.g ? groupRowHtml(d.g) : singleRowHtml(d.r)).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
+  return displayRows.length ? displayRows.map(d => d.g ? groupRowHtml(d.g) : singleRowHtml(d.r)).join('') : emptyHtml();
 }
 function histCountText(){
   return t('filtered') + ': ' + histFilterLabel() + ' • ' + (fmtDMY(histFrom) || '…') + t('fromToSep') + (fmtDMY(histTo) || '…') + ' • ' + histShownCount + ' ' + t('records') + ' • User, Date, Time included';
@@ -2507,7 +2508,7 @@ function historyBankLoans(){
 function bankLoanDetailHtml(loans){
   const d = bankLoanPdfDetails(loans);
   const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
-  if(!d.items.length) return '<div style="font-size:12px;text-align:center;padding:10px">' + t('noData') + '</div>';
+  if(!d.items.length) return emptyHtml();
   const row = (label, val) => '<tr style="page-break-inside:avoid"><td style="' + cell + ';width:40%">' + label + '</td><td style="' + cell + ';text-align:left;font-weight:700">' + val + '</td></tr>';
   const blocks = d.items.map(it => {
     const rows = [
@@ -2528,8 +2529,10 @@ function bankLoanDetailHtml(loans){
       row('Status', it.status)
     ];
     if(it.note) rows.splice(1, 0, row('Note', escA(it.note)));
+    const pct = it.months ? Math.round(it.paid / it.months * 100) : 0;
     return '<div style="page-break-inside:avoid;margin-bottom:14px">' +
       '<div style="background:#F5EEDD;border:1px solid #ccc;padding:6px;font-weight:800;font-size:14px">🏦 ' + escA(it.bank || '') + '</div>' +
+      '<div style="padding:8px 6px 2px"><div style="height:6px;background:#E8E8E8;border-radius:999px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:#4CAF50;border-radius:999px"></div></div><div style="font-size:11px;color:#555;margin-top:4px">EMI Progress: ' + it.paid + ' / ' + it.months + ' (' + pct + '%)</div></div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><tbody>' + rows.join('') + '</tbody></table></div>';
   }).join('');
   const tot = d.totals;
@@ -2688,6 +2691,7 @@ function homeBankLoansHtml(){
       '<div class="text-[12px] text-[#8B7355]">' + fmt(e.amount) + ' • ' + blMonths(e) + 'mo • ' + blRate(e) + '%</div></div>' +
       '<div class="text-right shrink-0"><div class="font-extrabold text-[15px]">' + fmt(emi) + '/mo</div>' +
       '<div class="text-[12px] text-[#8B7355]">' + paid + '/' + blMonths(e) + ' Paid</div></div></div>' +
+      '<div style="height:6px;background:#F3E8D3;border-radius:999px;margin-top:8px;overflow:hidden"><div style="width:' + (blMonths(e) ? Math.round(paid / blMonths(e) * 100) : 0) + '%;height:100%;background:#4CAF50;border-radius:999px"></div></div>' +
       '<div class="flex gap-2 mt-2 items-center">' +
       '<button onclick="openEmiChecklist(' + ti + ')" class="flex-1 py-2 text-left text-[13px] font-bold text-[#8B7355] underline">✓ ' + t('emiChecklist') + '</button>' +
       '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold">' + t('editBtn') + '</button>' +
@@ -2699,37 +2703,50 @@ function homeBankLoansHtml(){
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="toLbl">To</label><input type="date" value="' + escA(homeBankTo) + '" onchange="homeBankSetTo(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div></div>' +
     '<div class="flex gap-2 mb-2">' +
     '<button onclick="downloadHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('downloadPdf') + '</button>' +
-    '<button onclick="openHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-white border border-[#F3E8D3] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
-    '<button onclick="shareHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📤 ' + t('shareBtn') + '</button></div>' +
+    '<button onclick="openHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] border border-[#BBDEFB] font-bold text-[13px]">👁 ' + t('viewBtn') + '</button>' +
+    '<button onclick="shareHomeBankPdf()" class="flex-1 py-2.5 rounded-full bg-[#2D2A26] text-white font-bold text-[13px]">📤 ' + t('shareBtn') + '</button></div>' +
     '<div class="text-[11px] text-[#8B7355] text-center">' + t('filterLoansHint') + '</div></div>' +
     '<div class="flex justify-between items-center mt-4 mb-2"><h3 class="font-extrabold text-[15px]">' + t('bankLoansPage') + '</h3>' +
     '<span class="w-6 h-6 rounded-full bg-[#E3F2FD] text-[12px] flex items-center justify-center font-bold">' + loans.length + '</span></div>' +
-    (cards || '<div class="text-center text-[13px] text-[#8B7355] py-4">' + t('noData') + '</div>');
+    (cards || emptyHtml());
 }
 function homeSummaryData(){
   const tot = totals();
-  return { todayIncome: tot.tIn, todayExpense: tot.tEx, monthIncome: tot.mIn, monthExpense: tot.mEx, totalGiven: tot.given, totalTaken: tot.taken };
+  return { todayIncome: tot.tIn, todayExpense: tot.tEx, monthIncome: tot.mIn, monthExpense: tot.mEx, totalGiven: tot.given, returned: tot.returned, givenDue: tot.given - tot.returned, totalTaken: tot.taken, repaid: tot.repaid, takenDue: tot.taken - tot.repaid };
 }
 function homeSummaryHtml(){
   const s = homeSummaryData();
   const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
   const row = (label, val) => '<tr style="page-break-inside:avoid"><td style="' + cell + ';width:40%">' + label + '</td><td style="' + cell + ';text-align:left;font-weight:700">' + val + '</td></tr>';
-  const rows = [
+  const homeRows = [
     row(t('todayIncome'), fmt(s.todayIncome)),
     row(t('todayExpense'), fmt(s.todayExpense)),
     row(t('monthIncome'), fmt(s.monthIncome)),
-    row(t('monthExpense'), fmt(s.monthExpense)),
-    row(t('totalGiven'), fmt(s.totalGiven)),
-    row(t('totalTaken'), fmt(s.totalTaken))
+    row(t('monthExpense'), fmt(s.monthExpense))
   ];
-  return '<div style="page-break-inside:avoid;margin-bottom:14px">' +
-    '<div style="background:#F5EEDD;border:1px solid #ccc;padding:6px;font-weight:800;font-size:14px">' + (lang === 'en' ? 'Home Summary' : 'হোম সারাংশ') + '</div>' +
+  const rowHL = (label, val) => '<tr style="page-break-inside:avoid"><td style="' + cell + ';width:40%;background:#FFF8E1;font-weight:700">' + label + '</td><td style="' + cell + ';text-align:left;font-weight:700;background:#FFF8E1">' + val + '</td></tr>';
+  const givenRows = [
+    row(t('given'), fmt(s.totalGiven)),
+    row(t('returned'), fmt(s.returned)),
+    rowHL(t('dueLbl'), fmt(s.givenDue))
+  ];
+  const takenRows = [
+    row(t('taken'), fmt(s.totalTaken)),
+    row(t('repaid'), fmt(s.repaid)),
+    rowHL(t('dueLbl'), fmt(s.takenDue))
+  ];
+  const block = (heading, rows, bg) => '<div style="page-break-inside:avoid;margin-bottom:14px">' +
+    '<div style="background:' + (bg || '#F5EEDD') + ';border:1px solid #ccc;padding:6px;font-weight:800;font-size:14px">' + heading + '</div>' +
     '<table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><tbody>' + rows.join('') + '</tbody></table></div>';
+  return block((lang === 'en' ? 'Home Summary' : 'হোম সারাংশ'), homeRows, '#F5EEDD') +
+    block('↗️ ' + t('totalGiven'), givenRows, '#EAF7EA') +
+    block('↙️ ' + t('totalTaken'), takenRows, '#FDECEC');
 }
 function homeBankPdfHtml(){
   const loans = homeBankLoansFiltered();
   const period = statementPeriod(homeBankFrom, homeBankTo, loans.map(e => ({ date: e.date || e.loanDate || '' })));
-  return statementHeaderHtml('History - Bank Loan', loans.length, period) + homeSummaryHtml() + bankLoanDetailHtml(loans);
+  return statementHeaderHtml('History - Bank Loan', loans.length, period) + homeSummaryHtml() + bankLoanDetailHtml(loans) +
+    '<div style="text-align:center;font-size:11px;color:#999;margin-top:12px;border-top:1px solid #eee;padding-top:8px">Lifestyle \u2022 Md. Abdus Salam</div>';
 }
 function openHomeBankPdf(){ pdfMode = 'homeBank'; showStatementPreview(homeBankPdfHtml()); }
 function downloadHomeBankPdf(){ pdfMode = 'homeBank'; downloadPdfFile(); }
@@ -3601,7 +3618,7 @@ function pdfBankLoansJpegs(data){
     const rows = loanRows(it);
     let hh = 26;
     rows.forEach(r => { hh += rowH(r[0], r[1]); });
-    blocks.push({ heading: '🏦 ' + (it.bank || ''), rows: rows, h: hh });
+    blocks.push({ heading: '🏦 ' + (it.bank || ''), rows: rows, h: hh + 16, pct: (it.months ? Math.round(it.paid / it.months * 100) : 0), paid: it.paid, months: it.months });
   });
   if(d.items.length){
     const tot = d.totals;
@@ -3621,17 +3638,32 @@ function pdfBankLoansJpegs(data){
   }
   if(data.homeSummary){
     const s = data.homeSummary;
-    const sumRows = [
+    const homeSumRows = [
       [t('todayIncome'), fmt(s.todayIncome)],
       [t('todayExpense'), fmt(s.todayExpense)],
       [t('monthIncome'), fmt(s.monthIncome)],
-      [t('monthExpense'), fmt(s.monthExpense)],
-      [t('totalGiven'), fmt(s.totalGiven)],
-      [t('totalTaken'), fmt(s.totalTaken)]
+      [t('monthExpense'), fmt(s.monthExpense)]
     ];
-    let shh = 26;
-    sumRows.forEach(r => { shh += rowH(r[0], r[1]); });
-    blocks.unshift({ heading: (lang === 'en' ? 'Home Summary' : 'হোম সারাংশ'), rows: sumRows, h: shh });
+    const givenSumRows = [
+      [t('given'), fmt(s.totalGiven)],
+      [t('returned'), fmt(s.returned)],
+      [t('dueLbl'), fmt(s.givenDue)]
+    ];
+    const takenSumRows = [
+      [t('taken'), fmt(s.totalTaken)],
+      [t('repaid'), fmt(s.repaid)],
+      [t('dueLbl'), fmt(s.takenDue)]
+    ];
+    const mkSumBlock = (heading, sumRows, bg) => {
+      let shh = 26;
+      sumRows.forEach(r => { shh += rowH(r[0], r[1]); });
+      return { heading: heading, rows: sumRows, h: shh, bg: bg || '#F5EEDD' };
+    };
+    blocks.unshift(
+      mkSumBlock((lang === 'en' ? 'Home Summary' : 'হোম সারাংশ'), homeSumRows, '#F5EEDD'),
+      mkSumBlock('↗️ ' + t('totalGiven'), givenSumRows, '#EAF7EA'),
+      mkSumBlock('↙️ ' + t('totalTaken'), takenSumRows, '#FDECEC')
+    );
   }
   const pages = [];
   if(!blocks.length){ pages.push([]); }
@@ -3672,13 +3704,23 @@ function pdfBankLoansJpegs(data){
   };
   const drawBlock = (ctx, y, b) => {
     const top = y;
-    ctx.fillStyle = '#F5EEDD';
+    ctx.fillStyle = b.bg || '#F5EEDD';
     ctx.fillRect(M, y, CW, 26);
     ctx.font = FB14; ctx.fillStyle = '#000'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText(b.heading, M + CPADX, y + 5);
     y += 26;
+    if(typeof b.pct === 'number'){
+      ctx.fillStyle = '#E8E8E8';
+      ctx.fillRect(M + CPADX, y + 2, CW - 2 * CPADX, 6);
+      ctx.fillStyle = '#4CAF50';
+      ctx.fillRect(M + CPADX, y + 2, (CW - 2 * CPADX) * b.pct / 100, 6);
+      ctx.font = F; ctx.fillStyle = '#555'; ctx.textAlign = 'left';
+      ctx.fillText('EMI Progress: ' + b.paid + ' / ' + b.months + ' (' + b.pct + '%)', M + CPADX, y + 12);
+      y += 16;
+    }
     b.rows.forEach(r => {
       const hh = rowH(r[0], r[1]);
+      if(r[0] === t('dueLbl')){ ctx.fillStyle = '#FFF8E1'; ctx.fillRect(M, y, CW, hh); }
       ctx.fillStyle = '#ccc';
       ctx.fillRect(M, y, CW, 1);
       ctx.fillRect(M + LW, y, 1, hh);
@@ -3750,12 +3792,21 @@ function pdfBankLoansJpegs(data){
           const _pc2 = document.createElement('canvas'); _pc2.width = W * S; _pc2.height = H * S;
           const _cx2 = _pc2.getContext('2d'); _cx2.scale(S, S); _cx2.fillStyle = '#fff'; _cx2.fillRect(0, 0, W, H);
           drawSig(_cx2);
+          _cx2.textAlign = 'center';
+          _cx2.font = '10px system-ui, -apple-system, "Segoe UI", sans-serif';
+          _cx2.fillStyle = '#999';
+          _cx2.fillText('Lifestyle \u2022 Md. Abdus Salam', M + CW / 2, H - 10);
+          _cx2.textAlign = 'left';
           const _d1 = _pc2.toDataURL('image/jpeg', 0.92);
           jpegs.push({ bytes: pdfB64ToBytes((_d1.split(',')[1] || '')), w: _pc2.width, h: _pc2.height });
           continue;
         }
       }
     }
+    ctx.textAlign = 'center';
+    ctx.font = '10px system-ui, -apple-system, "Segoe UI", sans-serif';
+    ctx.fillStyle = '#999';
+    ctx.fillText('Lifestyle \u2022 Md. Abdus Salam', M + CW / 2, H - 10);
     ctx.textAlign = 'left';
     const dataUrl = pc.toDataURL('image/jpeg', 0.92);
     jpegs.push({ bytes: pdfB64ToBytes((dataUrl.split(',')[1] || '')), w: pc.width, h: pc.height });
