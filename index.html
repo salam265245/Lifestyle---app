@@ -2706,10 +2706,30 @@ function homeBankLoansHtml(){
     '<span class="w-6 h-6 rounded-full bg-[#E3F2FD] text-[12px] flex items-center justify-center font-bold">' + loans.length + '</span></div>' +
     (cards || '<div class="text-center text-[13px] text-[#8B7355] py-4">' + t('noData') + '</div>');
 }
+function homeSummaryData(){
+  const tot = totals();
+  return { todayIncome: tot.tIn, todayExpense: tot.tEx, monthIncome: tot.mIn, monthExpense: tot.mEx, totalGiven: tot.given, totalTaken: tot.taken };
+}
+function homeSummaryHtml(){
+  const s = homeSummaryData();
+  const cell = 'border:1px solid #ccc;padding:5px 6px;vertical-align:top;overflow-wrap:break-word';
+  const row = (label, val) => '<tr style="page-break-inside:avoid"><td style="' + cell + ';width:40%">' + label + '</td><td style="' + cell + ';text-align:left;font-weight:700">' + val + '</td></tr>';
+  const rows = [
+    row(t('todayIncome'), fmt(s.todayIncome)),
+    row(t('todayExpense'), fmt(s.todayExpense)),
+    row(t('monthIncome'), fmt(s.monthIncome)),
+    row(t('monthExpense'), fmt(s.monthExpense)),
+    row(t('totalGiven'), fmt(s.totalGiven)),
+    row(t('totalTaken'), fmt(s.totalTaken))
+  ];
+  return '<div style="page-break-inside:avoid;margin-bottom:14px">' +
+    '<div style="background:#F5EEDD;border:1px solid #ccc;padding:6px;font-weight:800;font-size:14px">' + (lang === 'en' ? 'Home Summary' : 'হোম সারাংশ') + '</div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed"><tbody>' + rows.join('') + '</tbody></table></div>';
+}
 function homeBankPdfHtml(){
   const loans = homeBankLoansFiltered();
   const period = statementPeriod(homeBankFrom, homeBankTo, loans.map(e => ({ date: e.date || e.loanDate || '' })));
-  return statementHeaderHtml('History - Bank Loan', loans.length, period) + bankLoanDetailHtml(loans);
+  return statementHeaderHtml('History - Bank Loan', loans.length, period) + homeSummaryHtml() + bankLoanDetailHtml(loans);
 }
 function openHomeBankPdf(){ pdfMode = 'homeBank'; showStatementPreview(homeBankPdfHtml()); }
 function downloadHomeBankPdf(){ pdfMode = 'homeBank'; downloadPdfFile(); }
@@ -3171,7 +3191,7 @@ function pdfStatementData(){
   }
   if(pdfMode === 'homeBank'){
     const loans = homeBankLoansFiltered();
-    return { prof: prof, title: 'History - Bank Loan', records: loans.length, period: statementPeriod(homeBankFrom, homeBankTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))), bankLoans: loans };
+    return { prof: prof, title: 'History - Bank Loan', records: loans.length, period: statementPeriod(homeBankFrom, homeBankTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))), bankLoans: loans, homeSummary: homeSummaryData() };
   }
   return null;
 }
@@ -3599,8 +3619,22 @@ function pdfBankLoansJpegs(data){
     sumRows.forEach(r => { hh += rowH(r[0], r[1]); });
     blocks.push({ heading: 'Summary', rows: sumRows, h: hh });
   }
+  if(data.homeSummary){
+    const s = data.homeSummary;
+    const sumRows = [
+      [t('todayIncome'), fmt(s.todayIncome)],
+      [t('todayExpense'), fmt(s.todayExpense)],
+      [t('monthIncome'), fmt(s.monthIncome)],
+      [t('monthExpense'), fmt(s.monthExpense)],
+      [t('totalGiven'), fmt(s.totalGiven)],
+      [t('totalTaken'), fmt(s.totalTaken)]
+    ];
+    let shh = 26;
+    sumRows.forEach(r => { shh += rowH(r[0], r[1]); });
+    blocks.unshift({ heading: (lang === 'en' ? 'Home Summary' : 'হোম সারাংশ'), rows: sumRows, h: shh });
+  }
   const pages = [];
-  if(!d.items.length){ pages.push([]); }
+  if(!blocks.length){ pages.push([]); }
   else {
     let cur = [], used = 0;
     const avail = PAGE_H - headerH;
@@ -3694,7 +3728,7 @@ function pdfBankLoansJpegs(data){
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
     let y = drawHeader(ctx);
-    if(!d.items.length){
+    if(!d.items.length && !data.homeSummary){
       ctx.font = F; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
       ctx.fillText(t('noData'), M + CW / 2, y + 10);
       ctx.textAlign = 'left';
