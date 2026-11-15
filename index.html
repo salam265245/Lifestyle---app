@@ -2152,8 +2152,9 @@ function filteredHistoryRows(){
     const q = histSearch.trim().toLowerCase();
     rows = rows.filter(r => (r.title || '').toLowerCase().includes(q) || (r.note || '').toLowerCase().includes(q) || (r.medium || '').toLowerCase().includes(q) || (r.catEn || '').toLowerCase().includes(q) || (r.catBn || '').includes(histSearch.trim()));
   }
-  if(histFrom) rows = rows.filter(r => normDate(r.date) >= histFrom);
-  if(histTo) rows = rows.filter(r => normDate(r.date) <= histTo);
+  // Bank Loan is an ongoing liability like on Home: date filter must not hide old bank loans in History.
+  if(histFrom) rows = rows.filter(r => r.kind === 'bank' || normDate(r.date) >= histFrom);
+  if(histTo) rows = rows.filter(r => r.kind === 'bank' || normDate(r.date) <= histTo);
   return rows;
 }
 function histSetFilter(f){ if(f !== histFilter) navPush(); histFilter = f; render(); }
@@ -4002,7 +4003,8 @@ function pdfStatementJpegs(){
     ctx.fillStyle = '#ccc';
     for(let tr of tableRows) ctx.fillRect(M, tr.top, CW, 1);
     ctx.fillRect(M, tableBottom, CW, 1);
-    for(let x of colX) ctx.fillRect(x, tableTop, 1, tableBottom - tableTop);
+    // Vertical lines respect header spans: merged Channel (span 2) gets NO divider in header row 1; From/To divider only in header row 2. Full column lines run through the body only.
+    { let ht = tableTop; for(let hi = 0; hi < headerRows.length; hi++){ let idx = 0; const xs = [M]; for(let c of headerRows[hi]){ idx += c.span; xs.push(colX[idx]); } for(let x of xs) ctx.fillRect(x, ht, 1, headerRowHeights[hi]); ht += headerRowHeights[hi]; } const bodyTop = tableTop + headerRowsH; if(tableBottom > bodyTop) for(let x of colX) ctx.fillRect(x, bodyTop, 1, tableBottom - bodyTop); }
     for(let tr of tableRows){
       const font = (tr.kind === 'header' || tr.kind === 'total') ? FB : F;
       ctx.font = font;
