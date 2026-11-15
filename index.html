@@ -866,6 +866,7 @@ function restoreRecycleEntry(rid, quiet){
     let tasks = []; try{ tasks = JSON.parse(localStorage.getItem('lifestyle_daily_tasks') || '[]'); }catch(err){ tasks = []; }
     if(!tasks.some(function(tk){ return tk.id === e.item.id; })) tasks.push(e.item);
     try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(tasks)); }catch(err){}
+    unmarkDeleted(e.origId); addRestoreId(e.origId);
     state.recycle.splice(idx, 1); persist(); if(!quiet) showToast(t('itemRestored')); render(); return;
   }
 }
@@ -2316,11 +2317,11 @@ function editLoanEntry(key){
   if(isBank){
     renderBankSelect(r.entry.bank || r.entry.name || '');
     document.getElementById('leBankAmount').value = r.entry.amount || '';
-    document.getElementById('leMonths').value = r.entry.months || '';
-    document.getElementById('leRate').value = r.entry.rate || '';
-    document.getElementById('leDisbursement').value = normDate(r.entry.date) || today();
-    document.getElementById('leEmiStart').value = normDate(r.entry.emiStart || r.entry.date) || today();
-    emiPaidDraft = normalizeEmiPaid(r.entry.emiPaid, r.entry.months); renderBankEmiSheet();
+    document.getElementById('leMonths').value = blMonths(r.entry) || '';
+    document.getElementById('leRate').value = blRate(r.entry) || '';
+    document.getElementById('leDisbursement').value = normDate(r.entry.date || r.entry.loanDate || r.entry.disbursementDate) || today();
+    document.getElementById('leEmiStart').value = normDate(r.entry.emiStart || r.entry.emiStartDate || r.entry.date || r.entry.loanDate) || today();
+    emiPaidDraft = normalizeEmiPaid(blPaidArr(r.entry), blMonths(r.entry)); renderBankEmiSheet();
   }
   loanFormKind = (r.kind === 'given' || r.kind === 'return') ? 'given' : 'taken';
   loanFormPersonIdx = r.pi;
@@ -2449,19 +2450,22 @@ function calcEmi(P, rate, months){
   const f = Math.pow(1 + r, months);
   return P * r * f / (f - 1);
 }
+function blMonths(e){ return Math.floor(+(((e && e.months) || (e && e.termMonths)) || 0)); }
+function blRate(e){ return +(((e && e.rate) || (e && e.interestRate)) || 0); }
+function blPaidArr(e){ return Array.isArray(e && e.emiPaid) ? e.emiPaid : (Array.isArray(e && e.paidEmis) ? e.paidEmis : []); }
 function normalizeEmiPaid(arr, months){
   const out = Array.isArray(arr) ? arr.slice(0, months) : [];
   while(out.length < months) out.push(false);
   return out.map(v => !!v);
 }
 function bankEmiSchedule(entry){
-  const months = Math.floor(+(entry.months || 0));
+  const months = blMonths(entry);
   if(months <= 0) return [];
-  const emi = Math.round(calcEmi(entry.amount, entry.rate, months));
-  const paid = normalizeEmiPaid(entry.emiPaid, months);
+  const emi = Math.round(calcEmi(entry.amount, blRate(entry), months));
+  const paid = normalizeEmiPaid(blPaidArr(entry), months);
   const rows = [];
   for(let i = 0; i < months; i++){
-    rows.push({ sl: i + 1, date: addMonths(entry.emiStart || entry.date || today(), i), emi: emi, paid: !!paid[i] });
+    rows.push({ sl: i + 1, date: addMonths(entry.emiStart || entry.emiStartDate || entry.date || entry.loanDate || entry.disbursementDate || today(), i), emi: emi, paid: !!paid[i] });
   }
   return rows;
 }
@@ -2471,7 +2475,7 @@ function bankLoanPdfDetails(loans){
     const amount = +(e.amount || 0);
     const rate = +((e.rate || e.interestRate) || 0);
     const emi = Math.round(calcEmi(amount, rate, months));
-    const paid = normalizeEmiPaid(e.emiPaid, months).filter(Boolean).length;
+    const paid = normalizeEmiPaid(blPaidArr(e), months).filter(Boolean).length;
     const remaining = Math.max(0, months - paid);
     const totalPayable = emi * months;
     const totalInterest = Math.max(0, totalPayable - amount);
@@ -2627,7 +2631,7 @@ let emiCheckIdx = -1;
 function openEmiChecklist(ei){
   const e = (state.bankLoans || [])[ei]; if(!e) return;
   emiCheckIdx = ei;
-  emiPaidDraft = Array.isArray(e.emiPaid) ? e.emiPaid.slice() : [];
+  emiPaidDraft = blPaidArr(e).slice();
   document.getElementById('emiTitle').textContent = (e.bank || e.name || t('fBank')) + ' — EMI Checklist';
   renderEmiChecklist();
   document.getElementById('emiSheet').classList.remove('hidden');
@@ -2635,9 +2639,9 @@ function openEmiChecklist(ei){
 }
 function renderEmiChecklist(){
   const e = (state.bankLoans || [])[emiCheckIdx]; if(!e) return;
-  const emi = Math.round(calcEmi(e.amount, e.rate, e.months));
+  const emi = Math.round(calcEmi(e.amount, blRate(e), blMonths(e)));
   const r = emiTableHtml({...e, emiPaid: emiPaidDraft}, 'toggleEmiCheck');
-  document.getElementById('emiSummary').innerHTML = '<div class="text-[13px] text-[#8B7355]">' + fmt(e.amount) + ' • ' + (e.months || 0) + 'mo • ' + (e.rate || 0) + '%</div>' +
+  document.getElementById('emiSummary').innerHTML = '<div class="text-[13px] text-[#8B7355]">' + fmt(e.amount) + ' • ' + blMonths(e) + 'mo • ' + blRate(e) + '%</div>' +
     '<div class="text-[14px] font-bold mt-1">' + fmt(emi) + '/mo • ' + r.paid + '/' + r.total + ' Paid</div>';
   document.getElementById('emiPaidCount').textContent = r.paid + '/' + r.total + ' Paid';
   document.getElementById('emiList').innerHTML = r.html;
@@ -2648,7 +2652,12 @@ function toggleEmiCheck(i){
 }
 function saveEmiChecklist(){
   const e = (state.bankLoans || [])[emiCheckIdx]; if(!e){ closeEmiChecklist(); return; }
-  e.emiPaid = normalizeEmiPaid(emiPaidDraft, Math.floor(+(e.months || 0)));
+  const _m = blMonths(e);
+  e.months = _m; e.termMonths = _m;
+  if(e.rate == null && e.interestRate != null) e.rate = e.interestRate;
+  if(e.interestRate == null && e.rate != null) e.interestRate = e.rate;
+  e.emiPaid = normalizeEmiPaid(emiPaidDraft, _m);
+  e.paidEmis = e.emiPaid.slice();
   e.updatedAt = new Date().toISOString();
   persist(); render(); flashSaved(document.getElementById('emiSaveBtn'), () => { closeEmiChecklist(); showToast(t('saved')); });
 }
@@ -2671,13 +2680,13 @@ function homeBankLoansHtml(){
   const loans = (state.bankLoans || []);
   const cards = loans.map(e => {
     const ti = state.bankLoans.indexOf(e);
-    const emi = Math.round(calcEmi(e.amount, e.rate, e.months));
-    const paid = (e.emiPaid || []).filter(Boolean).length;
+    const emi = Math.round(calcEmi(e.amount, blRate(e), blMonths(e)));
+    const paid = blPaidArr(e).filter(Boolean).length;
     return '<div class="card p-3 mb-2">' +
       '<div class="flex justify-between items-start"><div style="min-width:0"><div class="font-extrabold text-[15px] cursor-pointer" onclick="openEmiChecklist(' + ti + ')">' + escA(e.bank || e.name || '') + '</div>' +
-      '<div class="text-[12px] text-[#8B7355]">' + fmt(e.amount) + ' • ' + (e.months || 0) + 'mo • ' + (e.rate || 0) + '%</div></div>' +
+      '<div class="text-[12px] text-[#8B7355]">' + fmt(e.amount) + ' • ' + blMonths(e) + 'mo • ' + blRate(e) + '%</div></div>' +
       '<div class="text-right shrink-0"><div class="font-extrabold text-[15px]">' + fmt(emi) + '/mo</div>' +
-      '<div class="text-[12px] text-[#8B7355]">' + paid + '/' + (e.months || 0) + ' Paid</div></div></div>' +
+      '<div class="text-[12px] text-[#8B7355]">' + paid + '/' + blMonths(e) + ' Paid</div></div></div>' +
       '<div class="flex gap-2 mt-2 items-center">' +
       '<button onclick="openEmiChecklist(' + ti + ')" class="flex-1 py-2 text-left text-[13px] font-bold text-[#8B7355] underline">✓ ' + t('emiChecklist') + '</button>' +
       '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold">' + t('editBtn') + '</button>' +
@@ -2725,6 +2734,8 @@ function saveLoanEntry(){
       entry.emiStart = document.getElementById('leEmiStart').value || entry.date;
       entry.emiEnd = addMonths(entry.emiStart, Math.max(0, entry.months - 1));
       entry.emiPaid = normalizeEmiPaid(emiPaidDraft, entry.months);
+      entry.termMonths = entry.months; entry.interestRate = entry.rate; entry.paidEmis = entry.emiPaid.slice();
+      entry.bankName = entry.bank; entry.loanDate = entry.date; entry.disbursementDate = entry.date; entry.emiStartDate = entry.emiStart; entry.emiEndDate = entry.emiEnd;
       state.bankLoans = [...(state.bankLoans || []), entry];
       currentView = 'loans'; loansKind = 'bank';
       persist(); render(); flashSaved(loanEntrySaveBtn(), () => { closeLoanEntryForm(); showToast(t('bankLoanAdded')); }); return;
@@ -2763,6 +2774,8 @@ function saveLoanEntry(){
     r.entry.emiStart = document.getElementById('leEmiStart').value || r.entry.date;
     r.entry.emiEnd = addMonths(r.entry.emiStart, Math.max(0, r.entry.months - 1));
     r.entry.emiPaid = normalizeEmiPaid(emiPaidDraft, r.entry.months);
+    r.entry.termMonths = r.entry.months; r.entry.interestRate = r.entry.rate; r.entry.paidEmis = r.entry.emiPaid.slice();
+    r.entry.bankName = r.entry.bank; r.entry.loanDate = r.entry.date; r.entry.disbursementDate = r.entry.date; r.entry.emiStartDate = r.entry.emiStart; r.entry.emiEndDate = r.entry.emiEnd;
   } else {
     r.entry.amount = parseFloat(document.getElementById('leAmount').value) || 0;
     r.entry.date = document.getElementById('leDate').value || today();
@@ -4288,11 +4301,11 @@ function renderLoansView(){
     });
     const rowsHtml = loans.length ? loans.map((e, ei) => {
       const ti = state.bankLoans.indexOf(e);
-      const emi = Math.round(calcEmi(e.amount, e.rate, e.months));
-      const paid = (e.emiPaid || []).filter(Boolean).length;
-      const sub = [fmtDMY(e.date), (e.months ? e.months + ' ' + t('monthsLbl') : ''), (e.rate ? e.rate + '%' : ''), e.note].filter(Boolean).join(' • ');
+      const emi = Math.round(calcEmi(e.amount, blRate(e), blMonths(e)));
+      const paid = blPaidArr(e).filter(Boolean).length;
+      const sub = [fmtDMY(e.date || e.loanDate || e.disbursementDate), (blMonths(e) ? blMonths(e) + ' ' + t('monthsLbl') : ''), (blRate(e) ? blRate(e) + '%' : ''), e.note].filter(Boolean).join(' • ');
       return '<div class="flex gap-2 py-2.5 border-b border-[#F3E8D3]"><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px] cursor-pointer" onclick="openEmiChecklist(' + ti + ')">🏦 ' + escA(e.bank || e.name || '') + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div>' +
-        '<div class="text-[12px] text-[#8B7355]">' + fmt(emi) + '/mo • ' + paid + '/' + (e.months || 0) + ' Paid</div></div>' +
+        '<div class="text-[12px] text-[#8B7355]">' + fmt(emi) + '/mo • ' + paid + '/' + blMonths(e) + ' Paid</div></div>' +
         '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] text-red-600">-' + fmt(e.amount) + '</div>' +
         '<div class="flex gap-1 flex-nowrap"><button onclick="openEmiChecklist(' + ti + ')" class="px-3 py-1.5 rounded-full bg-[#FFF7EA] text-[12px] font-bold whitespace-nowrap">✓ ' + t('emiChecklist') + '</button>' +
         '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
@@ -5382,13 +5395,13 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
 
 /* ---------- Bank loan form ---------- */
 function BankLoanForm({ t, lang, initial, onSave }){
-  const [bankName, setBankName] = useState(initial ? initial.bankName : loadLS('lifestyle_draft_bank_bankName', BANKS[0]));
+  const [bankName, setBankName] = useState(initial ? (initial.bankName || initial.bank || initial.name || '') : loadLS('lifestyle_draft_bank_bankName', BANKS[0]));
   const [amount, setAmount] = useState(initial ? String(initial.amount) : loadLS('lifestyle_draft_bank_amount', ''));
-  const [term, setTerm] = useState(initial ? String(initial.termMonths) : loadLS('lifestyle_draft_bank_term', '24'));
-  const [rate, setRate] = useState(initial ? String(initial.interestRate) : loadLS('lifestyle_draft_bank_rate', '9'));
-  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || today()) : firstDayOfMonth());
-  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.loanDate || today()) : firstDayOfMonth());
-  const [paidEmis, setPaidEmis] = useState(initial && initial.paidEmis ? initial.paidEmis.slice() : []);
+  const [term, setTerm] = useState(initial ? String(initial.termMonths || initial.months || '') : loadLS('lifestyle_draft_bank_term', '24'));
+  const [rate, setRate] = useState(initial ? String(initial.interestRate ?? initial.rate ?? '') : loadLS('lifestyle_draft_bank_rate', '9'));
+  const [disbursementDate, setDisbursementDate] = useState(initial ? (initial.disbursementDate || initial.loanDate || initial.date || today()) : firstDayOfMonth());
+  const [emiStartDate, setEmiStartDate] = useState(initial ? (initial.emiStartDate || initial.emiStart || initial.loanDate || initial.date || today()) : firstDayOfMonth());
+  const [paidEmis, setPaidEmis] = useState(initial && (initial.paidEmis || initial.emiPaid) ? (initial.paidEmis || initial.emiPaid).slice() : []);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_bankName', bankName); }catch(e){} } }, [bankName, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_amount', amount); }catch(e){} } }, [amount, initial]);
   useEffect(()=>{ if(!initial){ try{ saveLS('lifestyle_draft_bank_term', term); }catch(e){} } }, [term, initial]);
@@ -5418,9 +5431,9 @@ function BankLoanForm({ t, lang, initial, onSave }){
       p = resized;
     }
     onSave({
-      id: initial?initial.id:uid(), bankName, amount:parseFloat(amount)||0, termMonths:n,
-      interestRate:parseFloat(rate)||0, loanDate: disbursementDate,
-      disbursementDate, emiStartDate, emiEndDate, paidEmis: p
+      id: initial?initial.id:uid(), bankName, bank: bankName, name: bankName, amount:parseFloat(amount)||0, termMonths:n, months:n,
+      interestRate:parseFloat(rate)||0, rate:parseFloat(rate)||0, loanDate: disbursementDate, date: disbursementDate,
+      disbursementDate, emiStartDate, emiStart: emiStartDate, emiEndDate, emiEnd: emiEndDate, paidEmis: p, emiPaid: p.slice()
     });
   }
   const n = parseInt(term)||24;
@@ -5499,8 +5512,9 @@ function BankLoanForm({ t, lang, initial, onSave }){
 
 
 function EmiChecklist({ t, lang, loan, onToggle }){
-  const n = loan.termMonths;
-  const paidEmis = loan.paidEmis && loan.paidEmis.length === n ? loan.paidEmis : Array(n).fill(false);
+  const n = loan.termMonths || loan.months || 0;
+  const _paid = loan.paidEmis || loan.emiPaid || [];
+  const paidEmis = _paid.length === n ? _paid : Array(n).fill(false);
   const paidCount = paidEmis.filter(Boolean).length;
   return h('div', null,
     h('div', {className:'bg-[#2D2A26] rounded-[16px] p-4 text-white mb-4 flex items-center justify-between'},
@@ -7531,7 +7545,7 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
 
   function handleDeleteDailyTask(id){
     const task = (dailyTasks || []).find(function(t){ return t.id === id; });
-    if(task){ const rid = 'rt:' + task.id; recyclePush({ id: rid, recycleKind: 'routineTask', item: Object.assign({}, task), origId: task.id }); persist(); showUndoToast(t('itemDeleted'), function(){ setDailyTasks(function(prev){ return prev.some(function(x){ return x.id === task.id; }) ? prev : prev.concat([task]); }); restoreRecycleEntry(rid, true); }); }
+    if(task){ try{ const rid = 'rt:' + task.id; recyclePush({ id: rid, recycleKind: 'routineTask', item: Object.assign({}, task), origId: task.id }); if(typeof markDeleted === 'function') markDeleted(task.id); persist(); showUndoToast(lang === 'en' ? 'Task deleted' : 'টাস্ক মুছে ফেলা হয়েছে', function(){ setDailyTasks(function(prev){ return prev.some(function(x){ return x.id === task.id; }) ? prev : prev.concat([task]); }); restoreRecycleEntry(rid, true); }); }catch(err){} }
     setDailyTasks(prev=> prev.filter(t=> t.id!==id));
     if(editingDailyTaskId===id) setEditingDailyTaskId(null);
   }
