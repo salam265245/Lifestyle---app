@@ -577,6 +577,15 @@
     <div id="pickerList"></div>
   </div>
 </div>
+<!-- Contact number picker: one contact, several numbers -> user picks one -->
+<div id="contactNumberOverlay" class="overlay hidden" onclick="closeContactNumberSheet()"></div>
+<div id="contactNumberSheet" class="sheet hidden">
+  <div class="p-5">
+    <div class="flex justify-between items-center mb-1"><h2 class="text-[17px] font-extrabold" id="contactNumberTitle">Select Number</h2><button onclick="closeContactNumberSheet()" class="text-xl px-2">✕</button></div>
+    <div class="text-[12px] text-[#8B7355] mb-3" id="contactNumberSub"></div>
+    <div id="contactNumberList"></div>
+  </div>
+</div>
 
 <div id="toastBox"></div>
 
@@ -2380,6 +2389,31 @@ function openLoanPersonPicker(){
   document.getElementById('pickerSheet').classList.remove('hidden');
   document.getElementById('pickerOverlay').classList.remove('hidden');
 }
+let pendingContactNumbers = [];
+let pendingContactName = '';
+function closeContactNumberSheet(){
+  document.getElementById('contactNumberSheet').classList.add('hidden');
+  document.getElementById('contactNumberOverlay').classList.add('hidden');
+  pendingContactNumbers = [];
+  pendingContactName = '';
+}
+function chooseContactNumber(i){
+  const num = pendingContactNumbers[i] || '';
+  if(num) document.getElementById('lePersonMobile').value = num.replace(/[\s\-\(\)\.]/g, '');
+  closeContactNumberSheet();
+  updatePersonSaveBtn();
+}
+function showContactNumberSheet(name, numbers){
+  pendingContactNumbers = numbers.slice();
+  pendingContactName = name || '';
+  document.getElementById('contactNumberTitle').textContent = (lang === 'bn' ? 'নম্বর বাছুন' : 'Select Number');
+  document.getElementById('contactNumberSub').textContent = pendingContactName;
+  document.getElementById('contactNumberList').innerHTML = numbers.map((n, i) =>
+    '<button onclick="chooseContactNumber(' + i + ')" class="w-full text-left bg-white border border-[#F3E8D3] rounded-[14px] px-4 py-3 text-[15px] font-bold mb-2">📞 ' + escA(n) + '</button>'
+  ).join('');
+  document.getElementById('contactNumberSheet').classList.remove('hidden');
+  document.getElementById('contactNumberOverlay').classList.remove('hidden');
+}
 async function pickFromPhoneContacts(){
   const nav = (typeof navigator !== 'undefined') ? navigator : {};
   if(nav.contacts && typeof nav.contacts.select === 'function'){
@@ -2388,11 +2422,24 @@ async function pickFromPhoneContacts(){
       if(!contacts || !contacts.length) return; // user cancelled the phone contact picker
       const c = contacts[0];
       const name = (c.name && c.name[0]) || '';
-      const tel = (c.tel && c.tel[0]) || '';
-      const cleanTel = tel.replace(/[\s\-\(\)\.]/g, '');
       if(name) document.getElementById('lePersonName').value = name;
-      if(cleanTel) document.getElementById('lePersonMobile').value = cleanTel;
-      updatePersonSaveBtn();
+      // All numbers of this contact, deduplicated (same number written as +880... / 01... counts once)
+      const seen = new Set();
+      const numbers = [];
+      (c.tel || []).forEach(raw => {
+        const digits = String(raw || '').replace(/\D/g, '');
+        const key = digits.slice(-10);
+        if(key && !seen.has(key)){ seen.add(key); numbers.push(String(raw).trim()); }
+      });
+      if(numbers.length === 1){
+        document.getElementById('lePersonMobile').value = numbers[0].replace(/[\s\-\(\)\.]/g, '');
+        updatePersonSaveBtn();
+      } else if(numbers.length > 1){
+        showContactNumberSheet(name, numbers);
+        updatePersonSaveBtn();
+      } else {
+        updatePersonSaveBtn();
+      }
       return;
     }catch(e){
       // permission denied / API error -> fall through to the app's own picker
