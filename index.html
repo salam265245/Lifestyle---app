@@ -11,6 +11,11 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
+@keyframes navSlideBack{from{transform:translateX(-28px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes navSlideFwd{from{transform:translateX(28px);opacity:0}to{transform:translateX(0);opacity:1}}
+.nav-anim-back{animation:navSlideBack .22s ease-out}
+.nav-anim-fwd{animation:navSlideFwd .22s ease-out}
+
   body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
   .card{background:#fff;border:1px solid #F3E8D3;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,0.04);}
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} #formSheet:not(.hidden){display:flex;flex-direction:column;overflow:hidden;height:92vh;} #formSheet .formSheetBody{overflow-y:auto;flex:1;min-height:0;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
@@ -676,7 +681,7 @@ const T = {
     cloudSyncDone:'Sync হয়ে গেছে ✅', cloudUploadDone:'Upload হয়ে গেছে ✅', cloudDownloadDone:'Download হয়ে গেছে ✅',
     cloudSyncFail:'Sync হয়নি — ইন্টারনেট / Config দেখো', cloudSaved:'Cloud সেটিংস সেভ হয়েছে',
     cloudCleared:'Cloud সংযোগ মুছে ফেলা হয়েছে', cloudInvalidConfig:'Config ঠিক নেই — JSON দেখো', cloudNoCode:'Sync Code দাও',
-    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'Today Bazar', bzTotal:'মোট', bzBought:'কেনা', bzRemaining:'বাকি', bzPasteTitle:'📋 মেসেজ Paste করুন', bzMakeList:'✨ লিস্ট তৈরি করুন', bzClear:'Clear', bzPasteNote:'কমা, স্পেস বা নতুন লাইনে আলাদা করলে অটো লিস্ট হবে', bzItemName:'পণ্যের নাম *', bzItemNamePh:'যেমন: আলু', bzPriceOpt:'দাম (ঐচ্ছিক)', bzPricePh:'0 - পরে দিতে পারবেন', bzCatOpt:'ব্যয়ের খাত (ঐচ্ছিক)', bzCatPh:'খাত নির্বাচন করুন (ঐচ্ছিক)', bzAddToList:'লিস্টে যোগ করুন', bzPricePending:'দাম বাকি', bzNeedName:'আগে পণ্যের নাম লিখো', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'যেমন: আলু, পেঁয়াজ, রসুন বা আলু পেঁয়াজ রসুন বা প্রতি লাইনে একটা', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', summaryLbl:'সারাংশ', overdueLbl:'বকেয়া', dueTodayLbl:'আজকে', daysLateLbl:'দিন দেরি', dueBoxTitle:'⏰ ফেরত দেওয়ার সময় হয়েছে', backupTitle:'ডাটা ব্যাকআপ', backupNote:'পুরো হিসাব ফোনে সেভ করে রাখুন, পরে যেকোনো সময় ফেরত আনতে পারবেন।', exportBackupBtn:'📥 ব্যাকআপ ডাউনলোড', importBackupBtn:'📤 ব্যাকআপ ফেরত আনুন', backupExported:'ব্যাকআপ ডাউনলোড হয়েছে', backupInvalid:'এটা সঠিক ব্যাকআপ ফাইল না', backupConfirmImport:'ব্যাকআপ ফেরত আনলে এখনকার সব ডাটা বদলে যাবে। চালিয়ে যাবেন?', descLbl:'বিবরণ', dateLbl:'তারিখ', noteLbl:'নোট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', saveLoan:'লোন সেভ করো', loanAmountLbl:'লোনের পরিমাণ', termLbl:'মেয়াদ (মাস)', disbursementLbl:'বিতরণের তারিখ', emiStartLbl:'EMI শুরুর তারিখ', emiEndLbl:'EMI শেষের তারিখ (অটো)', selectBank:'ব্যাংক বাছুন', monthsLbl:'মাস', rateLbl:'সুদের হার %', backBtn:'← ফিরে যাও', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPersonLoanTitle:'+ লোক যোগ করো', nameLbl:'নাম', mobileContactLbl:'মোবাইল / যোগাযোগ নম্বর', fromChannelLbl:'কোথা থেকে', toChannelLbl:'কোথায়', expectedReturnLbl:'ফেরতের সম্ভাব্য তারিখ', newPersonNamePh:'নতুন লোকের নাম', typeManuallyPh:'নিজে লিখুন বা কন্ট্যাক্ট থেকে নিন', newPerson:'নতুন লোক', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
+    cloudSetupTitle:'সেটআপ কীভাবে করবে (একবারই)', bazarTitle:'Today Bazar', bzTotal:'মোট', bzBought:'কেনা', bzRemaining:'বাকি', bzPasteTitle:'📋 মেসেজ Paste করুন', bzMakeList:'✨ লিস্ট তৈরি করুন', bzClear:'Clear', bzPasteNote:'কমা, স্পেস বা নতুন লাইনে আলাদা করলে অটো লিস্ট হবে', bzItemName:'পণ্যের নাম *', bzItemNamePh:'যেমন: আলু', bzPriceOpt:'দাম (ঐচ্ছিক)', bzPricePh:'0 - পরে দিতে পারবেন', bzCatOpt:'ব্যয়ের খাত (ঐচ্ছিক)', bzCatPh:'খাত নির্বাচন করুন (ঐচ্ছিক)', bzAddToList:'লিস্টে যোগ করুন', bzPricePending:'দাম বাকি', bzNeedName:'আগে পণ্যের নাম লিখো', bazarList:'বাজার লিস্ট', bought:'কেনা হয়েছে', notBought:'কেনা হয়নি', itemsLbl:'টা আইটেম', addNote:'নোট যোগ করো', notePh:'যেমন: আলু, পেঁয়াজ, রসুন বা আলু পেঁয়াজ রসুন বা প্রতি লাইনে একটা', editBtn:'এডিট', yesBtn:'হ্যাঁ', noBtn:'না', deleteBtn:'ডিলিট', priceLbl:'দাম', needPriceCat:'দাম আর খাত সিলেক্ট করো, তারপর সেভ হবে', addedToExpense:'খরচে যোগ হয়েছে', notBoughtYet:'এখনো কেনা হয়নি', confirmDelete:'এই আইটেমটা ডিলিট করবো?', allLbl:'সব', buyTitle:'কেনা হয়েছে — খরচে সেভ করো', editItemTitle:'আইটেম এডিট করো', itemLbl:'আইটেম', emptyBazar:'এখনো কিছু নেই', boughtNote:'এই আইটেমের খরচ ইতিমধ্যে খরচে যোগ হয়েছে — এখানে এডিট করলে শুধু বাজার লিস্ট বদলাবে', writeNote:'আগে নোট লিখো', movedBack:'কেনা হয়নি-তে ফিরে গেছে — খরচ কমে গেছে',   fAll:'সব', fIncome:'আয়', fExpense:'ব্যয়', fGiven:'প্রদান', fTaken:'গ্রহণ', fReturn:'ফেরত', fRepay:'পরিশোধ', fBank:'ব্যাংক লোন', histSearchPh:'লেনদেন খুঁজুন…', addPerson:'লোক যোগ করো', addReturn:'ফেরত যোগ করো', addRepay:'পরিশোধ যোগ করো', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'তারিখ মুছো', filterByCat:'খাত দিয়ে ফিল্টার', filtered:'ফিল্টার', records:'টি রেকর্ড', noData:'এখনো ডেটা নেই', editIncome:'আয় এডিট করো', editExpense:'ব্যয় এডিট করো', confirmDeleteTx:'এই লেনদেনটা ডিলিট করবো?', deletedTx:'লেনদেন ডিলিট হয়েছে', loanEntryTitle:'লোনের এন্ট্রি এডিট করো', personCol:'লোক', commentCol:'মন্তব্য', fromCol:'From', toCol:'To', amountCol:'টাকা', totalIncome:'মোট আয়', totalExpense:'মোট ব্যয়', netBalance:'নেট জের', printPdf:'প্রিন্ট / PDF সেভ করো', pdfFail:'PDF বানানো যায়নি। আবার চেষ্টা করুন।', closeBtn:'বন্ধ করো', fromToSep:' থেকে ', loansGivenPage:'প্রদত্ত লোন', loansTakenPage:'গৃহীত লোন', bankLoansPage:'ব্যাংক লোন', searchPeople:'লোক খুঁজুন…', peopleLbl:'জন লোক', entriesLbl:'টি এন্ট্রি', youWillGet:'তুমি পাবে', youWillPay:'তুমি দেবে', loanEntries:'লোনের এন্ট্রি', paymentsSec:'পেমেন্ট', summaryLbl:'সারাংশ', overdueLbl:'বকেয়া', dueTodayLbl:'আজকে', daysLateLbl:'দিন দেরি', dueBoxTitle:'⏰ ফেরত দেওয়ার সময় হয়েছে', backupTitle:'ডাটা ব্যাকআপ', backupNote:'পুরো হিসাব ফোনে সেভ করে রাখুন, পরে যেকোনো সময় ফেরত আনতে পারবেন।', exportBackupBtn:'📥 ব্যাকআপ ডাউনলোড', importBackupBtn:'📤 ব্যাকআপ ফেরত আনুন', backupExported:'ব্যাকআপ ডাউনলোড হয়েছে', backupInvalid:'এটা সঠিক ব্যাকআপ ফাইল না', backupConfirmImport:'ব্যাকআপ ফেরত আনলে এখনকার সব ডাটা বদলে যাবে। চালিয়ে যাবেন?', descLbl:'বিবরণ', dateLbl:'তারিখ', noteLbl:'নোট', addLoanBtn:'+ লোন যোগ করো', addPaymentBtn:'+ পেমেন্ট যোগ করো', addBankLoanBtn:'+ ব্যাংক লোন যোগ করো', personName:'লোকের নাম', mobileNo:'মোবাইল নম্বর', selectPerson:'লোক বাছো', bankNameLbl:'ব্যাংকের নাম', saveLoan:'লোন সেভ করো', loanAmountLbl:'লোনের পরিমাণ', termLbl:'মেয়াদ (মাস)', disbursementLbl:'বিতরণের তারিখ', emiStartLbl:'EMI শুরুর তারিখ', emiEndLbl:'EMI শেষের তারিখ (অটো)', selectBank:'ব্যাংক বাছুন', monthsLbl:'মাস', rateLbl:'সুদের হার %', backBtn:'←', balanceLbl:'জের', totalLbl:'মোট', addLoanTitle:'লোন যোগ করো', addPersonLoanTitle:'+ লোক যোগ করো', nameLbl:'নাম', mobileContactLbl:'মোবাইল / যোগাযোগ নম্বর', fromChannelLbl:'কোথা থেকে', toChannelLbl:'কোথায়', expectedReturnLbl:'ফেরতের সম্ভাব্য তারিখ', newPersonNamePh:'নতুন লোকের নাম', typeManuallyPh:'নিজে লিখুন বা কন্ট্যাক্ট থেকে নিন', newPerson:'নতুন লোক', addPaymentTitle:'পেমেন্ট যোগ করো', addPersonTitle:'লোক যোগ করো', addBankLoanTitle:'ব্যাংক লোন', needName:'নাম লিখো', personAdded:'লোক যোগ হয়েছে', loanAdded:'লোন যোগ হয়েছে', paymentAdded:'পেমেন্ট যোগ হয়েছে', bankLoanAdded:'ব্যাংক লোন যোগ হয়েছে', noPeople:'এখনো কেউ নেই', editPersonTitle:'লোক এডিট করো', confirmDeletePerson:'এই লোক ও তার সব এন্ট্রি মুছে ফেলবো?', personDeleted:'লোক মুছে ফেলা হয়েছে', personUpdated:'লোকের তথ্য আপডেট হয়েছে', excelBtn:'⬇ Excel (CSV)', csvSaved:'এক্সেল ফাইল ডাউনলোড হয়েছে', profileTitle:'আমার প্রোফাইল', fullName:'পূর্ণ নাম', designation:'পদবি / উপাধি', addressLbl:'ঠিকানা', mobileLbl:'মোবাইল নম্বর', emailLbl:'ইমেইল', dobLbl:'জন্ম তারিখ', bloodLbl:'রক্তের গ্রুপ', nidLbl:'NID নম্বর', tapToEdit:'নামে চাপ দিলে প্রোফাইল এডিট হবে', yourName:'আপনার নাম', profileSaved:'প্রোফাইল সেভ হয়েছে' },
   en: { home:'HOME', history:'History', reports:'Reports', profile:'Profile', addNewTx:'Add New Transaction', addIncome:'Add Income', addExpense:'Add Expense', giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', selectedCat:'Selected Category', cancel:'Cancel', amount:'Amount (৳)', category:'Category', date:'Date', medium:'Medium', note:'Note', saved:'Saved', pickCat:'Pick a category', searchPh:'Search… e.g. Fish', noMatch:'No match found', todayIncome:"Today's Income", todayExpense:"Today's Expense", todayBalance:"Today's Balance", monthIncome:'Monthly Income', monthExpense:'Monthly Expense', monthBalance:'Monthly Balance', loansTitle:'Loans & Receivables', totalGiven:'Total Given', totalTaken:'Total Taken', given:'Given', taken:'Taken', returned:'Returned', repaid:'Repaid', dueLbl:'Due', localSaved:'Saved locally', comingSoon:'Coming in Phase 3', time:'Time', day:'Day', syncNow:'Sync Now', upload:'Upload', syncSoon:'Cloud Sync comes in Phase 4',
     cloudTitle:'Cloud Sync', cloudDesc:'Use the same Sync Code on both phones to merge their data.',
     syncCodeLbl:'Sync Code', cloudLastSync:'Last sync: ', cloudNever:'Never synced',
@@ -743,7 +748,7 @@ const T = {
     cloudSyncDone:'Synced ✅', cloudUploadDone:'Uploaded ✅', cloudDownloadDone:'Downloaded ✅',
     cloudSyncFail:'Sync failed — check internet / Config', cloudSaved:'Cloud settings saved',
     cloudCleared:'Cloud connection removed', cloudInvalidConfig:'Config looks wrong — check the JSON', cloudNoCode:'Enter a Sync Code',
-    cloudSetupTitle:'How to set up (once)', bazarTitle:'Today Bazar', bzTotal:'Total', bzBought:'Bought', bzRemaining:'Remaining', bzPasteTitle:'📋 Paste message', bzMakeList:'✨ Create List', bzClear:'Clear', bzPasteNote:'Comma, space or new line will auto-split into a list', bzItemName:'Item Name *', bzItemNamePh:'e.g. Potato', bzPriceOpt:'Price (optional)', bzPricePh:'0 - you can add later', bzCatOpt:'Expense Category (optional)', bzCatPh:'Select category (optional)', bzAddToList:'Add to List', bzPricePending:'Price pending', bzNeedName:'Write the item name first', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'e.g. Potato, Onion, Garlic or one per line', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', dueTodayLbl:'today', daysLateLbl:'days late', dueBoxTitle:'⏰ Returns Due', backupTitle:'Data Backup', backupNote:'Save your full data to your phone, restore it anytime.', exportBackupBtn:'📥 Download Backup', importBackupBtn:'📤 Restore Backup', backupExported:'Backup downloaded', backupInvalid:'Not a valid backup file', backupConfirmImport:'Restoring will replace all current data. Continue?', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Tenure (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'← Back', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
+    cloudSetupTitle:'How to set up (once)', bazarTitle:'Today Bazar', bzTotal:'Total', bzBought:'Bought', bzRemaining:'Remaining', bzPasteTitle:'📋 Paste message', bzMakeList:'✨ Create List', bzClear:'Clear', bzPasteNote:'Comma, space or new line will auto-split into a list', bzItemName:'Item Name *', bzItemNamePh:'e.g. Potato', bzPriceOpt:'Price (optional)', bzPricePh:'0 - you can add later', bzCatOpt:'Expense Category (optional)', bzCatPh:'Select category (optional)', bzAddToList:'Add to List', bzPricePending:'Price pending', bzNeedName:'Write the item name first', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'e.g. Potato, Onion, Garlic or one per line', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', dueTodayLbl:'today', daysLateLbl:'days late', dueBoxTitle:'⏰ Returns Due', backupTitle:'Data Backup', backupNote:'Save your full data to your phone, restore it anytime.', exportBackupBtn:'📥 Download Backup', importBackupBtn:'📤 Restore Backup', backupExported:'Backup downloaded', backupInvalid:'Not a valid backup file', backupConfirmImport:'Restoring will replace all current data. Continue?', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Tenure (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'←', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
 let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
@@ -1476,6 +1481,8 @@ function logoHeaderH(){
   return 24;
 }
 function render(){
+  var _nd = window.__navDir || ''; window.__navDir = '';
+  if(_nd){ var _ap = document.getElementById('app'); if(_ap){ _ap.classList.remove('nav-anim-fwd','nav-anim-back'); void _ap.offsetWidth; _ap.classList.add(_nd === 'back' ? 'nav-anim-back' : 'nav-anim-fwd'); } }
   document.title = t('appName');
   saveViewState();
   if(currentView === 'history'){ renderHistoryView(); return; }
@@ -1568,6 +1575,7 @@ function navSnapshot(){
 }
 function navPush(){
   if(_navGoingBack) return;
+  window.__navDir = 'fwd'; window.__exitArmed = 0;
   try{
     const s = navSnapshot();
     const last = navStack[navStack.length - 1];
@@ -1577,7 +1585,7 @@ function navPush(){
     // Every app step = one browser history entry, so the phone's Back button
     // steps back exactly one app step. The popstate handler re-pushes after
     // each Back, so Back can never run out of history and leave the app.
-    try{ history.pushState({app: true}, ''); }catch(e){}
+    try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){}
   }catch(e){}
 }
 function navRestore(s){
@@ -1599,6 +1607,7 @@ function navRestore(s){
   }finally{ _navGoingBack = false; }
 }
 function goBackStep(){
+  window.__navDir = 'back';
   if(navStack.length){ navRestore(navStack.pop()); return true; }
   if(currentView && currentView !== 'home'){
     _navGoingBack = true;
@@ -1661,7 +1670,7 @@ function renderDuasView(){
   ];
   var cards = folders.map(function(f, idx){ return folderCard(f.ic, f.t1, f.t2, "openDuasFolder('" + f.k + "')", idx + 1); }).join('');
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">🤲 বিভিন্ন দোয়া</h2>' +
     '<div class="text-[13px] text-[#8B7355] mb-3">ফোল্ডার খুলে দেখুন — নামাজের দোয়াগুলো প্রথমে, তারপর সারাদিনের দোয়াগুলো, তারপর আরও দোয়াগুলো।</div>' +
     cards + '</div>';
@@ -1683,7 +1692,7 @@ function renderDuasFolderView(){
   if(duasFolderKey === 'more3'){ title = 'আরও দোয়া — ব্যাচ ৩'; sub = 'একটা একটা করে শিখুন।'; }
   var cards = arr.map(function(d, i){ return folderCard('🤲', d.t, 'আরবি • বাংলা উচ্চারণ • অর্থ', 'openDuaItem(' + i + ')', i + 1); }).join('');
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">📁 ' + title + ' (' + arr.length + 'টি)</h2>' +
     '<div class="text-[13px] text-[#8B7355] mb-3">' + sub + ' নামে ট্যাপ করলে শুধু ওই দোয়াটা খুলবে।</div>' +
     cards + '</div>';
@@ -1691,7 +1700,7 @@ function renderDuasFolderView(){
 function renderDuaItemView(){
   var arr = duasFolderArr(), d = arr[duaIdx];
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">📁 ' + d.t + '</h2>' + duaCard(d) + '</div>';
 }
 function guideCard(h){
@@ -1723,7 +1732,7 @@ function openVariousNamazItem(i){ navPush(); variousNamazIdx = i; currentView = 
 function renderVariousNamazView(){
   var cards = VARIOUS_NAMAZ.map(function(h, i){ return folderCard('📖', h.n, h.rakat, 'openVariousNamazItem(' + i + ')', i + 1); }).join('');
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">📖 বিভিন্ন নামাজের নিয়ম</h2>' +
     '<div class="text-[13px] text-[#8B7355] mb-3">ফোল্ডার খুলে দেখুন — যার যেটা দরকার, শুধু সেটাই খুলবে। নব মুসলিমের জন্য সহজ ভাষায় লেখা।</div>' +
     cards + '</div>';
@@ -1731,7 +1740,7 @@ function renderVariousNamazView(){
 function renderVariousNamazItemView(){
   var h = VARIOUS_NAMAZ[variousNamazIdx];
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">📁 ' + h.n + '</h2>' +
     guideCard(h) + '</div>';
 }
@@ -1741,7 +1750,7 @@ function renderFivePrayersView(){
   var first = folderCard('📖', '২ রাকাত নামাজ — ধাপে ধাপে (মূল নিয়ম)', '১২টি ধাপ • এটাই শিখলে বাকি সব নামাজ পারবেন', 'openFivePrayersItem(0)', 1);
   var rest = FIVE_PRAYERS.map(function(h, i){ return folderCard('🕋', h.n, h.rakat, 'openFivePrayersItem(' + (i + 1) + ')', i + 2); }).join('');
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">🕋 ৫ ওয়াক্ত নামাজের নিয়ম</h2>' +
     '<div class="text-[13px] text-[#8B7355] mb-3">ফোল্ডার খুলে দেখুন — প্রথমে ২ রাকাতের নিয়মটা শিখুন, তারপর একটা একটা ওয়াক্ত। শুরুতে শুধু ফরজ পড়লেও হবে।</div>' +
     first + rest + '</div>';
@@ -1751,7 +1760,7 @@ function renderFivePrayersItemView(){
   if(fivePrayersIdx === 0){ head = '📁 ২ রাকাত নামাজ — ধাপে ধাপে'; body = HOW_TO_PRAY.map(guideCard).join(''); }
   else { var h = FIVE_PRAYERS[fivePrayersIdx - 1]; head = '📁 ' + h.n; body = guideCard(h); }
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">' + head + '</h2>' + body + '</div>';
 }
 var surahIdx = 0;
@@ -1759,7 +1768,7 @@ function openSurahItem(i){ navPush(); surahIdx = i; currentView = 'surahItem'; s
 function renderSurahsView(){
   var cards = SHORT_SURAHS.map(function(d, i){ return folderCard('📗', d.t, 'আরবি • বাংলা উচ্চারণ • অর্থ', 'openSurahItem(' + i + ')', i + 1); }).join('');
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">📗 ছোট ছোট সূরা</h2>' +
     '<div class="text-[13px] text-[#8B7355] mb-3">ফোল্ডার খুলে দেখুন — সূরা ফাতিহা সবার আগে, তারপর একটা একটা করে ছোট সূরা।</div>' +
     cards + '</div>';
@@ -1767,7 +1776,7 @@ function renderSurahsView(){
 function renderSurahItemView(){
   var d = SHORT_SURAHS[surahIdx];
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">📁 ' + d.t + '</h2>' + surahCard(d) + '</div>';
 }
 function renderIslamicView(){
@@ -1790,7 +1799,7 @@ function renderIslamicView(){
       '<div class="font-extrabold text-[20px] text-[#8B7355]">›</div></div></div>';
   }).join('');
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">🕌 ' + title + '</h2>' +
     '<div class="text-[13px] text-[#8B7355] mb-3">' + sub + '</div>' +
     cards +
@@ -4620,7 +4629,7 @@ function loansPeopleFiltered(){
 }
 function renderLoansView(){
   const title = loansPageTitle();
-  const backBtn = '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>';
+  const backBtn = '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>';
   const controls = '<div class="flex gap-2 mb-3">' +
     '<button onclick="' + (loansKind === 'bank' ? 'openLoanEntryForm(\'addbank\',\'bank\',\'\')' : 'openAddPerson(\'' + loansKind + '\')') + '" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] font-bold text-[13px]">' + (loansKind === 'bank' ? t('addBankLoanBtn') : t('addPerson')) + '</button>' +
     '<button onclick="loansDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
@@ -4705,7 +4714,7 @@ function renderPersonView(){
     return entryRow(e, payKey + ':' + personIdx + ':p:' + realIdx);
   }).join('') : '<div class="text-[13px] text-[#8B7355] py-3">' + t('noData') + '</div>';
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="goBackStep()" class="text-[13px] font-bold text-[#8B7355] mb-2">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<div class="flex justify-between items-start gap-2"><div style="min-width:0"><div class="font-extrabold text-[20px]">' + escA(person.name || '') + '</div><div class="text-[13px] text-[#8B7355]">' + escA(person.mobile || '') + contactBtnsHtml(person.mobile) + '</div>' + dueBadgeHtml(person) + '</div>' +
     '<div class="flex gap-1 shrink-0 flex-nowrap"><button onclick="openEditPerson()" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
     '<button onclick="deletePerson()" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div>' +
@@ -5011,13 +5020,28 @@ function appGoBack(){
   if(currentView === 'history' && histCat){ if(navStack.length) goBackStep(); else { histCat = ''; renderHistoryView(); } return true; }
   if(navStack.length){ goBackStep(); return true; }
   if(currentView && currentView !== 'home'){ goBackStep(); return true; }
-  return true; // Home, nothing open -> stay on Home, never exit the app
+  var _now = Date.now();
+  if(window.__exitArmed && _now - window.__exitArmed < 2000){ return 'exit'; }
+  window.__exitArmed = _now;
+  try{ showToast(lang === 'en' ? 'Press Back again to exit' : 'আবার Back চাপলে অ্যাপ বন্ধ হবে'); }catch(e){}
+  return true;
 }
 if(typeof window !== 'undefined' && window.addEventListener){
-  window.addEventListener('popstate', function(){ if(appGoBack()){ try{ history.pushState({app: true}, ''); }catch(e){} } });
-  try{ history.pushState({app: true}, ''); }catch(e){}
+  window.addEventListener('popstate', function(){
+  if(window.__exiting) return;
+  window.__histDepth = Math.max(0, (window.__histDepth || 0) - 1);
+  var _r = appGoBack();
+  if(_r === 'exit'){
+    window.__exiting = true;
+    var _n = window.__histDepth; window.__histDepth = 0; window.__exitArmed = 0;
+    setTimeout(function(){ window.__exiting = false; }, 800);
+    if(_n > 0){ try{ history.go(-_n); }catch(e){} }
+    return;
+  }
+  if(_r){ try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){} }
+});
+  try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){}
 }
-
 </script>
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
