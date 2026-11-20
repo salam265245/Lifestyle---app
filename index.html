@@ -951,7 +951,7 @@ function mergeProfile(lp, cp){
   return out;
 }
 function mergeCloudState(local, cloud){
-  if(!cloud) return { transactions: local.transactions || [], peopleGiven: local.peopleGiven || [], peopleTaken: local.peopleTaken || [], bankLoans: local.bankLoans || [], bazar: local.bazar || [], profile: local.profile || {}, deleted: local.deleted || [], dailyTasks: local.dailyTasks || [], travelList: local.travelList || [] };
+  if(!cloud) return { transactions: local.transactions || [], peopleGiven: local.peopleGiven || [], peopleTaken: local.peopleTaken || [], bankLoans: local.bankLoans || [], bazar: local.bazar || [], profile: local.profile || {}, deleted: local.deleted || [], dailyTasks: local.dailyTasks || [], travelList: local.travelList || [], reminders: local.reminders || [] };
   const del = new Set([...(local.deleted || []).map(d => d.id), ...(cloud.deleted || []).map(d => d.id)]);
     getRestoreIds().forEach(id => del.delete(id));
   const dropDeleted = arr => (arr || []).filter(it => it && it.id && !del.has(it.id));
@@ -964,6 +964,7 @@ function mergeCloudState(local, cloud){
     profile: mergeProfile(local.profile || {}, cloud.profile || {}),
     dailyTasks: dropDeleted(mergeById(local.dailyTasks || [], cloud.dailyTasks || [])),
     travelList: dropDeleted(mergeById(local.travelList || [], cloud.travelList || [])),
+    reminders: dropDeleted(mergeById(local.reminders || [], cloud.reminders || [])),
     deleted: Array.from(del).map(id => ({ id: id, at: new Date().toISOString() }))
   };
   [merged.peopleGiven, merged.peopleTaken].forEach(list => list.forEach(pr => {
@@ -975,6 +976,8 @@ function mergeCloudState(local, cloud){
 function applyMerged(m){
   try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(m.dailyTasks || [])); }catch(e){}
   try{ localStorage.setItem('lifestyle_travel_list', JSON.stringify(m.travelList || [])); }catch(e){}
+  try{ if(Array.isArray(m.reminders)) localStorage.setItem('lifestyle_reminders_v1', JSON.stringify(m.reminders)); }catch(e){}
+  try{ if(Array.isArray(m.reminders)) window.dispatchEvent(new CustomEvent('lifestyle-cloud-reminders', { detail: { reminders: m.reminders } })); }catch(e){}
   try{ window.dispatchEvent(new CustomEvent('lifestyle-cloud-routine', { detail: { dailyTasks: m.dailyTasks || [], travelList: m.travelList || [] } })); }catch(e){}
   state.transactions = m.transactions || [];
   state.peopleGiven = m.peopleGiven || [];
@@ -1054,7 +1057,7 @@ async function cloudSync(mode, quiet){
 function readRoutineLS(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; } }
 function routineLocal(){ return { dailyTasks: readRoutineLS('lifestyle_daily_tasks'), travelList: readRoutineLS('lifestyle_travel_list') }; }
 function queueRoutineCloudUpload(){ if(!applyingCloud) queueCloudUpload(); }
-function cloudDocData(){ var rt = routineLocal(); return { transactions: state.transactions, peopleGiven: state.peopleGiven, peopleTaken: state.peopleTaken, bankLoans: state.bankLoans, bazar: bazar, profile: profile, deleted: state.deleted, dailyTasks: rt.dailyTasks, travelList: rt.travelList }; }
+function cloudDocData(){ var rt = routineLocal(); var rem=[]; try{ rem=JSON.parse(localStorage.getItem('lifestyle_reminders_v1')||'[]'); }catch(e){} return { transactions: state.transactions, peopleGiven: state.peopleGiven, peopleTaken: state.peopleTaken, bankLoans: state.bankLoans, bazar: bazar, profile: profile, deleted: state.deleted, dailyTasks: rt.dailyTasks, travelList: rt.travelList, reminders: rem }; }
 function queueCloudUpload(){
   try{localStorage.setItem('lifestyle_pending_sync','1');}catch(e){} try{updateOfflineUI();}catch(e){} if(!cloudUser) return;
   if(typeof navigator!=='undefined' && !navigator.onLine) return;
@@ -7757,6 +7760,7 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
           {k:'visit', l:'Visit', i:'📍'},
           {k:'office', l:'Office Work', i:'🏢'},
           {k:'personal', l:'Personal', i:'📝'},
+          {k:'reminder', l:'Reminder', i:'⏰'},
         ].map(tb=>
           h('button', {key:tb.k, onClick:()=>setActiveTab(tb.k), style: activeTab===tb.k ? {color:'white', backgroundColor:'#1B4D3E', borderColor:'#1B4D3E'} : {color:'#2D2A26', backgroundColor:'white', borderColor:'#E8E6DC'}, className: 'flex-1 justify-center px-2 py-2 rounded-full text-[11px] font-bold border flex items-center gap-1'},
             h('span', {style: activeTab===tb.k ? {color:'white'} : {color:'#2D2A26'}}, tb.i),
@@ -7765,6 +7769,16 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
         )
       ),
 
+      activeTab==='reminder' ? h('div', {className:'space-y-4'},
+        h('div', {className:'bg-[#E3F2FD] border border-[#BBDEFB] rounded-[16px] p-4 text-center'},
+          h('p', {className:'text-[22px]'}, '⏰'),
+          h('p', {className:'font-extrabold text-[16px]'}, 'রিমাইন্ডার — Daily Routine এর ভিতরে'),
+          h('p', {className:'text-[12px] text-[#5C4A32] mt-1'}, 'মুখে বলুন, সময়মতো রিমাইন্ডার পাবেন।')
+        ),
+        h('button', {onClick:()=>{ if(window.rmOpen) window.rmOpen(); }, className:'w-full py-3.5 rounded-[16px] bg-[#1B4D3E] text-white font-extrabold text-[15px]'}, '🎤 রিমাইন্ডার সেট করুন — মুখে বলুন / লিখুন'),
+        h('p', {className:'text-[11px] text-[#8B7355] text-center'}, 'যেমন: আগামীকাল সকাল ১০টায় কল দিতে হবে'),
+        h('div', {id:'rmTabList', className:'space-y-2'})
+      ) :
       activeTab==='call' ? h('div', {className:'space-y-5'},
         h('div', null,
           h('label', {className:labelClass}, '👤 WHO TO CALL / PERSON'),
@@ -9255,6 +9269,207 @@ function RoutineSheet(props){
   }catch(e){}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', updateOfflineUI); else updateOfflineUI();
   setTimeout(updateOfflineUI, 1500);
+})();
+</script>
+
+
+<!-- ===== REMINDER ONLY - Added, old code untouched ===== -->
+<style>
+#rmFab{position:fixed;right:16px;bottom:92px;z-index:60;width:56px;height:56px;border-radius:999px;background:#1B4D3E;color:#fff;font-size:24px;box-shadow:0 6px 18px rgba(0,0,0,.25);border:none;cursor:pointer}
+#rmFab span{font-size:10px;display:block;margin-top:-4px}
+#rmSheet{position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;padding:16px 16px 24px;box-shadow:0 -8px 30px rgba(0,0,0,.2);max-width:42rem;margin:0 auto}
+#rmOverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:65}
+.rmInp{width:100%;border:1.5px solid #F3E8D3;border-radius:12px;padding:11px 12px;font-size:14px}
+.rmBtn{border-radius:999px;padding:10px 14px;font-weight:700;font-size:13px;border:none;cursor:pointer}
+</style>
+
+<div id="rmOverlay" class="hidden"></div>
+<div id="rmSheet" class="hidden">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <b style="font-size:17px">⏰ রিমাইন্ডার সেট করুন</b>
+    <button onclick="rmClose()" style="font-size:20px;background:none;border:none;cursor:pointer">✕</button>
+  </div>
+  <p style="font-size:12px;color:#8B7355;margin:6px 0 12px">মুখে বলুন বা লিখুন — যেমন: “আগামীকাল সকাল ১০টায় রহিমকে কল দিতে হবে”</p>
+  <div style="display:flex;gap:8px">
+    <input id="rmText" class="rmInp" placeholder="কি কাজ? যেমন: রহিমকে কল দিতে হবে">
+    <button id="rmMic" class="rmBtn" style="background:#E3F2FD;min-width:52px">🎤</button>
+  </div>
+  <p id="rmHeard" style="font-size:12px;color:#2E7D32;min-height:16px;margin:6px 0"></p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+    <div><label style="font-size:12px;font-weight:700">তারিখ</label><input id="rmDate" type="date" class="rmInp"></div>
+    <div><label style="font-size:12px;font-weight:700">সময় (AM/PM খেয়াল করুন)</label><input id="rmTime" type="time" class="rmInp"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <select id="rmRepeat" class="rmInp"><option value="once">একবার</option><option value="daily">প্রতিদিন</option><option value="weekly">প্রতি সপ্তাহে</option></select>
+    <button onclick="rmSave()" class="rmBtn" style="background:#1B4D3E;color:#fff;flex:1">রিমাইন্ডার সেভ করুন</button>
+  </div>
+  <p style="font-size:11px;color:#8B7355;margin-top:8px">🔔 সময় হলে নোটিফিকেশন + আওয়াজ দিয়ে জানাবে। অ্যাপ বন্ধ থাকলেও লিস্টে থাকবে।</p>
+  <hr style="margin:14px 0">
+  <b style="font-size:14px">আমার রিমাইন্ডার</b>
+  <div id="rmList" style="margin-top:10px"></div>
+</div>
+<script>
+(function(){
+  var KEY='lifestyle_reminders_v1';
+  function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
+  function save(a){localStorage.setItem(KEY,JSON.stringify(a)); try{ if(typeof queueRoutineCloudUpload==='function') queueRoutineCloudUpload(); }catch(e){} }
+  function bn2en(s){var m={'০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};return String(s||'').split('').map(function(c){return m[c]||c}).join('')}
+  function fmt(d){try{return new Date(d).toLocaleString('bn-BD',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true})}catch(e){return d}}
+  function render(){
+    var list=document.getElementById('rmList'); if(!list) return;
+    var a=load().sort(function(x,y){return new Date(x.when)-new Date(y.when)});
+    if(!a.length){list.innerHTML='<p style="font-size:13px;color:#8B7355;text-align:center;padding:16px">এখনো কোনো রিমাইন্ডার নেই।</p>';return}
+    list.innerHTML=a.map(function(r){
+      var st=r.done?'✅ সম্পন্ন':'⏰ '+fmt(r.when)+(r.repeat!=='once'?' • '+(r.repeat==='daily'?'প্রতিদিন':'প্রতি সপ্তাহে'):'');
+      return '<div style="border:1px solid #F3E8D3;border-radius:14px;padding:10px;margin-bottom:8px;background:'+(r.done?'#E8F5E9':'#fff')+'"><b style="font-size:14px">'+r.text+'</b><div style="font-size:12px;color:#5C4A32;margin-top:3px">'+st+'</div><div style="display:flex;gap:6px;margin-top:8px"><button onclick="rmDone(\''+r.id+'\')" class="rmBtn" style="background:#E8F5E9">Done</button><button onclick="rmSnooze(\''+r.id+'\')" class="rmBtn" style="background:#FFF3D6">১০ মিনিট পরে</button><button onclick="rmDel(\''+r.id+'\')" class="rmBtn" style="background:#FFEBEE;color:#B71C1C">মুছুন</button></div></div>';
+    }).join('');
+  }
+  window.rmOpen=function(){document.getElementById('rmSheet').classList.remove('hidden');document.getElementById('rmOverlay').classList.remove('hidden');render(); try{if('Notification' in window && Notification.permission==='default') Notification.requestPermission()}catch(e){}};
+  window.rmClose=function(){document.getElementById('rmSheet').classList.add('hidden');document.getElementById('rmOverlay').classList.add('hidden')};
+  
+  document.getElementById('rmOverlay').onclick=rmClose;
+  // default date = today
+  try{document.getElementById('rmDate').value=new Date().toISOString().slice(0,10)}catch(e){}
+  window.rmSave=function(){
+    var text=document.getElementById('rmText').value.trim();
+    var d=document.getElementById('rmDate').value, tm=document.getElementById('rmTime').value;
+    if(!text){alert('কি কাজ সেটা লিখুন বা মুখে বলুন');return}
+    if(!d||!tm){alert('তারিখ আর সময় দুইটাই দিন — AM/PM খেয়াল করুন');return}
+    var when=new Date(d+'T'+tm+':00');
+    if(when<new Date()){if(!confirm('এই সময়টা পেরিয়ে গেছে। তবুও সেভ করবো?')) return}
+    var a=load(); a.push({id:Date.now().toString(),text:text,when:when.toISOString(),repeat:document.getElementById('rmRepeat').value,done:false,notified:false,updatedAt:new Date().toISOString()});
+    save(a); document.getElementById('rmText').value=''; document.getElementById('rmHeard').textContent='✅ রিমাইন্ডার সেভ হয়েছে: '+fmt(when.toISOString());
+    render(); schedule();
+  };
+  window.rmDone=function(id){var a=load(); a.forEach(function(r){if(r.id===id) r.done=true}); save(a); render()};
+  window.rmDel=function(id){save(load().filter(function(r){return r.id!==id})); render()};
+  window.rmSnooze=function(id){var a=load(); a.forEach(function(r){if(r.id===id){r.when=new Date(Date.now()+10*60000).toISOString(); r.done=false; r.notified=false}}); save(a); render(); schedule()};
+  function notify(r){
+    var msg='এখন সময় হয়েছে: '+r.text;
+    try{if('Notification' in window && Notification.permission==='granted') new Notification('⏰ রিমাইন্ডার',{body:msg})}catch(e){}
+    try{var u=new SpeechSynthesisUtterance(msg); u.lang='bn-BD'; speechSynthesis.speak(u)}catch(e){}
+    try{var el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.body.appendChild(el); setTimeout(function(){el.remove()},8000)}catch(e){}
+    try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+  }
+  function schedule(){
+    var a=load(), now=new Date(), changed=false;
+    a.forEach(function(r){
+      if(r.done||r.notified) return;
+      if(new Date(r.when)<=now){ notify(r); r.notified=true; changed=true;
+        if(r.repeat==='daily'){r.when=new Date(new Date(r.when).getTime()+86400000).toISOString(); r.notified=false}
+        else if(r.repeat==='weekly'){r.when=new Date(new Date(r.when).getTime()+7*86400000).toISOString(); r.notified=false}
+        else r.done=false;
+      }
+    });
+    if(changed) save(a); render();
+  }
+  // Voice
+  document.getElementById('rmMic').onclick=function(){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){document.getElementById('rmHeard').textContent='এই ব্রাউজারে ভয়েস চলছে না — লিখে দিন।'; return}
+    var rec=new SR(); rec.lang='bn-BD'; rec.interimResults=false;
+    document.getElementById('rmHeard').textContent='🎤 শুনছি... বলুন';
+    rec.onresult=function(e){
+      var txt=e.results[0][0].transcript;
+      document.getElementById('rmHeard').textContent='শুনলাম: “'+txt+'”';
+      parseVoice(txt);
+    };
+    rec.onerror=function(){document.getElementById('rmHeard').textContent='ভয়েস বুঝতে পারিনি, আবার চেষ্টা করুন।'};
+    rec.start();
+  };
+  function parseVoice(raw){
+    var txt=bn2en(raw);
+    document.getElementById('rmText').value=txt;
+    var d=new Date(), dateStr=d.toISOString().slice(0,10);
+    if(/আগামীকাল|আগামী কাল|tomorrow/i.test(txt)){d.setDate(d.getDate()+1); dateStr=d.toISOString().slice(0,10)}
+    if(/পরশু/i.test(txt)){d.setDate(d.getDate()+2); dateStr=d.toISOString().slice(0,10)}
+    document.getElementById('rmDate').value=dateStr;
+    // time: 10 টা / 10:30 / 10টা / সকাল 10 / বিকাল 4
+    var m=txt.match(/(\d{1,2})(?::|টা|টা\.?)?\s*(\d{2})?/);
+    var hour=null, min=0, isPM=false, isAM=false;
+    if(/বিকাল|বিকেল|সন্ধ্যা|রাত|দুপুর|evening|afternoon|night|pm|পিএম/i.test(txt)) isPM=true;
+    if(/সকাল|ভোর|morning|am|এএম/i.test(txt)) isAM=true;
+    if(m){hour=parseInt(m[1],10); if(m[2]) min=parseInt(m[2],10);
+      if(isPM && hour<12) hour+=12; if(isAM && hour===12) hour=0;
+      if(!isPM && !isAM && hour<8) hour+=12; // ambiguous evening guess not forced
+      document.getElementById('rmTime').value=String(hour).padStart(2,'0')+':'+String(min).padStart(2,'0');
+    }
+    if(/প্রতিদিন|প্রতি দিন|daily|every day/i.test(txt)) document.getElementById('rmRepeat').value='daily';
+    if(/প্রতি সপ্তাহ|সাপ্তাহিক|weekly/i.test(txt)) document.getElementById('rmRepeat').value='weekly';
+  }
+  window.addEventListener('lifestyle-cloud-reminders', function(){ try{ render(); schedule(); }catch(e){} });
+  setInterval(schedule, 15000);
+  document.addEventListener('visibilitychange', function(){if(!document.hidden) schedule()});
+  setTimeout(schedule, 2000);
+  render();
+})();
+</script>
+
+
+<script>
+/* Reminder lives INSIDE Daily Routine - no separate button */
+(function(){
+  function addBtn(){
+    var sheet=document.getElementById('routineRoot'); if(!sheet) return;
+    if(sheet.querySelector('[data-rm-inside]')) return;
+    // find Daily Routine title / container - insert at very top of the sheet
+    var container=sheet.querySelector('div'); if(!container) return;
+    // Only when Daily Routine is open (title contains Daily Routine / ডেইলি রুটিন)
+    var txt=sheet.innerText||'';
+    if(txt.indexOf('Daily Routine')===-1 && txt.indexOf('ডেইলি রুটিন')===-1 && txt.indexOf('Add Task')===-1) return;
+    var b=document.createElement('button');
+    b.setAttribute('data-rm-inside','1');
+    b.textContent='⏰ রিমাইন্ডার সেট করুন — মুখে বলুন';
+    b.style.cssText='width:100%;background:#1B4D3E;color:#fff;border:none;border-radius:14px;padding:12px;font-weight:800;font-size:14px;margin:10px 0;cursor:pointer';
+    b.onclick=function(){ if(window.rmOpen) window.rmOpen(); };
+    container.prepend(b);
+  }
+  setInterval(addBtn, 800);
+  document.addEventListener('click', function(){ setTimeout(addBtn, 300); });
+})();
+</script>
+
+
+<script>
+setInterval(function(){
+  var el=document.getElementById('rmTabList'); if(!el) return;
+  try{
+    var a=JSON.parse(localStorage.getItem('lifestyle_reminders_v1')||'[]');
+    if(!a.length){ el.innerHTML='<p style="font-size:12px;color:#8B7355;text-align:center">এখনো কোনো রিমাইন্ডার নেই।</p>'; return; }
+    el.innerHTML=a.slice(0,5).map(function(r){
+      var d=new Date(r.when); return '<div style="border:1px solid #F3E8D3;border-radius:12px;padding:10px;background:#fff"><b style="font-size:13px">'+r.text+'</b><div style="font-size:11px;color:#5C4A32">'+d.toLocaleString('bn-BD',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true})+(r.done?' • ✅ সম্পন্ন':'')+'</div></div>';
+    }).join('') + '<p style="font-size:11px;color:#8B7355;text-align:center">সব দেখতে উপরের বাটনে চাপ দিন</p>';
+  }catch(e){}
+}, 1000);
+</script>
+
+
+<!-- ===== UPDATE 1+3+4 ONLY: Home polish + Today summary + Sync status | Old code untouched ===== -->
+<style>
+/* 1 - Home polish: same cream+green, softer cards, even gaps */
+.card{border-radius:20px !important;box-shadow:0 4px 14px rgba(0,0,0,.05) !important}
+#app .grid{gap:10px}
+#syncStatusPill{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:210;background:#E8F5E9;border:1px solid #A5D6A7;color:#1B4D3E;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.08);white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+</style>
+<script>
+(function(){
+  // 4 - Sync status pill: SYNCED / Syncing / Offline + Last Sync
+  var pill=document.createElement('div'); pill.id='syncStatusPill'; document.body.appendChild(pill);
+  function fmtSync(ts){ try{ if(!ts) return ''; return new Date(ts).toLocaleString('bn-BD',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}); }catch(e){ return ''; } }
+  function updateSyncPill(){
+    var online=navigator.onLine, pending=false, last='';
+    try{ pending=localStorage.getItem('lifestyle_pending_sync')==='1'; last=localStorage.getItem('lifestyle_cloud_lastSync')||''; }catch(e){}
+    if(!online){ pill.textContent='⚠️ Offline — ফোনে সেভ হচ্ছে, অনলাইন হলে Sync হবে'; pill.style.background='#FFF3CD'; pill.style.borderColor='#FFE082'; }
+    else if(pending){ pill.textContent='🔄 Sync হচ্ছে...'; pill.style.background='#E3F2FD'; pill.style.borderColor='#BBDEFB'; }
+    else{ pill.textContent='✅ SYNCED' + (last?' • Last Sync: '+fmtSync(last):''); pill.style.background='#E8F5E9'; pill.style.borderColor='#A5D6A7'; }
+  }
+  setInterval(updateSyncPill,5000); updateSyncPill();
+  window.addEventListener('online',function(){ setTimeout(updateSyncPill,500); });
+  window.addEventListener('offline',updateSyncPill);
+  // 3 - REMOVED as requested: Today summary deleted, 1 and 4 kept.
+  // Remove any old summary box if present:
+  setTimeout(function(){ var el=document.getElementById('homeTodaySummary'); if(el) el.remove(); }, 500);
+});
 })();
 </script>
 
