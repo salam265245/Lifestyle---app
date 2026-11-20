@@ -3132,8 +3132,19 @@ function closePdfPreview(){
   document.getElementById('pdfOverlay').classList.add('hidden');
 }
 let pdfMode = 'history', pdfPrintHeader = '';
-function pdfDocHtml(){ const _b = pdfMode === 'person' ? personPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfStatementHtml(); return _b + sigPdfPreviewHtml(); }
+function pdfDocHtml(){ const _b = pdfMode === 'marketSurvey' || pdfMode === 'marketFile' ? marketPdfHtml(window.__marketPdfEntry||{}, pdfMode) : pdfMode === 'person' ? personPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfStatementHtml(); return _b + sigPdfPreviewHtml(); }
+  var __marketSkipKeys = {id:1, updatedAt:1, _guarantorGenerated:1, businessTypeSearch:1, existingLoanSearch:1, _loansGenerated:1};
+  function marketPdfLabel(k){ var m = {'businessName':'Business Name / ব্যবসার নাম','ownerName':'Owners Name / মালিকের নাম','businessAddress':'Business Address / ব্যবসার ঠিকানা','address':'Address / ঠিকানা','mobileNo':'Mobile No / মোবাইল','businessType':'Business Type / ব্যবসার ধরন','businessTypeBn':'Business Type (Bangla) / ব্যবসার ধরন (বাংলা)','stock':'Stock (Lac) / স্টক (লাখ)','receivables':'Receivables (Lac) / পাওনা (লাখ)','payables':'Payables (Lac) / দেনা (লাখ)','monthlySales':'Monthly Sales (Lac) / মাসিক বিক্রি (লাখ)','totalEmployee':'Total Employee No / মোট কর্মচারী','totalSalary':'Total Salary (Thousand) / মোট বেতন (হাজার)','wholesalePct':'Wholesale % / পাইকারি %','wholesaleMargin':'Wholesale Profit Margin % / পাইকারি লাভ %','retailPct':'Retail Sales % / খুচরা বিক্রি %','retailMargin':'Retail Profit Margin % / খুচরা লাভ %','avgMargin':'Average Margin % (Auto) / গড় মার্জিন %','existingLoanType':'Existing Loan Type / লোনের ধরন','existingLoanOrg':'Existing Loan Org / সংস্থা','othersNGO':'Others NGO Name / অন্যান্য NGO নাম','loanType':'Loan Type / লোনের টাইপ','disbursementDate':'Disbursement Date / বিতরণের তারিখ','disbursementAmount':'Disbursement Amount (Lac) / বিতরণের পরিমাণ (লাখ)','totalEMI':'Total EMI / মোট কিস্তি','currentOutstanding':'Current Outstanding (Lac) / বর্তমান বকেয়া (লাখ)','otherLoans':'অন্য Existing Loan থাকলে / Other Existing Loans','noOfLoan':'No of Loan / লোনের সংখ্যা','noOfGuarantor':'No of Guarantor / গ্যারান্টরের সংখ্যা','familyExpenseTotal':'Family Expense Total / পারিবারিক খরচ মোট','totalIncome':'Total Income / মোট আয়','netWorth':'Net Worth / নিট সম্পদ','totalValue':'Total Value / মোট মূল্য'}; if(m[k]) return m[k]; return k.replace(/([A-Z])/g, ' $1').replace(/^./, function(c){ return c.toUpperCase(); }); }
+  function marketPdfIsEmpty(v){ if(v===null||v===undefined) return true; if(typeof v==='string') return v.trim()===''; if(Array.isArray(v)) return v.length===0; if(typeof v==='object') return Object.keys(v).length===0; return false; }
+  function marketPdfFmtVal(v){ if(Array.isArray(v)){ return v.map(function(x){ if(x&&typeof x==='object'){ if(x.bn||x.en) return (x.bn||'')+(x.en?(' / '+x.en):''); return Object.keys(x).map(function(k){ return marketPdfLabel(k)+': '+marketPdfFmtVal(x[k]); }).join(', '); } return String(x); }).join(', '); } if(v&&typeof v==='object'){ return Object.keys(v).map(function(k){ var arr=v[k]; if(Array.isArray(arr)) return marketPdfLabel(k)+': '+(arr.length?arr.map(function(x){ return (x.bn||x.en)?((x.bn||'')+' / '+(x.en||'')):String(x); }).join(', '):'—'); return marketPdfLabel(k)+': '+marketPdfFmtVal(arr); }).join(' | '); } return String(v); }
+  function marketPdfLoanRows(loan){ var rows=[]; var keys=['existingLoanType','existingLoanOrg','othersNGO','loanType','disbursementDate','disbursementAmount','totalEMI','currentOutstanding']; keys.forEach(function(k){ if(!marketPdfIsEmpty(loan[k])) rows.push({label:marketPdfLabel(k), value:marketPdfFmtVal(loan[k])}); }); var sel=loan.selectedLoans||{}; ['ngo','bank','nbfi'].forEach(function(tp){ var arr=sel[tp]||[]; if(arr.length) rows.push({label:'Selected '+(tp==='ngo'?'NGO':tp==='bank'?'Bank':'NBFI'), value:arr.map(function(x){ return (x.bn||'')+' / '+(x.en||''); }).join(', ')}); }); return rows; }
+  function marketPdfSections(entry){ var secs=[]; var main=[], loans=[], others=[]; var loanKeys={existingLoanType:1,existingLoanOrg:1,othersNGO:1,loanType:1,disbursementDate:1,disbursementAmount:1,totalEMI:1,currentOutstanding:1,selectedLoans:1}; Object.keys(entry||{}).forEach(function(k){ if(__marketSkipKeys[k]) return; var v=entry[k]; if(k==='loans'&&Array.isArray(v)&&v.length){ loans=v; return; } if(k==='selectedLoans'){ var sel=v||{}; var all=[]; ['ngo','bank','nbfi'].forEach(function(tp){ (sel[tp]||[]).forEach(function(x){ all.push((x.bn||'')+' / '+(x.en||'')); }); }); if(all.length) main.push({label:'Selected Loans (Existing Loan) / সিলেক্ট করা লোন', value:all.join(', ')}); return; } if(k==='selectedBizItems'&&Array.isArray(v)&&v.length){ main.push({label:'Selected Business Types / সিলেক্ট করা ব্যবসার ধরন', value:v.map(function(x){ return (x.bn||'')+' / '+(x.en||''); }).join(', ')}); return; } if(marketPdfIsEmpty(v)) return; if(loanKeys[k]) others.push({label:marketPdfLabel(k), value:marketPdfFmtVal(v)}); else main.push({label:marketPdfLabel(k), value:marketPdfFmtVal(v)}); }); if(main.length) secs.push({title:'Business / Survey তথ্য', rows:main}); if(loans.length) loans.forEach(function(ln, i){ var r=marketPdfLoanRows(ln); if(r.length) secs.push({title:'Loan '+(i+1)+' / লোন '+(i+1), rows:r}); }); else if(others.length) secs.push({title:'Existing Loan / বর্তমান লোন', rows:others}); return secs; }
+  function marketPdfHtml(entry, kind){ var title = kind==='marketFile' ? 'Market Survey - File Making' : 'Market Survey - Survey'; var secs=marketPdfSections(entry); var period={from:'…', to:'…'}; try{ period=statementPeriod('', '', []); }catch(e){} var html=statementHeaderHtml(title, secs.reduce(function(s,x){ return s+x.rows.length; },0), period); html+='<div style="font-size:15px;font-weight:700;margin:10px 0 4px">'+escA(entry.businessName||entry.ownerName||'Market Survey')+'</div>'; if(!secs.length) html+='<div style="font-size:13px;color:#666">কোনো তথ্য পূরণ করা হয়নি / No data filled yet.</div>'; secs.forEach(function(sec){ html+='<div style="font-size:13px;font-weight:700;background:#F5F1E8;padding:7px 8px;border-radius:8px;margin:12px 0 4px">'+escA(sec.title)+'</div>'; html+='<table class="stmt-table" style="width:100%;border-collapse:collapse;font-size:12px">'; sec.rows.forEach(function(r){ html+='<tr><td style="border:1px solid #E8E6DC;padding:6px 8px;width:38%;vertical-align:top;font-weight:600">'+escA(r.label)+'</td><td style="border:1px solid #E8E6DC;padding:6px 8px;vertical-align:top">'+escA(r.value)+'</td></tr>'; }); html+='</table>'; }); return html; }
+  function marketPdfText(entry, kind){ var title = kind==='marketFile' ? 'Market Survey - File Making' : 'Market Survey - Survey'; var prof={}; try{ prof=(typeof loadProfile==='function'?loadProfile():{})||{}; }catch(e){} var out=t('appName')+'\nDownload: '+fmtDownloadNow()+'\nUser: '+(prof.name||'')+'\n'+title+'\n'+(entry.businessName||entry.ownerName||'')+'\n'; marketPdfSections(entry).forEach(function(sec){ out+='\n['+sec.title+']\n'; sec.rows.forEach(function(r){ out+=r.label+': '+r.value+'\n'; }); }); return out; }
+  function marketPdfOpen(kind, entry, mode){ try{ window.__marketPdfEntry=entry||{}; window.__marketPdfKind=kind; pdfMode = kind==='marketFile' ? 'marketFile' : 'marketSurvey'; if(mode==='view'){ showStatementPreview(marketPdfHtml(window.__marketPdfEntry, pdfMode) + sigPdfPreviewHtml()); } else if(mode==='download'){ downloadPdfFile(); } else if(mode==='share'){ sharePdf(); } }catch(e){ try{ showToast(t('pdfFail')); }catch(_e){} } }
+
 function pdfTextForMode(){
+  if(pdfMode === 'marketSurvey' || pdfMode === 'marketFile'){ return marketPdfText(window.__marketPdfEntry||{}, pdfMode); }
   if(pdfMode === 'person'){
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
     const person = arr[personIdx] || { name: '' };
@@ -3260,6 +3271,7 @@ function pdfStatementData(){
     const loans = homeBankLoansFiltered();
     return { prof: prof, title: 'History - Bank Loan', records: loans.length, period: statementPeriod(homeBankFrom, homeBankTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))), bankLoans: loans, homeSummary: homeSummaryData() };
   }
+  if(pdfMode === 'marketSurvey' || pdfMode === 'marketFile'){ var e = window.__marketPdfEntry||{}; var secs = marketPdfSections(e); var total = secs.reduce(function(s,x){ return s+x.rows.length; }, 0); return { prof: prof, title: (pdfMode==='marketFile' ? 'Market Survey - File Making' : 'Market Survey - Survey') + ' - ' + (e.businessName||e.ownerName||''), records: total, period: statementPeriod('', '', []), marketSections: secs }; }
   return null;
 }
 function pdfWrapText(ctx, text, maxW){
@@ -3876,7 +3888,7 @@ function pdfStatementJpegs(){
   const LH = 18, CLH = 15, CPAD = 5, CPADX = 6;
   const mctx = document.createElement('canvas').getContext('2d');
   let cols, headerRows, rows, totalRow, emptyRow;
-  if(data.loansRows){
+  if(data.marketSections){     cols = [{ w: 38, align: 'left' }, { w: 62, align: 'left' }];     headerRows = [[ { text: 'Field / ফিল্ড', span: 1, align: 'left' }, { text: 'Value / মান', span: 1, align: 'left' } ]];     rows = [];     data.marketSections.forEach(function(sec){ rows.push(['--- ' + sec.title + ' ---', '']); sec.rows.forEach(function(r){ rows.push([r.label, r.value]); }); });     if(!rows.length) rows.push(['কোনো তথ্য পূরণ করা হয়নি / No data filled yet.', '']);     totalRow = [ { text: 'Total (' + data.records + ' fields)', span: 1, align: 'left' }, { text: '', span: 1, align: 'left' } ];     emptyRow = [{ text: t('noData'), span: 2, align: 'center' }];   } else if(data.loansRows){
     cols = [{ w: 26, align: 'left' }, { w: 20, align: 'left' }, { w: 18, align: 'right' }, { w: 18, align: 'right' }, { w: 18, align: 'right' }];
     const retLabel = data.loansKind === 'given' ? 'Returned' : 'Repaid';
     headerRows = [[
@@ -4227,6 +4239,7 @@ function pdfPersonFileName(){
   return 'Lifestyle-' + (clean || 'person') + '-' + kindLbl + '-History-' + today() + '.pdf';
 }
 function pdfFileName(){
+  if(pdfMode === 'marketSurvey' || pdfMode === 'marketFile'){ var nm=(((window.__marketPdfEntry||{}).businessName||(window.__marketPdfEntry||{}).ownerName||'survey')+'').trim().replace(/[\\\/:*?"<>|]/g,'').replace(/\s+/g,'-').slice(0,60); return 'Lifestyle-Market-'+(pdfMode==='marketFile'?'FileMaking':'Survey')+'-'+(nm||'survey')+'-'+today()+'.pdf'; }
   if(pdfMode === 'person') return pdfPersonFileName();
   return 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
 }
@@ -8274,7 +8287,7 @@ function MarketSurveyManager({t, lang, setToast}){
       supplier1Business:'', supplier1Owner:'', supplier1Mobile:'', supplier1Payable:'', supplier2Business:'', supplier2Owner:'', supplier2Mobile:'', supplier2Payable:'',
       buyer1Business:'', buyer1Owner:'', buyer1Mobile:'', buyer1Receivable:'', buyer2Business:'', buyer2Owner:'', buyer2Mobile:'', buyer2Receivable:'',
       noOfShop:'', shopRentYearly:'', noOfGodown:'', godownAdvance:'', godownRentYearly:'',
-      existingLoanType:'', existingLoanSearch:'', existingLoanOrg:'', loanType:'', disbursementDate:'', disbursementAmount:'', totalEMI:'', currentOutstanding:'',
+      existingLoanType:'', existingLoanSearch:'', noOfLoan:'', loans:[], existingLoanOrg:'', loanType:'', disbursementDate:'', disbursementAmount:'', totalEMI:'', currentOutstanding:'',
       familyExpensePerson1:'', houseRent:'', houseElectricity:'', foodCloth:'', education:'', telephoneBill:'', medical:'', entertainment:'', conveyance:'', othersExpense:'', familyExpenseTotal:'0',
       rentalIncome:'', otherBusinessIncome:'', transportBusiness:'', remittance:'', otherBusinessIncome2:'', totalBusinessIncome:'', salaryOtherIncome:'', totalIncome:'0',
       totalFamilyAsset:'', totalLiabilities:'', netWorth:'0', totalValue:'',
@@ -8285,6 +8298,15 @@ function MarketSurveyManager({t, lang, setToast}){
   });
   const [showBusinessList, setShowBusinessList] = React.useState(false);
   const [showLoanList, setShowLoanList] = React.useState(false);
+   const [showLoanIdx, setShowLoanIdx] = React.useState(-1);
+   const [showOthersIdx, setShowOthersIdx] = React.useState(-1);
+   function blankLoan(){ return {existingLoanType:'', existingLoanSearch:'', existingLoanOrg:'', loanType:'', disbursementDate:'', disbursementAmount:'', totalEMI:'', currentOutstanding:'', othersNGO:'', selectedLoans:{ngo:[],bank:[],nbfi:[]}}; }
+   function getLoansList(){ if(Array.isArray(form.loans)&&form.loans.length) return form.loans; var hasLegacy = form.existingLoanType||form.existingLoanOrg||form.loanType||form.disbursementAmount||form.totalEMI||form.currentOutstanding||(form.selectedLoans&&((form.selectedLoans.ngo&&form.selectedLoans.ngo.length)||(form.selectedLoans.bank&&form.selectedLoans.bank.length)||(form.selectedLoans.nbfi&&form.selectedLoans.nbfi.length))); if(hasLegacy){ var b=blankLoan(); b.existingLoanType=form.existingLoanType||''; b.existingLoanSearch=form.existingLoanSearch||''; b.existingLoanOrg=form.existingLoanOrg||''; b.loanType=form.loanType||''; b.disbursementDate=form.disbursementDate||''; b.disbursementAmount=form.disbursementAmount||''; b.totalEMI=form.totalEMI||''; b.currentOutstanding=form.currentOutstanding||''; b.othersNGO=form.othersNGO||''; b.selectedLoans=form.selectedLoans||{ngo:[],bank:[],nbfi:[]}; return [b]; } return [blankLoan()]; }
+   function updateLoan(idx, k, v){ var loans=getLoansList().map(function(l,i){ if(i===idx){ var o={}; o[k]=v; return Object.assign({}, l, o); } return Object.assign({}, l); }); update('loans', loans); if(idx===0) update(k, v); }
+   function toggleLoanItemFor(idx, type, item, checked){ var loans=getLoansList(); var loan=loans[idx]||blankLoan(); var sel=loan.selectedLoans||{ngo:[],bank:[],nbfi:[]}; var cur=sel[type]||[]; var next; if(checked){ next = cur.some(function(x){ return x.bn===item.bn; }) ? cur : cur.concat([item]); } else { next = cur.filter(function(x){ return x.bn!==item.bn; }); } var newSel={ngo:sel.ngo||[], bank:sel.bank||[], nbfi:sel.nbfi||[]}; newSel[type]=next; var all=(newSel.bank||[]).concat(newSel.ngo||[]).concat(newSel.nbfi||[]); updateLoan(idx, 'selectedLoans', newSel); updateLoan(idx, 'existingLoanOrg', all.map(function(x){ return x.en; }).join(', ')); }
+   function filteredLoanFor(loan){ var opts = loan.existingLoanType==='NGO' ? NGO_LIST : loan.existingLoanType==='Bank' ? BANK_LIST : loan.existingLoanType==='NBFI' ? NBFI_LIST : []; var q=(loan.existingLoanSearch||'').trim(); if(!q) return opts; var ql=q.toLowerCase(); return opts.filter(function(o){ var en=(o.en||'').toLowerCase(), bn=o.bn||''; return en.indexOf(ql)>=0 || bn.indexOf(q)>=0 || bn.toLowerCase().indexOf(ql)>=0; }); }
+   function generateLoans(){ var n=parseInt(form.noOfLoan)||1; if(n<1||n>10){ alert('1 থেকে 10 এর মধ্যে লিখুন'); return; } var cur=getLoansList(); var next=Array.from({length:n}, function(_,i){ return cur[i] ? Object.assign({}, cur[i]) : blankLoan(); }); update('loans', next); if(typeof setToast==='function') setToast(n+' Loan generated'); }
+
   const [showOthersNGO, setShowOthersNGO] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
@@ -8503,7 +8525,7 @@ function MarketSurveyManager({t, lang, setToast}){
             ),
             h('div', {className:'flex gap-1.5 ml-2'},
               h('button', {onClick:()=>loadPerson(p.id), className:'px-2.5 py-1 rounded-full bg-white border border-[#F3E8D3] text-[10px] font-bold'}, 'Load'),
-              h('button', {onClick:()=>deletePerson(p.id), className:'px-2.5 py-1 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, 'Del')
+              h('button', {onClick:()=>marketPdfOpen('marketFile', p, 'view'), className:'px-2.5 py-1 rounded-full bg-white border border-[#F3E8D3] text-[10px] font-bold'}, 'View'), h('button', {onClick:()=>marketPdfOpen('marketFile', p, 'download'), className:'px-2.5 py-1 rounded-full bg-[#1B4D3E] text-white text-[10px] font-bold'}, 'PDF'), h('button', {onClick:()=>marketPdfOpen('marketFile', p, 'share'), className:'px-2.5 py-1 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[10px] font-bold'}, 'Share'), h('button', {onClick:()=>deletePerson(p.id), className:'px-2.5 py-1 rounded-full bg-[#FFEBEE] border border-[#FFCDD2] text-[#B71C1C] text-[10px] font-bold'}, 'Del')
             )
           ))
         ),
@@ -8511,7 +8533,8 @@ function MarketSurveyManager({t, lang, setToast}){
       ),
 
       // 1 Ownership
-      h('div', {className:sectionClass}, h('span', null, '1. Ownership'), h('button', {onClick:()=>handleSaveSection('Ownership'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'flex gap-2'}, h('button', {onClick:()=>marketPdfOpen('marketFile', form, 'view'), className:'flex-1 py-3 rounded-[16px] bg-white border-2 border-[#1B4D3E] text-[#1B4D3E] font-extrabold text-[13px]'}, '👁 View PDF'), h('button', {onClick:()=>marketPdfOpen('marketFile', form, 'download'), className:'flex-1 py-3 rounded-[16px] bg-[#1B4D3E] text-white font-extrabold text-[13px]'}, '⬇ Download PDF'), h('button', {onClick:()=>marketPdfOpen('marketFile', form, 'share'), className:'flex-1 py-3 rounded-[16px] bg-[#C9A86A] text-[#2D2A26] font-extrabold text-[13px]'}, '📤 Share PDF')),
+       h('div', {className:sectionClass}, h('span', null, '1. Ownership'), h('button', {onClick:()=>handleSaveSection('Ownership'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
       h('div', {className:'grid grid-cols-1 gap-3 bg-white border rounded-[12px] p-3'},
         h('div', null, h('label', {className:labelClass}, 'Ownership Type'), h('div', {className:'flex gap-2'}, h('button', {onClick:()=>update('ownershipType','1 Person (100%)'), style: form.ownershipType.includes('1 Person') ? {backgroundColor:'#1E4538', color:'white'} : {backgroundColor:'white', color:'#1A1A1A'}, className:'flex-1 py-2 rounded-full text-[11px] font-bold border'}, '1 Person (100%)'), h('button', {onClick:()=>update('ownershipType','2 Persons'), style: form.ownershipType.includes('2 Persons') ? {backgroundColor:'#1E4538', color:'white'} : {backgroundColor:'white', color:'#1A1A1A'}, className:'flex-1 py-2 rounded-full text-[11px] font-bold border'}, '2 Persons'))),
         h('div', {className:'grid grid-cols-1 gap-2'}, h('div', null, h('label', {className:labelClass}, 'Owner 1 %'), h('input', {value:form.owner1Pct, onChange:e=>update('owner1Pct', e.target.value), className:inputClass})), h('div', null, h('label', {className:labelClass}, 'Owner 2 %'), h('input', {value:form.owner2Pct, onChange:e=>update('owner2Pct', e.target.value), className:inputClass})))
@@ -8540,17 +8563,21 @@ function MarketSurveyManager({t, lang, setToast}){
           ),
           form.businessType ? h('p', {className:'text-[11px] mt-2 text-[#2E7D32] font-bold'}, 'Selected: '+(form.selectedBizItems||[]).map(x=>x.bn+' ('+x.en+')').join(', ')) : h('p', {className:'text-[11px] mt-1 text-[#8B7355]'}, 'কোনো ব্যবসার ধরন সিলেক্ট করুন / No business selected')
         ),
-        h('div', {className:'grid grid-cols-1 gap-3'},
-          [['cashInHand','Cash In Hand (Lac)','যেমন: 25 = 25 Lac'],['goodsInTransit','Goods In Transit (Lac)',''],['stock','Stock (Lac)',''],['receivables','Receivables (Lac)',''],['payables','Payables (Lac)',''],['monthlySales','Monthly Sales (Lac)',''],['yearlySales','Yearly Sales (Auto x12)','Auto'],['advanceToSuppliers','Advance Payment to Suppliers (Lac)',''],['possessionValue','Possession Value (নিজের জায়গার বাজার মূল্য) (Lac)',''],['shopAdvance','Shop Advance (জমা টাকা) (Lac)',''],['buildingCost','Building Cost (নিট খরচ) (Lac)',''],['furniture','Furniture, Fixture & Decoration (Lac)',''],['machineries','Machineries & Equipments (Lac)',''],['vehicleNo','Vehicle No',''],['vehiclePrice','Vehicle Price (Lac)',''],['totalEmployee','Total Employee No',''],['totalSalary','Total Salary (Thousand)','']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[2], className:inputClass})))
+        h('div', {className:'grid grid-cols-2 gap-3'},
+          [['cashInHand','Cash In Hand (Lac)','যেমন: 25 = 25 Lac'],['goodsInTransit','Goods In Transit (Lac)',''],['stock','Stock (Lac)',''],['receivables','Receivables (Lac)',''],['payables','Payables (Lac)',''],['monthlySales','Monthly Sales (Lac)',''],['yearlySales','Yearly Sales (Auto x12)','Auto'],['advanceToSuppliers','Advance Payment to Suppliers (Lac)',''],['possessionValue','Possession Value (নিজের জায়গার বাজার মূল্য) (Lac)',''],['shopAdvance','Shop Advance (জমা টাকা) (Lac)',''],['buildingCost','Building Cost (নিট খরচ) (Lac)',''],['furniture','Furniture, Fixture & Decoration (Lac)',''],['machineries','Machineries & Equipments (Lac)',''],['vehicleNo','Vehicle No',''],['vehiclePrice','Vehicle Price (Lac)',''],['totalEmployee','Total Employee No',''],['totalSalary','Total Salary (Thousand)','']].map(f=> h('div', {key:f[0], className: f[0]==='totalSalary' ? 'col-span-2' : ''}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[2], className:inputClass})))
         ),
         h('div', {className:'mt-4 border-t pt-3 space-y-3'},
-          h('p', {className:'text-[12px] font-bold text-[#1E4538]'}, 'Sales % & Margin - Percentage'),
-          h('div', {className:'grid grid-cols-1 gap-3'},
-            [['wholesalePct','Wholesale Sales %'],['wholesaleMargin','Profit Margin %'],['retailPct','Retail Sales %'],['retailMargin','Profit Margin %'],['avgMargin','Average Margin % (Auto)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+          h('p', {className:'text-[12px] font-bold text-[#1E4538]'}, 'Sales % & Profit Margin %'),
+          h('div', {className:'grid grid-cols-2 gap-3'},
+            [['wholesalePct','Wholesale %','%'],['wholesaleMargin','Profit Margin %','%'],['retailPct','Retail Sales %','%'],['retailMargin','Profit Margin %','%']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[2], className:inputClass})))
+          ),
+          h('div', null, h('label', {className:labelClass}, 'Average Margin % (Auto)'), h('input', {value:form.avgMargin, onChange:e=>update('avgMargin', e.target.value), placeholder:'Auto', className:inputClass + ' bg-[#F5F1E8]'}))
+        ),
+        h('div', {className:'mt-4 border-t pt-3'},
+          h('div', {className:'grid grid-cols-2 gap-3'},
+            [['electricity','Electricity (Thousand)'],['transportCost','Transportation Cost (Thousand)'],['adminCost','Admin/Operating (Thousand)'],['ownerDrawing','Owners Drawing (Thousand)'],['rentBusiness','Rent for Business Premises (Thousand)'],['tax','Tax (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass}))),
+            h('div', {key:'monthlyTotalExpense', className:'col-span-2'}, h('label', {className:labelClass}, 'Monthly Total Operating Expenses (Auto)'), h('input', {value:form.monthlyTotalExpense, onChange:e=>update('monthlyTotalExpense', e.target.value), className:inputClass + ' bg-[#F5F1E8]'}))
           )
-        ),
-        h('div', {className:'mt-4 border-t pt-3 space-y-3'},
-          [['electricity','Electricity (Thousand)'],['transportCost','Transportation Cost (Thousand)'],['adminCost','Admin/Operating (Thousand)'],['ownerDrawing','Owners Drawing (Thousand)'],['rentBusiness','Rent for Business Premises (Thousand)'],['monthlyTotalExpense','Monthly Total Operating Expenses (Auto)'],['tax','Tax (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
         ),
         h('div', {className:sectionClass}, h('span', null, 'Supplier Information (Amount in (Lac))')),
         h('div', {className:'space-y-3'},
@@ -8562,104 +8589,68 @@ function MarketSurveyManager({t, lang, setToast}){
           h('div', null, h('p', {className:'text-[11px] font-bold text-[#1E4538]'}, '• Buyer 1 / ক্রেতা ১'), h('div', {className:'grid grid-cols-1 gap-2 mt-2'}, [['buyer1Business','Business Name - Buyer 1'],['buyer1Owner','Owner Name - Buyer 1'],['buyer1Mobile','Mobile - Buyer 1'],['buyer1Receivable','Receivable (Lac) - Buyer 1']].map(f=> h('input', {key:f[0], value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[1], className:inputClass})))),
           h('div', null, h('p', {className:'text-[11px] font-bold text-[#1E4538]'}, '• Buyer 2 / ক্রেতা ২'), h('div', {className:'grid grid-cols-1 gap-2 mt-2'}, [['buyer2Business','Business Name - Buyer 2'],['buyer2Owner','Owner Name - Buyer 2'],['buyer2Mobile','Mobile - Buyer 2'],['buyer2Receivable','Receivable (Lac) - Buyer 2']].map(f=> h('input', {key:f[0], value:form[f[0]], onChange:e=>update(f[0], e.target.value), placeholder:f[1], className:inputClass}))))
         ),
-        h('div', {className:'grid grid-cols-1 gap-3 mt-4'},
-          [['noOfShop','No of Shop'],['shopRentYearly','Shop Rent Yearly (Thousand)'],['noOfGodown','No of Godown'],['godownAdvance','Godown Advance (Lac)'],['godownRentYearly','Godown Rent Yearly (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+        h('div', {className:'grid grid-cols-2 gap-3 mt-4'},
+          [['noOfShop','No of Shop'],['shopRentYearly','Shop Rent Yearly (Thousand)'],['noOfGodown','No of Godown'],['godownAdvance','Godown Advance (Lac)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass}))),
+          h('div', {key:'godownRentYearly', className:'col-span-2'}, h('label', {className:labelClass}, 'Godown Rent Yearly (Thousand)'), h('input', {value:form.godownRentYearly, onChange:e=>update('godownRentYearly', e.target.value), className:inputClass}))
         )
       ),
 
       // 3 Existing Loan - like index.html with tabs and checkboxes
       h('div', {className:sectionClass}, h('span', null, '3. Existing Loan'), h('button', {onClick:()=>handleSaveSection('Existing Loan'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
-      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
-        h('div', {className:'flex gap-2 flex-wrap'}, 
-          [['NGO','NGO'],['Bank','Bank'],['NBFI','NBFI'],['Others NGO','Others NGO']].map(t=> h('button', {key:t[0], onClick:()=>{ 
-            // Toggle logic: if same button clicked again, hide
-            if(form.existingLoanType===t[0]){
-              if(t[0]==='Others NGO'){
-                setShowOthersNGO(v=>!v);
-              } else {
-                setShowLoanList(v=>!v);
-              }
-              return;
-            }
-            update('existingLoanType', t[0]); 
-            if(t[0]==='Others NGO'){ 
-              setShowOthersNGO(true); 
-              setShowLoanList(false);
-            } else {
-              setShowOthersNGO(false);
-              setShowLoanList(true);
-            }
-            setShowBusinessList(false);
-          }, style: form.existingLoanType===t[0] ? {backgroundColor:'#1A1A1A', color:'white'} : {backgroundColor:'#F5F1E8', color:'#1A1A1A'}, className:'px-4 py-2 rounded-full text-[11px] font-bold border'}, t[1]))
-        ),
-        showOthersNGO ? h('div', {id:'othersNGOBox', className:'mb-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-xl'},
-          h('label', {className:'font-semibold text-sm text-amber-800'}, 'Others NGO Name / অন্যান্য NGO নাম'),
-          h('input', {id:'othersNGOInput', value:form.othersNGO, onChange:e=>update('othersNGO', e.target.value), placeholder:'Others NGO নাম লিখুন', className:'w-full mt-2 border-2 border-amber-100 rounded-xl p-3 '+inputClass})
-        ) : null,
-        h('div', {className:'relative'},
-          form.existingLoanType!=='Others NGO' ? h('input', {id:'loanSearch', value:form.existingLoanSearch, onClick:()=>{ if(form.existingLoanType!=='Others NGO') setShowLoanList(v=>!v); }, onFocus:()=>{ if(form.existingLoanType!=='Others NGO') setShowLoanList(true); }, onChange:e=>{ update('existingLoanSearch', e.target.value); setShowLoanList(true); }, placeholder:'Search NGO/Bank/NBFI - বাংলা / English', className:'w-full border-2 border-emerald-100 rounded-xl p-3 mb-3 '+inputClass}) : null,
-          showLoanList ? h('div', {id:'loanTabs', className:'space-y-3'},
-            // NGO Tab Content
-            form.existingLoanType==='NGO' ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
-              (form.selectedLoans&&form.selectedLoans.ngo&&form.selectedLoans.ngo.length>0) ? h('div', null,
-                form.selectedLoans.ngo.map(it=> h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:()=>toggleLoanItem('ngo', it, false), className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')))
-              ) : null,
-              filteredLoan.length===0 ? h('p', {className:'text-xs text-gray-400 p-3'}, 'No results / কোনো ফলাফল নেই') :
-              filteredLoan.map(item=> h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked:(form.selectedLoans&&form.selectedLoans.ngo&&form.selectedLoans.ngo.some(x=>x.bn===item.bn)), onChange:e=>toggleLoanItem('ngo', item, e.target.checked), className:'mt-1 loan-check'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))))
-            ) : null,
-            // Bank Tab
-            form.existingLoanType==='Bank' ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
-              (form.selectedLoans&&form.selectedLoans.bank&&form.selectedLoans.bank.length>0) ? h('div', null,
-                form.selectedLoans.bank.map(it=> h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:()=>toggleLoanItem('bank', it, false), className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')))
-              ) : null,
-              filteredLoan.map(item=> h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked:(form.selectedLoans&&form.selectedLoans.bank&&form.selectedLoans.bank.some(x=>x.bn===item.bn)), onChange:e=>toggleLoanItem('bank', item, e.target.checked), className:'mt-1'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))))
-            ) : null,
-            // NBFI Tab
-            form.existingLoanType==='NBFI' ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
-              (form.selectedLoans&&form.selectedLoans.nbfi&&form.selectedLoans.nbfi.length>0) ? h('div', null,
-                form.selectedLoans.nbfi.map(it=> h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:()=>toggleLoanItem('nbfi', it, false), className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')))
-              ) : null,
-              filteredLoan.map(item=> h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked:(form.selectedLoans&&form.selectedLoans.nbfi&&form.selectedLoans.nbfi.some(x=>x.bn===item.bn)), onChange:e=>toggleLoanItem('nbfi', item, e.target.checked), className:'mt-1'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))))
-            ) : null,
-            form.existingLoanType==='Others NGO' ? h('div', {className:'p-3 bg-gray-50 border rounded-xl text-sm'}, 'Others NGO এর জন্য উপরের বক্সে নাম লিখুন - উপরে Others NGO বাটনে ক্লিক করলে বক্স ওপেন হবে') : null,
-            h('button', {onClick:()=>{ setShowLoanList(false); setShowBusinessList(false); }, className:'w-full py-2 text-[11px] font-bold text-white bg-[#1E4538] rounded-full mt-2'}, '✕ বন্ধ করুন / Hide')
-          ) : null
-        ),
-        form.existingLoanOrg ? h('p', {className:'text-[11px] text-[#2E7D32] font-bold'}, 'Selected: '+form.existingLoanOrg) : null,
-        h('div', {className:'space-y-3 mt-2'},
-          h('div', {className:'col-span-2'},
-            h('label', {className:labelClass}, 'Loan Type - CC, Monthly, Weekly, Daily (এক বা একাধিক টিক দিন)'),
-            h('div', {className:'grid grid-cols-1 gap-2 mt-1'},
-              ['CC','Monthly','Weekly','Daily'].map(opt=>{
-                const selected = (form.loanType||'').split(',').map(s=>s.trim()).filter(Boolean);
-                const checked = selected.includes(opt);
-                return h('label', {key:opt, className:'flex items-center gap-2 border rounded-[10px] px-3 py-2.5 text-[12px] cursor-pointer '+(checked?'bg-[#E8F5E9] border-[#2E7D32] font-bold text-[#1B5E20]':'bg-white border-[#D8CFC0]')},
-                  h('input', {type:'checkbox', checked:checked, onChange:e=>{
-                    const cur = (form.loanType||'').split(',').map(s=>s.trim()).filter(Boolean);
-                    let next;
-                    if(e.target.checked){ if(!cur.includes(opt)) next=[...cur, opt]; else next=cur; } else { next=cur.filter(x=>x!==opt); }
-                    update('loanType', next.join(', '));
-                  }, className:'w-4 h-4 accent-[#1E4538]'}),
-                  h('span', null, opt)
-                );
-              })
-            ),
-            form.loanType ? h('p', {className:'text-[10px] text-[#2E7D32] mt-2 font-bold'}, 'Selected: '+form.loanType) : h('p', {className:'text-[10px] text-gray-500 mt-1'}, 'এক বা একাধিক সিলেক্ট করুন')
-          ),
-          h('div', {className:'grid grid-cols-1 gap-3'},
-            [['disbursementDate','Disbursement Date Month/Year'],['disbursementAmount','Disbursement Amount (Lac)'],['totalEMI','Total EMI (Thousand)'],['currentOutstanding','Current Outstanding (Lac)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
-          )
-        )
+       h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+         h('div', {className:'flex gap-2 items-end'},
+           h('div', {className:'flex-1'}, h('label', {className:labelClass}, 'No of Loan'), h('input', {type:'number', min:1, max:10, value:form.noOfLoan||'', onChange:e=>update('noOfLoan', e.target.value), placeholder:'যেমন: 2', className:inputClass})),
+           h('button', {onClick:generateLoans, style:{backgroundColor:'#1E4538', color:'white'}, className:'px-5 py-2.5 rounded-[10px] font-bold text-[12px] h-[42px]'}, 'Generate')
+         ),
+         h('p', {className:'text-[10px] text-gray-500'}, 'No of Loan লিখে Generate ক্লিক করলে নিচে ঘর ওপেন হবে'),
+         getLoansList().map(function(L, LI){ return h('div', {key:'loan_'+LI, className:'border-2 rounded-[12px] p-3 space-y-3 bg-[#FFFEF7] border-[#E8DCC6]'},
+  h('p', {className:'text-[13px] font-bold text-[#1A1A1A]'}, 'Loan '+(LI+1)+' / লোন '+(LI+1)),
+  h('div', {className:'flex gap-2 flex-wrap'},
+    [['NGO','NGO'],['Bank','Bank'],['NBFI','NBFI'],['Others NGO','Others NGO']].map(function(bt){ return h('button', {key:bt[0]+'_'+LI, onClick:function(){ if(L.existingLoanType===bt[0]){ if(bt[0]==='Others NGO'){ setShowOthersIdx(function(v){ return v===LI ? -1 : LI; }); } else { setShowLoanIdx(function(v){ return v===LI ? -1 : LI; }); } return; } updateLoan(LI,'existingLoanType', bt[0]); if(bt[0]==='Others NGO'){ setShowOthersIdx(LI); setShowLoanIdx(-1); } else { setShowOthersIdx(-1); setShowLoanIdx(LI); } }, style: L.existingLoanType===bt[0] ? {backgroundColor:'#1A1A1A', color:'white'} : {backgroundColor:'#F5F1E8', color:'#1A1A1A'}, className:'px-4 py-2 rounded-full text-[11px] font-bold border'}, bt[1]); })
+  ),
+  showOthersIdx===LI ? h('div', {className:'mb-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-xl'},
+    h('label', {className:'font-semibold text-sm text-amber-800'}, 'Others NGO Name / অন্যান্য NGO নাম'),
+    h('input', {value:L.othersNGO||'', onChange:function(e){ updateLoan(LI,'othersNGO', e.target.value); }, placeholder:'Others NGO নাম লিখুন', className:'w-full mt-2 border-2 border-amber-100 rounded-xl p-3 '+inputClass})
+  ) : null,
+  h('div', {className:'relative'},
+    L.existingLoanType!=='Others NGO' ? h('input', {value:L.existingLoanSearch||'', onClick:function(){ if(L.existingLoanType!=='Others NGO') setShowLoanIdx(function(v){ return v===LI ? -1 : LI; }); }, onChange:function(e){ updateLoan(LI,'existingLoanSearch', e.target.value); setShowLoanIdx(LI); }, placeholder:'Search NGO/Bank/NBFI - বাংলা / English', className:'w-full border-2 border-emerald-100 rounded-xl p-3 mb-3 '+inputClass}) : null,
+    showLoanIdx===LI ? h('div', {className:'space-y-3'},
+      L.existingLoanType ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
+        (function(){ var sel=(L.selectedLoans||{ngo:[],bank:[],nbfi:[]}); var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; return sel[key]||[]; })().length>0 ? h('div', null, (function(){ var sel=(L.selectedLoans||{ngo:[],bank:[],nbfi:[]}); var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; return sel[key]||[]; })().map(function(it){ return h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:function(){ var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; toggleLoanItemFor(LI, key, it, false); }, className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')); })) : null,
+        filteredLoanFor(L).length===0 ? h('p', {className:'text-xs text-gray-400 p-3'}, 'No results / কোনো ফলাফল নেই') : filteredLoanFor(L).map(function(item){ var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; var sel=(L.selectedLoans||{ngo:[],bank:[],nbfi:[]}); var cur=sel[key]||[]; return h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked: cur.some(function(x){ return x.bn===item.bn; }), onChange:function(e){ toggleLoanItemFor(LI, key, item, e.target.checked); }, className:'mt-1 loan-check'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))); })
+      ) : null,
+      L.existingLoanType==='Others NGO' ? h('div', {className:'p-3 bg-gray-50 border rounded-xl text-sm'}, 'Others NGO এর জন্য উপরের বক্সে নাম লিখুন - উপরে Others NGO বাটনে ক্লিক করলে বক্স ওপেন হবে') : null,
+      h('button', {onClick:function(){ setShowLoanIdx(-1); }, className:'w-full py-2 text-[11px] font-bold text-white bg-[#1E4538] rounded-full mt-2'}, '✕ বন্ধ করুন / Hide')
+    ) : null
+  ),
+  L.existingLoanOrg ? h('p', {className:'text-[11px] text-[#2E7D32] font-bold'}, 'Selected: '+L.existingLoanOrg) : null,
+  h('div', {className:'space-y-3 mt-2'},
+    h('div', {className:'col-span-2'},
+      h('label', {className:labelClass}, 'Loan Type - CC, Monthly, Weekly, Daily (এক বা একাধিক টিক দিন)'),
+      h('div', {className:'grid grid-cols-1 gap-2 mt-1'},
+        ['CC','Monthly','Weekly','Daily'].map(function(opt){ var selected=(L.loanType||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean); var checked=selected.indexOf(opt)>=0; return h('label', {key:opt, className:'flex items-center gap-2 border rounded-[10px] px-3 py-2.5 text-[12px] cursor-pointer '+(checked?'bg-[#E8F5E9] border-[#2E7D32] font-bold text-[#1B5E20]':'bg-white border-[#D8CFC0]')}, h('input', {type:'checkbox', checked:checked, onChange:function(e){ var cur=(L.loanType||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean); var next; if(e.target.checked){ if(cur.indexOf(opt)<0) next=cur.concat([opt]); else next=cur; } else { next=cur.filter(function(x){ return x!==opt; }); } updateLoan(LI,'loanType', next.join(', ')); }, className:'w-4 h-4 accent-[#1E4538]'}), h('span', null, opt)); })
       ),
-// 4 Family Expenditure
+      L.loanType ? h('p', {className:'text-[10px] text-[#2E7D32] mt-2 font-bold'}, 'Selected: '+L.loanType) : h('p', {className:'text-[10px] text-gray-500 mt-1'}, 'এক বা একাধিক সিলেক্ট করুন')
+    ),
+    h('div', {className:'grid grid-cols-2 gap-3'},
+      [['disbursementDate','Disbursement Date Month/Year'],['disbursementAmount','Disbursement Amount (Lac)'],['totalEMI','Total EMI (Thousand)'],['currentOutstanding','Current Outstanding (Lac)']].map(function(f){ return h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:L[f[0]]||'', onChange:function(e){ updateLoan(LI, f[0], e.target.value); }, className:inputClass})); })
+    )
+  )
+); })
+       ),
+       // 4 Family Expenditure
       h('div', {className:sectionClass}, h('span', null, '4. Family Expenditure (Monthly)'), h('button', {onClick:()=>handleSaveSection('Family Expenditure'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
       h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
         h('p', {className:'text-[11px] font-bold'}, 'Person 1'),
-        h('div', {className:'grid grid-cols-1 gap-3'},
-          [['houseRent','House Rent (Thousand)'],['houseElectricity','House Electricity (Thousand)'],['foodCloth','Food & Cloth (Thousand)'],['education','Education (Thousand)'],['telephoneBill','Telephone Bill (Thousand)'],['medical','Medical (Thousand)'],['entertainment','Entertainment (Thousand)'],['conveyance','Conveyance (Thousand)'],['othersExpense','Others (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
+        h('div', {className:'grid grid-cols-2 gap-3'},
+          [['houseRent','House Rent (Thousand)'],['houseElectricity','House Electricity (Thousand)'],['foodCloth','Food & Cloth (Thousand)'],['education','Education (Thousand)'],['telephoneBill','Telephone Bill (Thousand)'],['medical','Medical (Thousand)'],['entertainment','Entertainment (Thousand)'],['conveyance','Conveyance (Thousand)'],['othersExpense','Others (Thousand)']].map(f=> h('div', {key:f[0], className: f[0]==='othersExpense' ? 'col-span-2' : ''}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
         ),
-        h('div', null, h('label', {className:labelClass}, 'Total (Auto)'), h('input', {value:form.familyExpenseTotal, readOnly:true, className:inputClass + ' bg-[#E8F5E9]'})),
-        h('div', {className:'grid grid-cols-1 gap-3 mt-4'},
+        h('div', null, h('label', {className:labelClass}, 'Total (Auto)'), h('input', {value:form.familyExpenseTotal, readOnly:true, className:inputClass + ' bg-[#E8F5E9]'}))
+      ),
+      // 5 Others Income
+      h('div', {className:sectionClass}, h('span', null, '5. Others Income'), h('button', {onClick:()=>handleSaveSection('Others Income'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
+      h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+        h('div', {className:'grid grid-cols-2 gap-3'},
           [['rentalIncome','Rental Income (Thousand)'],['otherBusinessIncome','Other Business Income Details - Business Name'],['transportBusiness','Transport Business (Thousand)'],['remittance','Remittance (Thousand)'],['otherBusinessIncome2','Other Business Income (Thousand)'],['salaryOtherIncome','Salary / Other Income (Thousand)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
         ),
         h('div', null, h('label', {className:labelClass}, 'Total (Auto) (Thousand)'), h('input', {value:form.totalIncome, readOnly:true, className:inputClass + ' bg-[#E8F5E9]'}))
@@ -8667,21 +8658,22 @@ function MarketSurveyManager({t, lang, setToast}){
 
       // 6 Family Asset & Liability
       h('div', {className:sectionClass}, h('span', null, '6. Family Asset & Liability'), h('button', {onClick:()=>handleSaveSection('Family Asset'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
-      h('div', {className:'bg-white border rounded-[12px] p-3 grid grid-cols-1 gap-3'},
+      h('div', {className:'bg-white border rounded-[12px] p-3 grid grid-cols-2 gap-3'},
         [['totalFamilyAsset','Total Family Asset (Lac)'],['totalLiabilities','Total Liabilities (Lac)'],['netWorth','Net Worth (Auto) (Lac)'],['totalValue','Total Value (Lac)']].map(f=> h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:form[f[0]], onChange:e=>update(f[0], e.target.value), className:inputClass})))
       ),
 
       // 7 Personal Asset & 8 New Loan Requirement
       h('div', {className:sectionClass}, h('span', null, '7. Personal Asset'), h('button', {onClick:()=>handleSaveSection('Personal Asset'), style:{color:'#2D2A26', backgroundColor:'#C9A86A'}, className:'px-4 py-1 rounded-full text-[11px] font-bold'}, 'Save')),
       h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
-        h('div', {className:'grid grid-cols-1 gap-3'},
+        h('div', {className:'grid grid-cols-2 gap-3'},
           [
             ['personalAsset','Personal Asset (Lac)'],
             ['personalLiabilities','Personal Liabilities (Lac)'],
             ['personalNetWorth','Personal Total Net Worth (PNW) (Lac) - Auto']
           ].map(f=>{
+            const isFull = f[0]==='personalNetWorth';
             const isAuto = f[0]==='personalNetWorth';
-            return h('div', {key:f[0]},
+            return h('div', {key:f[0], className: isFull ? 'col-span-2' : ''},
               h('label', {className:labelClass}, f[1]),
               h('input', {
                 value: isAuto ? (()=>{
@@ -9212,6 +9204,313 @@ function openRoutineModule(type){
 function closeRoutineModule(){
   if(__routineRoot){ try{ __routineRoot.render(null); }catch(e){} }
 }
+
+function SurveyTab(props){
+  var h = React.createElement;
+  var setToast = props.setToast;
+  var BIZ = [{"en": "Grocery Store", "bn": "মুদি দোকান"}, {"en": "Rice and Paddy Wholesale Business", "bn": "ধান চালের আড়ৎ ব্যবসা"}, {"en": "Vegetable Wholesale Business", "bn": "কাঁচা সবজী আড়ৎ/পাইকারী ব্যবসা"}, {"en": "Fish Wholesale Business", "bn": "মাছের আড়ৎ/পাইকারী ব্যবসা"}, {"en": "Fruit Shop", "bn": "ফলের দোকান"}, {"en": "Sweet Shop / Confectionery", "bn": "মিষ্টির দোকান"}, {"en": "Bakery", "bn": "বেকারি"}, {"en": "Hotel, Restaurant & Fast Food", "bn": "হোটেল, রেস্টুরেন্ট, ফাস্ট ফুড"}, {"en": "Betel Nut Business", "bn": "সুপারির ব্যবসা"}, {"en": "Clothing, Garments, Readymade & Tailoring Business", "bn": "কাপড়,গার্মেন্টস, তৈরি পোশাক, টেইলারিং ব্যবসা"}, {"en": "Shoes, Bags & Luggage", "bn": "জুতা, ব্যাগ ও লাগেজ"}, {"en": "Cosmetics Shop", "bn": "কসমেটিক্স"}, {"en": "Tailoring Materials / Sewing Supplies", "bn": "সুই-সুতা টেইলার্স এর কাচামাল"}, {"en": "Boutique Shop", "bn": "বুটিক"}, {"en": "Bedding Items", "bn": "বেডিং আইটেম"}, {"en": "Beauty Parlor", "bn": "বিউটি পার্লার"}, {"en": "Watch & Eyewear Shop", "bn": "ঘড়ি, চশমা দোকান"}, {"en": "Construction Materials - Bricks, Sand, Rod, Cement, Tiles", "bn": "ইট,বালি, রড, সিমেন্ট, টাইলস ও নির্মান সামগ্রী"}, {"en": "Tin / CI Sheet Shop", "bn": "টিন দোকান"}, {"en": "Hardware Store", "bn": "হার্ডওয়্যার"}, {"en": "Sanitary, Pipe & Fittings", "bn": "স্যানিটারি পাইপ ও ফিটিংস"}, {"en": "Timber / Wood Business", "bn": "কাঠের ব্যবসা"}, {"en": "Saw Mill", "bn": "করাতকল"}, {"en": "Workshop - Iron & Steel", "bn": "ওয়ার্কশপ লোহা/স্টীল"}, {"en": "Aluminum & Thai Glass Business", "bn": "অ্যালুমিনিয়াম,থাই গ্লাস ব্যবসা"}, {"en": "Decorator, Lighting, Pandal & Sound System", "bn": "ডেকোরেটর,লাইটিং ,প্যান্ডেল, সাউন্ড সিস্টেম"}, {"en": "Bike Showroom", "bn": "বাইক শোরুম"}, {"en": "Bike Servicing, Parts & Garage", "bn": "বাইক সার্ভিসিং, পার্টস, গ্যারেজ"}, {"en": "Bicycle Shop", "bn": "সাইকেল দোকান"}, {"en": "Auto & Motor Parts", "bn": "অটো,মোটর পার্টস"}, {"en": "Petrol Pump / Fuel Station", "bn": "পেট্রোল পাম্প"}, {"en": "Electric & Electronics Business / Servicing", "bn": "ইলেকট্রিক, ইলেকট্রনিক্স  ব্যবসা/সার্ভিসিং"}, {"en": "Mobile Business / Servicing", "bn": "মোবাইল ব্যবসা/সার্ভিসিং"}, {"en": "Computer & Laptop Business / Servicing", "bn": "কম্পিউটার,ল্যাপটপ ব্যবসা/ সার্ভিসিং"}, {"en": "bKash / Nagad Agent - MFS", "bn": "বিকাশ / নগদ এজেন্ট"}, {"en": "Dish Cable & WiFi / ISP Business", "bn": "ডিস ওয়াইফাই / ISP ব্যবসা"}, {"en": "Library / Bookstore", "bn": "লাইব্রেরি"}, {"en": "Stationery Shop", "bn": "স্টেশনারি"}, {"en": "Printing Press, Signboard, Banner, Online Service, Studio & IT Service", "bn": "প্রিন্টিং প্রেস,সাইনবোর্ড, ব্যানার,অনলাইন সেবা,স্টুডিও, আইটি সার্ভিস"}, {"en": "Coaching Center", "bn": "কোচিং সেন্টার"}, {"en": "Pharmacy / Medicine Shop", "bn": "ফার্মেসি / ঔষধ"}, {"en": "Clinic, Diagnostic Center & Physiotherapy Center", "bn": "ক্লিনিক, ডায়াগনস্টিক সেন্টার,ফিজিওথেরাপি সেন্টার"}, {"en": "Fertilizer, Seeds, Pesticides & Agricultural Machinery", "bn": "সার বীজ কীটনাশক কৃষি যন্ত্রপাতি ব্যবসা"}, {"en": "Poultry & Fish Agro Feed Business", "bn": "পোল্ট্রি মৎস্য এগ্রো ফিড ব্যবসা"}, {"en": "Poultry & Fish Agro Farm", "bn": "পোল্ট্রি মৎস্য এগ্রো খামার"}, {"en": "Distributor Business", "bn": "ডিস্ট্রিবিউটর ব্যবসা"}, {"en": "Gift Corner", "bn": "গিফট কর্নার"}, {"en": "Sports, Toys, Jersey, Disposable Plates & Shopping Bags", "bn": "স্পোর্টস,খেলনা, জার্সি, অন টাইম প্লেট, শপিং ব্যাগ ব্যবসা"}, {"en": "Crockery Shop", "bn": "ক্রোকারিজ"}, {"en": "Furniture - Wood / Board / Plastic", "bn": "ফার্নিচার কাঠ/বোর্ড/প্লাস্টিক"}, {"en": "Oil / Spice Mill", "bn": "তেল/ হলুদ/ডাল/ঝাল মিল"}, {"en": "Net, Thread & Fishing Net Business", "bn": "নেট-সুতা, জাল ব্যবসা"}, {"en": "Scrap / Junk Business", "bn": "ভাঙ্গারি ব্যবসা"}, {"en": "Bulkhead & Dredger Business", "bn": "বাল্কহেড ও ড্রেজার ব্যবসা"}, {"en": "Homeopathic Medicine Business", "bn": "হোমিওপ্যাথিক ব্যবসা"}, {"en": "Others", "bn": "অন্যান্য"}]
+  var SURVEY_NGO_LIST = [
+    {en:"BRAC", bn:"ব্র্যাক"},
+    {en:"ASA", bn:"আশা"},
+    {en:"BURO Bangladesh", bn:"ব্যুরো বাংলাদেশ"},
+    {en:"UDDIPAN", bn:"উদ্দীপন"},
+    {en:"TMSS", bn:"টিএমএসএস"},
+    {en:"Shakti Foundation", bn:"শক্তি ফাউন্ডেশন"},
+    {en:"Grameen Bank", bn:"গ্রামীণ ব্যাংক"},
+    {en:"Caritas", bn:"কারিতাস"},
+    {en:"SSS", bn:"এসএসএস"},
+    {en:"PKSF", bn:"পল্লী কর্ম সহায়ক ফাউন্ডেশন"},
+    {en:"Jagorani Chakra Foundation", bn:"জাগরণী চক্র ফাউন্ডেশন"},
+    {en:"RDRS Bangladesh", bn:"আরডিআরএস"},
+    {en:"PROSHIKA", bn:"প্রশিকা"},
+    {en:"SSS", bn:"সোসাইটি ফর সোশাল সার্ভিস"},
+    {en:"CODEC", bn:"কোডেক"},
+    {en:"BRAC Bank Samity", bn:"ব্র্যাক ব্যাংক সমিতি"},
+    {en:"DISA", bn:"দিশা"},
+    {en:"Sajida Foundation", bn:"সাজেদা ফাউন্ডেশন"},
+    {en:"Padakhep", bn:"পদক্ষেপ মানবিক উন্নয়ন কেন্দ্র"},
+    {en:"BRDB", bn:"বিআরডিবি"},
+    {en:"POPI", bn:"পপি"},
+    {en:"RDRS", bn:"আরএফ"},
+    {en:"UDD", bn:"উত্তরা ডেভেলপমেন্ট প্রোগ্রাম"},
+    {en:"Jeevan", bn:"জীবন"},
+    {en:"Prottyasha", bn:"প্রত্যাশা"},
+    {en:"SDC", bn:"সোসাইটি ডেভেলপমেন্ট কমিটি"},
+    {en:"Wave Foundation", bn:"ওয়েভ ফাউন্ডেশন"},
+    {en:"REB", bn:"আরইবি"},
+    {en:"CSS", bn:"সিএসএস"},
+    {en:"SDI", bn:"এসডিআই"},
+    {en:"PIDIM", bn:"পিআইডি"},
+    {en:"RKS", bn:"আরকেএস"},
+    {en:"BASA", bn:"বাসা"},
+    {en:"PMK", bn:"পল্লী মঙ্গল কর্মসূচি"},
+    {en:"BES", bn:"বিইএস"},
+    {en:"JAKAS Foundation", bn:"জাকস ফাউন্ডেশন"},
+    {en:"Ananda", bn:"আনন্দ"},
+    {en:"BEES", bn:"বিজ"},
+    {en:"NDP", bn:"এনডিপি"},
+    {en:"CCDB", bn:"সিসিডিবি"},
+    {en:"World Vision", bn:"ওয়ার্ল্ড ভিশন"},
+    {en:"CARE Bangladesh", bn:"কেয়ার বাংলাদেশ"},
+    {en:"Plan International", bn:"প্ল্যান ইন্টারন্যাশনাল"},
+    {en:"Oxfam", bn:"অক্সফাম"},
+    {en:"Save the Children", bn:"সেভ দ্য চিলড্রেন"}
+  ];
+  var SURVEY_BANK_LIST = [
+    {en:"Sonali Bank PLC", bn:"সোনালী ব্যাংক PLC"},
+    {en:"Janata Bank PLC", bn:"জনতা ব্যাংক PLC"},
+    {en:"Agrani Bank PLC", bn:"অগ্রণী ব্যাংক PLC"},
+    {en:"Rupali Bank PLC", bn:"রূপালী ব্যাংক PLC"},
+    {en:"BASIC Bank Limited", bn:"বেসিক ব্যাংক লিমিটেড"},
+    {en:"Bangladesh Development Bank", bn:"বাংলাদেশ ডেভেলপমেন্ট ব্যাংক"},
+    {en:"Bangladesh Krishi Bank", bn:"বাংলাদেশ কৃষি ব্যাংক"},
+    {en:"Rajshahi Krishi Unnayan Bank", bn:"রাজশাহী কৃষি উন্নয়ন ব্যাংক"},
+    {en:"Ansar-VDP Unnayan Bank", bn:"আনসার-ভিডিপি উন্নয়ন ব্যাংক"},
+    {en:"Karmasangsthan Bank", bn:"কর্মসংস্থান ব্যাংক"},
+    {en:"Probashi Kallyan Bank", bn:"প্রবাসী কল্যাণ ব্যাংক"},
+    {en:"Palli Sanchay Bank", bn:"পল্লী সঞ্চয় ব্যাংক"},
+    {en:"BRAC Bank PLC", bn:"ব্র্যাক ব্যাংক PLC"},
+    {en:"Dutch-Bangla Bank PLC", bn:"ডাচ্-বাংলা ব্যাংক PLC"},
+    {en:"Islami Bank Bangladesh PLC", bn:"ইসলামী ব্যাংক বাংলাদেশ PLC"},
+    {en:"City Bank PLC", bn:"সিটি ব্যাংক PLC"},
+    {en:"Eastern Bank PLC", bn:"ইস্টার্ন ব্যাংক PLC"},
+    {en:"Prime Bank PLC", bn:"প্রাইম ব্যাংক PLC"},
+    {en:"Dhaka Bank PLC", bn:"ঢাকা ব্যাংক PLC"},
+    {en:"Uttara Bank PLC", bn:"উত্তরা ব্যাংক PLC"},
+    {en:"Pubali Bank PLC", bn:"পূবালী ব্যাংক PLC"},
+    {en:"AB Bank PLC", bn:"এবি ব্যাংক PLC"},
+    {en:"National Bank PLC", bn:"ন্যাশনাল ব্যাংক PLC"},
+    {en:"IFIC Bank PLC", bn:"আইএফআইসি ব্যাংক PLC"},
+    {en:"Bank Asia PLC", bn:"ব্যাংক এশিয়া PLC"},
+    {en:"The Premier Bank PLC", bn:"দি প্রিমিয়ার ব্যাংক PLC"},
+    {en:"Mercantile Bank PLC", bn:"মার্কেন্টাইল ব্যাংক PLC"},
+    {en:"Mutual Trust Bank PLC", bn:"মিউচুয়াল ট্রাস্ট ব্যাংক PLC"},
+    {en:"One Bank PLC", bn:"ওয়ান ব্যাংক PLC"},
+    {en:"EXIM Bank PLC", bn:"এক্সিম ব্যাংক PLC"},
+    {en:"Al-Arafah Islami Bank PLC", bn:"আল-আরাফাহ ইসলামী ব্যাংক PLC"},
+    {en:"Social Islami Bank PLC", bn:"সোশ্যাল ইসলামী ব্যাংক PLC"},
+    {en:"Shahjalal Islami Bank PLC", bn:"শাহজালাল ইসলামী ব্যাংক PLC"},
+    {en:"First Security Islami Bank PLC", bn:"ফার্স্ট সিকিউরিটি ইসলামী ব্যাংক PLC"},
+    {en:"Union Bank PLC", bn:"ইউনিয়ন ব্যাংক PLC"},
+    {en:"Standard Bank PLC", bn:"স্ট্যান্ডার্ড ব্যাংক PLC"},
+    {en:"Global Islami Bank PLC", bn:"গ্লোবাল ইসলামী ব্যাংক PLC"},
+    {en:"ICB Islamic Bank PLC", bn:"আইসিবি ইসলামিক ব্যাংক PLC"},
+    {en:"Jamuna Bank PLC", bn:"যমুনা ব্যাংক PLC"},
+    {en:"Trust Bank PLC", bn:"ট্রাস্ট ব্যাংক PLC"},
+    {en:"NCC Bank PLC", bn:"এনসিসি ব্যাংক PLC"},
+    {en:"Midland Bank PLC", bn:"মিডল্যান্ড ব্যাংক PLC"},
+    {en:"Modhumoti Bank PLC", bn:"মধুমতি ব্যাংক PLC"},
+    {en:"Meghna Bank PLC", bn:"মেঘনা ব্যাংক PLC"},
+    {en:"South Bangla Agriculture Bank PLC", bn:"সাউথ বাংলা এগ্রিকালচার ব্যাংক PLC"},
+    {en:"Southeast Bank PLC", bn:"সাউথইস্ট ব্যাংক PLC"},
+    {en:"NRB Bank PLC", bn:"এনআরবি ব্যাংক PLC"},
+    {en:"NRB Commercial Bank PLC", bn:"এনআরবি কমার্শিয়াল ব্যাংক PLC"},
+    {en:"NRBC Bank PLC", bn:"এনআরবিসি ব্যাংক PLC"},
+    {en:"Shimanto Bank PLC", bn:"সীমান্ত ব্যাংক PLC"},
+    {en:"Bengal Commercial Bank PLC", bn:"বেঙ্গল কমার্শিয়াল ব্যাংক PLC"},
+    {en:"Citizen Bank PLC", bn:"সিটিজেন ব্যাংক PLC"},
+    {en:"Community Bank PLC", bn:"কমিউনিটি ব্যাংক PLC"},
+    {en:"Padma Bank PLC", bn:"পদ্মা ব্যাংক PLC"},
+    {en:"United Commercial Bank PLC", bn:"ইউনাইটেড কমার্শিয়াল ব্যাংক PLC"},
+    {en:"Standard Chartered Bank", bn:"স্ট্যান্ডার্ড চার্টার্ড ব্যাংক"},
+    {en:"HSBC Bank", bn:"এইচএসবিসি"},
+    {en:"Citibank NA", bn:"সিটি ব্যাংক এনএ"},
+    {en:"State Bank of India", bn:"স্টেট ব্যাংক অব ইন্ডিয়া"},
+    {en:"Habib Bank", bn:"হাবিব ব্যাংক"},
+    {en:"National Bank of Pakistan", bn:"ন্যাশনাল ব্যাংক অব পাকিস্তান"},
+    {en:"Woori Bank", bn:"উরি ব্যাংক"},
+    {en:"Bank Al-Falah", bn:"ব্যাংক আল-ফালাহ"}
+  ];
+  var SURVEY_NBFI_LIST = [
+    {en:"IDLC Finance PLC", bn:"আইডিএলসি ফাইন্যান্স PLC"},
+    {en:"LankaBangla Finance PLC", bn:"লংকাবাংলা ফাইন্যান্স PLC"},
+    {en:"IPDC Finance", bn:"আইপিডিসি ফাইন্যান্স"},
+    {en:"DBH Finance PLC", bn:"ডিবিএইচ ফাইন্যান্স PLC"},
+    {en:"IPDC", bn:"ইন্ডাস্ট্রিয়াল প্রমোশন অ্যান্ড ডেভেলপমেন্ট কোম্পানি"},
+    {en:"Islamic Finance and Investment Ltd", bn:"ইসলামিক ফাইন্যান্স"},
+    {en:"National Housing Finance", bn:"ন্যাশনাল হাউজিং ফাইন্যান্স"},
+    {en:"Midas Financing Ltd", bn:"মাইডাস ফাইন্যান্সিং"},
+    {en:"Bangladesh Finance", bn:"বাংলাদেশ ফাইন্যান্স"},
+    {en:"Bay Leasing & Investment", bn:"বে লিজিং অ্যান্ড ইনভেস্টমেন্ট"},
+    {en:"GSP Finance", bn:"জিএসপি ফাইন্যান্স"},
+    {en:"First Finance Ltd", bn:"ফার্স্ট ফাইন্যান্স"},
+    {en:"Phoenix Finance", bn:"ফিনিক্স ফাইন্যান্স"},
+    {en:"Prime Finance & Investment Ltd", bn:"প্রাইম ফাইন্যান্স"},
+    {en:"Union Capital Ltd", bn:"ইউনিয়ন ক্যাপিটাল"},
+    {en:"Uttara Finance & Investment Ltd", bn:"উত্তরা ফাইন্যান্স"},
+    {en:"International Leasing", bn:"ইন্টারন্যাশনাল লিজিং"},
+    {en:"Fareast Finance", bn:"ফেয়ারইস্ট ফাইন্যান্স"},
+    {en:"Aviva Finance Ltd", bn:"আভিভা ফাইন্যান্স"},
+    {en:"BD Finance", bn:"বিডি ফাইন্যান্স"},
+    {en:"CVC Finance PLC", bn:"সিভিসি ফাইন্যান্স"},
+    {en:"Meridian Finance", bn:"মেরিডিয়ান ফাইন্যান্স"},
+    {en:"LankaBangla Investment", bn:"লঙ্কাবাংলা ইনভেস্টমেন্ট"},
+    {en:"IIDFC", bn:"আইআইডিএফসি"},
+    {en:"Saudi-Bangladesh Industrial Finance", bn:"সৌদি-বাংলাদেশ ফাইন্যান্স"},
+    {en:"IDCOL", bn:"ইনফ্রাস্ট্রাকচার ডেভেলপমেন্ট"},
+    {en:"BIFL", bn:"বাংলাদেশ ইনফ্রাস্ট্রাকচার ফাইন্যান্স"},
+    {en:"Capitec Grameen", bn:"ক্যাপিটেক গ্রামীণ"},
+    {en:"Strategic Finance Ltd", bn:"স্ট্র্যাটেজিক ফাইন্যান্স"},
+    {en:"FAS Finance", bn:"ফাস ফাইন্যান্স"},
+    {en:"Fas Finance", bn:"এফএলআইডি"},
+    {en:"Peoples Leasing", bn:"পিপলস লিজিং"},
+    {en:"Premier Leasing", bn:"প্রিমিয়ার লিজিং"},
+    {en:"Hajj Finance PLC", bn:"হজ ফাইন্যান্স"}
+  ];
+
+  var emptyForm = function(){ return { businessName:'', ownerName:'', businessAddress:'', mobileNo:'', businessType:'', businessTypeBn:'', stock:'', receivables:'', payables:'', monthlySales:'', totalEmployee:'', totalSalary:'', wholesalePct:'', wholesaleMargin:'', retailPct:'', retailMargin:'', avgMargin:'', existingLoanType:'', existingLoanSearch:'', othersNGO:'', selectedLoans:{ngo:[],bank:[],nbfi:[]}, existingLoanOrg:'', loanType:'', disbursementDate:'', disbursementAmount:'', totalEMI:'', currentOutstanding:'', otherLoans:'' }; };
+  var listSt = React.useState(function(){ try{ var l=JSON.parse(localStorage.getItem('market_survey_tab_list')||'[]'); return Array.isArray(l)?l:[]; }catch(e){ return []; } });
+  var list = listSt[0], setList = listSt[1];
+  var formSt = React.useState(function(){ try{ var s=JSON.parse(localStorage.getItem('market_survey_tab_form')||'null'); if(s && !Array.isArray(s)) return Object.assign(emptyForm(), s); }catch(e){} return emptyForm(); });
+  var form = formSt[0], setForm = formSt[1];
+  var editSt = React.useState(null); var editingId = editSt[0], setEditingId = editSt[1];
+  var bizSearchSt = React.useState(''); var bizSearch = bizSearchSt[0], setBizSearch = bizSearchSt[1];
+  var showLoanSt = React.useState(false); var showLoanList = showLoanSt[0], setShowLoanList = showLoanSt[1];
+  var showLoanIdxSt = React.useState(-1); var showLoanIdx = showLoanIdxSt[0], setShowLoanIdx = showLoanIdxSt[1];
+  var showOthersIdxSt = React.useState(-1); var showOthersIdx = showOthersIdxSt[0], setShowOthersIdx = showOthersIdxSt[1];
+  function blankLoan(){ return {existingLoanType:'', existingLoanSearch:'', existingLoanOrg:'', loanType:'', disbursementDate:'', disbursementAmount:'', totalEMI:'', currentOutstanding:'', othersNGO:'', selectedLoans:{ngo:[],bank:[],nbfi:[]}}; }
+  function getLoansList(){ if(Array.isArray(form.loans)&&form.loans.length) return form.loans; var hasLegacy = form.existingLoanType||form.existingLoanOrg||form.loanType||form.disbursementAmount||form.totalEMI||form.currentOutstanding||(form.selectedLoans&&((form.selectedLoans.ngo&&form.selectedLoans.ngo.length)||(form.selectedLoans.bank&&form.selectedLoans.bank.length)||(form.selectedLoans.nbfi&&form.selectedLoans.nbfi.length))); if(hasLegacy){ var b=blankLoan(); b.existingLoanType=form.existingLoanType||''; b.existingLoanSearch=form.existingLoanSearch||''; b.existingLoanOrg=form.existingLoanOrg||''; b.loanType=form.loanType||''; b.disbursementDate=form.disbursementDate||''; b.disbursementAmount=form.disbursementAmount||''; b.totalEMI=form.totalEMI||''; b.currentOutstanding=form.currentOutstanding||''; b.othersNGO=form.othersNGO||''; b.selectedLoans=form.selectedLoans||{ngo:[],bank:[],nbfi:[]}; return [b]; } return [blankLoan()]; }
+  function updateLoan(idx, k, v){ var loans=getLoansList().map(function(l,i){ if(i===idx){ var o={}; o[k]=v; return Object.assign({}, l, o); } return Object.assign({}, l); }); upd('loans', loans); if(idx===0) upd(k, v); }
+  function toggleLoanItemFor(idx, type, item, checked){ var loans=getLoansList(); var loan=loans[idx]||blankLoan(); var sel=loan.selectedLoans||{ngo:[],bank:[],nbfi:[]}; var cur=sel[type]||[]; var next; if(checked){ next = cur.some(function(x){ return x.bn===item.bn; }) ? cur : cur.concat([item]); } else { next = cur.filter(function(x){ return x.bn!==item.bn; }); } var newSel={ngo:sel.ngo||[], bank:sel.bank||[], nbfi:sel.nbfi||[]}; newSel[type]=next; var all=(newSel.bank||[]).concat(newSel.ngo||[]).concat(newSel.nbfi||[]); updateLoan(idx, 'selectedLoans', newSel); updateLoan(idx, 'existingLoanOrg', all.map(function(x){ return x.en; }).join(', ')); }
+  function filteredLoanFor(loan){ var opts = loan.existingLoanType==='NGO' ? SURVEY_NGO_LIST : loan.existingLoanType==='Bank' ? SURVEY_BANK_LIST : loan.existingLoanType==='NBFI' ? SURVEY_NBFI_LIST : []; var q=(loan.existingLoanSearch||'').trim(); if(!q) return opts; var ql=q.toLowerCase(); return opts.filter(function(o){ var en=(o.en||'').toLowerCase(), bn=o.bn||''; return en.indexOf(ql)>=0 || bn.indexOf(q)>=0 || bn.toLowerCase().indexOf(ql)>=0; }); }
+  function generateLoans(){ var n=parseInt(form.noOfLoan)||1; if(n<1||n>10){ alert('1 থেকে 10 এর মধ্যে লিখুন'); return; } var cur=getLoansList(); var next=Array.from({length:n}, function(_,i){ return cur[i] ? Object.assign({}, cur[i]) : blankLoan(); }); upd('loans', next); if(setToast) setToast(n+' Loan generated'); }
+
+  var showOthersSt = React.useState(false); var showOthersNGO = showOthersSt[0], setShowOthersNGO = showOthersSt[1];
+  function surveyLoanOptions(){ return form.existingLoanType==='NGO' ? SURVEY_NGO_LIST : form.existingLoanType==='Bank' ? SURVEY_BANK_LIST : form.existingLoanType==='NBFI' ? SURVEY_NBFI_LIST : []; }
+  function surveyFilteredLoan(){ var opts=surveyLoanOptions(); var q=(form.existingLoanSearch||'').trim(); if(!q) return opts; var ql=q.toLowerCase(); return opts.filter(function(o){ var en=(o.en||'').toLowerCase(), bn=o.bn||''; return en.indexOf(ql)>=0 || bn.indexOf(q)>=0 || bn.toLowerCase().indexOf(ql)>=0; }); }
+  function surveyToggleLoanItem(type, item, checked){ var sel=form.selectedLoans||{ngo:[],bank:[],nbfi:[]}; var cur=sel[type]||[]; var next; if(checked){ next = cur.some(function(x){ return x.bn===item.bn; }) ? cur : cur.concat([item]); } else { next = cur.filter(function(x){ return x.bn!==item.bn; }); } var newSel={ngo:sel.ngo||[], bank:sel.bank||[], nbfi:sel.nbfi||[]}; newSel[type]=next; var all=(newSel.bank||[]).concat(newSel.ngo||[]).concat(newSel.nbfi||[]); upd('selectedLoans', newSel); upd('existingLoanOrg', all.map(function(x){ return x.en; }).join(', ')); }
+  function surveyLoanTypeKey(){ return form.existingLoanType==='Bank' ? 'bank' : form.existingLoanType==='NBFI' ? 'nbfi' : 'ngo'; }
+  function surveySelectedLoans(){ var sel=form.selectedLoans||{ngo:[],bank:[],nbfi:[]}; return sel[surveyLoanTypeKey()]||[]; }
+
+  var showBizSt = React.useState(false); var showBiz = showBizSt[0], setShowBiz = showBizSt[1];
+  function bizMatch(b, q){ if(!q) return true; var toks=q.toLowerCase().split(/[\s,]+/).filter(function(x){ return x.trim(); }); var en=(b.en||'').toLowerCase(), bn=b.bn||''; return toks.every(function(tk){ return en.indexOf(tk)>=0 || bn.indexOf(tk)>=0 || bn.toLowerCase().indexOf(tk)>=0; }); }
+  function bizFiltered(){ var out=[]; for(var i=0;i<BIZ.length;i++){ if(bizMatch(BIZ[i], bizSearch)) out.push(BIZ[i]); } return out; }
+  function bizBnFor(en){ for(var i=0;i<BIZ.length;i++){ if(BIZ[i].en===en) return BIZ[i].bn; } return ''; }
+  function selectBiz(b){ upd('businessType', b.en); upd('businessTypeBn', b.bn); setBizSearch(''); setShowBiz(false); }
+
+  function upd(k,v){ setForm(function(f){ var o={}; o[k]=v; return Object.assign({}, f, o); }); }
+  React.useEffect(function(){
+    var wp=parseFloat(form.wholesalePct)||0, wm=parseFloat(form.wholesaleMargin)||0, rp=parseFloat(form.retailPct)||0, rm=parseFloat(form.retailMargin)||0;
+    var avg='';
+    if(wp+rp>0) avg=((wp*wm + rp*rm)/(wp+rp)).toFixed(2);
+    else if(wm||rm) avg=(((wm||0)+(rm||0))/((wm?1:0)+(rm?1:0))).toFixed(2);
+    if(form.avgMargin!==avg) setForm(function(f){ return Object.assign({}, f, {avgMargin: avg}); });
+  }, [form.wholesalePct, form.wholesaleMargin, form.retailPct, form.retailMargin]);
+  React.useEffect(function(){ try{ localStorage.setItem('market_survey_tab_list', JSON.stringify(list)); }catch(e){} try{ localStorage.setItem('lifestyle_pending_sync','1'); }catch(e){} try{ if(typeof queueRoutineCloudUpload==='function') queueRoutineCloudUpload(); }catch(e){} }, [list]);
+  React.useEffect(function(){ try{ localStorage.setItem('market_survey_tab_form', JSON.stringify(form)); }catch(e){} }, [form]);
+  function newForm(){ setEditingId(null); setForm(emptyForm()); try{ localStorage.removeItem('market_survey_tab_form'); }catch(e){} if(setToast) setToast('নতুন Survey ফর্ম'); }
+  function loadItem(id){ var it=null; for(var i=0;i<list.length;i++){ if(list[i].id===id){ it=list[i]; break; } } if(it){ setForm(Object.assign(emptyForm(), it)); setEditingId(id); window.scrollTo(0,0); if(setToast) setToast('Loaded: '+(it.businessName||'')); } }
+  function delItem(id){ if(!confirm('এই Survey টা মুছে ফেলবেন?')) return; setList(function(prev){ return prev.filter(function(x){ return x.id!==id; }); }); if(editingId===id){ setEditingId(null); setForm(emptyForm()); } }
+  function save(){
+    if(!form.businessName.trim()){ alert('Business Name দিন'); return; }
+    var entry=Object.assign({}, form, { id: editingId || (Date.now()+'_'+Math.random().toString(36).slice(2)), updatedAt: new Date().toISOString() });
+    setList(function(prev){
+      if(editingId) return prev.map(function(x){ return x.id===editingId?entry:x; });
+      var ix=-1; for(var i=0;i<prev.length;i++){ if(prev[i].mobileNo && form.mobileNo && prev[i].mobileNo===form.mobileNo){ ix=i; break; } }
+      if(ix>=0){ var c=prev.slice(); c[ix]=entry; return c; }
+      return [entry].concat(prev);
+    });
+    setEditingId(entry.id);
+    if(setToast) setToast('Survey সেভ হয়েছে — Sync হবে');
+  }
+  var inputClass='w-full bg-white border border-[#D8CFC0] rounded-[10px] px-3 py-2.5 text-[15px] text-[#1A1A1A] outline-none';
+  var labelClass='text-[13px] font-bold text-[#5C4A32] mb-1 block';
+  var sectionClass='bg-[#2D2A26] text-white rounded-[8px] px-4 py-2.5 text-[13px] font-bold mt-6';
+  function field(label, key, ph, type, readOnly){
+    return h('div', {key:key}, h('label', {className:labelClass}, label),
+      h('input', {value:form[key]||'', type:type||'text', placeholder:ph||'', readOnly:!!readOnly, onChange:function(e){ upd(key, e.target.value); }, className:inputClass, style: readOnly?{background:'#F3EFE8'}:null}));
+  }
+  return h('div', {className:'p-4 space-y-4', style:{maxHeight:'80vh', overflowY:'auto'}},
+    h('div', {className:'bg-white border border-[#F3E8D3] rounded-[16px] p-3 space-y-2'},
+      h('div', {className:'flex items-center justify-between'},
+        h('p', {className:'font-bold text-[13px]'}, 'Saved Survey ('+list.length+')'),
+        h('button', {onClick:newForm, className:'px-3 py-1.5 rounded-full bg-[#2D2A26] text-white text-[11px] font-bold'}, '+ New Survey')),
+      list.length===0 ? h('p', {className:'text-[11px] text-[#8B7355] text-center py-2'}, 'এখনো কোনো Survey নেই')
+      : h('div', {className:'space-y-2 max-h-[160px] overflow-y-auto'}, list.map(function(it){
+          return h('div', {key:it.id, className:'flex items-center justify-between bg-[#FFFBF7] border border-[#F3E8D3] rounded-[12px] px-3 py-2'},
+            h('div', {className:'flex-1 min-w-0 cursor-pointer', onClick:function(){ loadItem(it.id); }},
+              h('p', {className:'font-bold text-[12px] truncate'}, it.businessName||'Unnamed'),
+              h('p', {className:'text-[10px] text-[#8B7355] truncate'}, (it.ownerName||'')+' • '+(it.mobileNo||'')+' • '+(it.businessType||''))),
+            h('div', {className:'flex gap-1 ml-2'}, h('button', {onClick:function(){ marketPdfOpen('survey', it, 'view'); }, className:'px-2 py-1 rounded-full bg-white border border-[#F3E8D3] text-[10px] font-bold'}, 'View'), h('button', {onClick:function(){ marketPdfOpen('survey', it, 'download'); }, className:'px-2 py-1 rounded-full bg-[#1B4D3E] text-white text-[10px] font-bold'}, 'PDF'), h('button', {onClick:function(){ marketPdfOpen('survey', it, 'share'); }, className:'px-2 py-1 rounded-full bg-[#C9A86A] text-[#2D2A26] text-[10px] font-bold'}, 'Share'), h('button', {onClick:function(){ delItem(it.id); }, className:'px-2 py-1 rounded-full bg-[#FFEBEE] text-[#B71C1C] text-[11px] font-bold'}, 'মুছুন')));
+        }))
+    ),
+    h('div', {className:sectionClass}, '📋 Survey — Business তথ্য'),
+    h('div', {className:'space-y-3 mt-3'},
+      field('Business Name','businessName','ব্যবসার নাম'),
+      field('Owners Name','ownerName','মালিকের নাম'),
+      field('Business Address','businessAddress','ঠিকানা'),
+      field('Mobile No','mobileNo','01XXXXXXXXX','tel'),
+      h('div', null,
+        h('label', {className:labelClass}, 'Business Type - Search: বালি, rod, cement, চুন, grocer'),
+        h('div', {className:'relative'},
+          h('input', {value:bizSearch, onClick:function(){ setShowBiz(!showBiz); }, onChange:function(e){ setBizSearch(e.target.value); setShowBiz(true); }, placeholder:'Search: বালি, rod, cement, চুন, grocer - বাংলা / English', className:'w-full border-2 border-blue-100 rounded-xl p-3 '+inputClass}),
+          showBiz ? h('div', {className:'grid gap-2 mt-3 max-h-[320px] overflow-y-auto border-2 border-blue-100 rounded-xl p-2 bg-gray-50'},
+            bizFiltered().length===0 ? h('p', {className:'text-xs text-gray-400 p-3 text-center'}, 'No results / কোনো ফলাফল নেই')
+            : bizFiltered().slice(0,100).map(function(bt){ return h('div', {key:bt.en+'_'+bt.bn, onClick:function(){ selectBiz(bt); }, className:'p-2.5 border rounded-xl hover:bg-blue-50 hover:border-blue-300 cursor-pointer flex justify-between items-center text-sm bg-white'}, h('span', {className:'font-medium text-[#1A1A1A]'}, bt.bn), h('span', {className:'text-gray-400 text-[11px] ml-2 text-right'}, bt.en)); })
+          ) : null
+        ),
+        form.businessType ? h('div', {className:'bg-green-50 border border-green-200 rounded-full px-3 py-1.5 text-xs flex items-center gap-2 mt-3'}, h('span', null, (form.businessTypeBn||bizBnFor(form.businessType)||'')+' ('+form.businessType+')'), h('button', {onClick:function(){ upd('businessType',''); upd('businessTypeBn',''); setBizSearch(''); }, className:'bg-red-100 text-red-600 rounded-full w-5 h-5 flex items-center justify-center'}, '✕'))
+        : h('p', {className:'text-[12px] text-[#8B7355] mt-2'}, 'কোনো ব্যবসার ধরন সিলেক্ট করুন / No business selected')
+      ),
+      h('div', {className:'grid grid-cols-2 gap-3'}, field('Stock (Lac)','stock','0','number'), field('Receivables (Lac)','receivables','0','number')),
+      h('div', {className:'grid grid-cols-2 gap-3'}, field('Payables (Lac)','payables','0','number'), field('Monthly Sales (Lac)','monthlySales','0','number')),
+      h('div', {className:'grid grid-cols-2 gap-3'}, field('Total Employee No','totalEmployee','0','number'), field('Total Salary (Thousand)','totalSalary','0','number'))
+    ),
+    h('div', {className:sectionClass}, 'Sales % & Profit Margin %'),
+    h('div', {className:'space-y-3 mt-3'},
+      h('div', {className:'grid grid-cols-2 gap-3'}, field('Wholesale %','wholesalePct','%','number'), field('Profit Margin %','wholesaleMargin','%','number')),
+      h('div', {className:'grid grid-cols-2 gap-3'}, field('Retail Sales %','retailPct','%','number'), field('Profit Margin %','retailMargin','%','number')),
+      field('Average Margin % (Auto)','avgMargin','Auto','text', true)
+    ),
+    h('div', {className:sectionClass}, '🏦 Existing Loan — File Making এর মতোই'),
+     h('div', {className:'bg-white border rounded-[12px] p-3 space-y-3'},
+       h('div', {className:'flex gap-2 items-end'},
+         h('div', {className:'flex-1'}, h('label', {className:labelClass}, 'No of Loan'), h('input', {type:'number', min:1, max:10, value:form.noOfLoan||'', onChange:function(e){ upd('noOfLoan', e.target.value); }, placeholder:'যেমন: 2', className:inputClass})),
+         h('button', {onClick:generateLoans, style:{backgroundColor:'#1E4538', color:'white'}, className:'px-5 py-2.5 rounded-[10px] font-bold text-[12px] h-[42px]'}, 'Generate')
+       ),
+       h('p', {className:'text-[10px] text-gray-500'}, 'No of Loan লিখে Generate ক্লিক করলে নিচে ঘর ওপেন হবে'),
+       getLoansList().map(function(L, LI){ return h('div', {key:'loan_'+LI, className:'border-2 rounded-[12px] p-3 space-y-3 bg-[#FFFEF7] border-[#E8DCC6]'},
+  h('p', {className:'text-[13px] font-bold text-[#1A1A1A]'}, 'Loan '+(LI+1)+' / লোন '+(LI+1)),
+  h('div', {className:'flex gap-2 flex-wrap'},
+    [['NGO','NGO'],['Bank','Bank'],['NBFI','NBFI'],['Others NGO','Others NGO']].map(function(bt){ return h('button', {key:bt[0]+'_'+LI, onClick:function(){ if(L.existingLoanType===bt[0]){ if(bt[0]==='Others NGO'){ setShowOthersIdx(function(v){ return v===LI ? -1 : LI; }); } else { setShowLoanIdx(function(v){ return v===LI ? -1 : LI; }); } return; } updateLoan(LI,'existingLoanType', bt[0]); if(bt[0]==='Others NGO'){ setShowOthersIdx(LI); setShowLoanIdx(-1); } else { setShowOthersIdx(-1); setShowLoanIdx(LI); } }, style: L.existingLoanType===bt[0] ? {backgroundColor:'#1A1A1A', color:'white'} : {backgroundColor:'#F5F1E8', color:'#1A1A1A'}, className:'px-4 py-2 rounded-full text-[11px] font-bold border'}, bt[1]); })
+  ),
+  showOthersIdx===LI ? h('div', {className:'mb-3 p-3 bg-amber-50 border-2 border-amber-200 rounded-xl'},
+    h('label', {className:'font-semibold text-sm text-amber-800'}, 'Others NGO Name / অন্যান্য NGO নাম'),
+    h('input', {value:L.othersNGO||'', onChange:function(e){ updateLoan(LI,'othersNGO', e.target.value); }, placeholder:'Others NGO নাম লিখুন', className:'w-full mt-2 border-2 border-amber-100 rounded-xl p-3 '+inputClass})
+  ) : null,
+  h('div', {className:'relative'},
+    L.existingLoanType!=='Others NGO' ? h('input', {value:L.existingLoanSearch||'', onClick:function(){ if(L.existingLoanType!=='Others NGO') setShowLoanIdx(function(v){ return v===LI ? -1 : LI; }); }, onChange:function(e){ updateLoan(LI,'existingLoanSearch', e.target.value); setShowLoanIdx(LI); }, placeholder:'Search NGO/Bank/NBFI - বাংলা / English', className:'w-full border-2 border-emerald-100 rounded-xl p-3 mb-3 '+inputClass}) : null,
+    showLoanIdx===LI ? h('div', {className:'space-y-3'},
+      L.existingLoanType ? h('div', {className:'loanContent grid gap-2 max-h-[250px] overflow-auto border rounded-xl p-2 bg-white'},
+        (function(){ var sel=(L.selectedLoans||{ngo:[],bank:[],nbfi:[]}); var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; return sel[key]||[]; })().length>0 ? h('div', null, (function(){ var sel=(L.selectedLoans||{ngo:[],bank:[],nbfi:[]}); var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; return sel[key]||[]; })().map(function(it){ return h('div', {key:it.bn, className:'p-3 border-2 border-green-500 bg-green-50 rounded-xl flex justify-between items-center text-sm mb-2'}, h('span', null, h('b', null, it.bn), ' / '+it.en), h('button', {onClick:function(){ var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; toggleLoanItemFor(LI, key, it, false); }, className:'bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs'}, '✕')); })) : null,
+        filteredLoanFor(L).length===0 ? h('p', {className:'text-xs text-gray-400 p-3'}, 'No results / কোনো ফলাফল নেই') : filteredLoanFor(L).map(function(item){ var key=L.existingLoanType==='Bank'?'bank':L.existingLoanType==='NBFI'?'nbfi':'ngo'; var sel=(L.selectedLoans||{ngo:[],bank:[],nbfi:[]}); var cur=sel[key]||[]; return h('label', {key:item.bn, className:'flex items-start gap-2 border p-2 rounded-xl text-[13px] hover:bg-blue-50 cursor-pointer bg-white'}, h('input', {type:'checkbox', checked: cur.some(function(x){ return x.bn===item.bn; }), onChange:function(e){ toggleLoanItemFor(LI, key, item, e.target.checked); }, className:'mt-1 loan-check'}), h('span', null, h('b', null, item.bn), h('br'), h('span', {className:'text-gray-500 text-xs'}, item.en))); })
+      ) : null,
+      L.existingLoanType==='Others NGO' ? h('div', {className:'p-3 bg-gray-50 border rounded-xl text-sm'}, 'Others NGO এর জন্য উপরের বক্সে নাম লিখুন - উপরে Others NGO বাটনে ক্লিক করলে বক্স ওপেন হবে') : null,
+      h('button', {onClick:function(){ setShowLoanIdx(-1); }, className:'w-full py-2 text-[11px] font-bold text-white bg-[#1E4538] rounded-full mt-2'}, '✕ বন্ধ করুন / Hide')
+    ) : null
+  ),
+  L.existingLoanOrg ? h('p', {className:'text-[11px] text-[#2E7D32] font-bold'}, 'Selected: '+L.existingLoanOrg) : null,
+  h('div', {className:'space-y-3 mt-2'},
+    h('div', {className:'col-span-2'},
+      h('label', {className:labelClass}, 'Loan Type - CC, Monthly, Weekly, Daily (এক বা একাধিক টিক দিন)'),
+      h('div', {className:'grid grid-cols-1 gap-2 mt-1'},
+        ['CC','Monthly','Weekly','Daily'].map(function(opt){ var selected=(L.loanType||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean); var checked=selected.indexOf(opt)>=0; return h('label', {key:opt, className:'flex items-center gap-2 border rounded-[10px] px-3 py-2.5 text-[12px] cursor-pointer '+(checked?'bg-[#E8F5E9] border-[#2E7D32] font-bold text-[#1B5E20]':'bg-white border-[#D8CFC0]')}, h('input', {type:'checkbox', checked:checked, onChange:function(e){ var cur=(L.loanType||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean); var next; if(e.target.checked){ if(cur.indexOf(opt)<0) next=cur.concat([opt]); else next=cur; } else { next=cur.filter(function(x){ return x!==opt; }); } updateLoan(LI,'loanType', next.join(', ')); }, className:'w-4 h-4 accent-[#1E4538]'}), h('span', null, opt)); })
+      ),
+      L.loanType ? h('p', {className:'text-[10px] text-[#2E7D32] mt-2 font-bold'}, 'Selected: '+L.loanType) : h('p', {className:'text-[10px] text-gray-500 mt-1'}, 'এক বা একাধিক সিলেক্ট করুন')
+    ),
+    h('div', {className:'grid grid-cols-1 gap-3'},
+      [['disbursementDate','Disbursement Date Month/Year'],['disbursementAmount','Disbursement Amount (Lac)'],['totalEMI','Total EMI (Thousand)'],['currentOutstanding','Current Outstanding (Lac)']].map(function(f){ return h('div', {key:f[0]}, h('label', {className:labelClass}, f[1]), h('input', {value:L[f[0]]||'', onChange:function(e){ updateLoan(LI, f[0], e.target.value); }, className:inputClass})); })
+    )
+  )
+); })
+     ),
+     h('div', {className:'space-y-3 mt-3'}, h('div', null, h('label', {className:labelClass}, 'অন্য Existing Loan থাকলে লিখুন'), h('textarea', {value:form.otherLoans||'', onChange:function(e){ upd('otherLoans', e.target.value); }, placeholder:'সংস্থা — পরিমাণ — EMI', className:inputClass, rows:2}))),
+     h('button', {onClick:save, className:'w-full py-3.5 rounded-[16px] bg-[#1B4D3E] text-white font-extrabold text-[15px] mt-2'}, '💾 Survey সেভ করুন'),
+     h('div', {className:'flex gap-2 mt-2'}, h('button', {onClick:function(){ marketPdfOpen('survey', form, 'view'); }, className:'flex-1 py-3 rounded-[16px] bg-white border-2 border-[#1B4D3E] text-[#1B4D3E] font-extrabold text-[13px]'}, '👁 View PDF'), h('button', {onClick:function(){ marketPdfOpen('survey', form, 'download'); }, className:'flex-1 py-3 rounded-[16px] bg-[#1B4D3E] text-white font-extrabold text-[13px]'}, '⬇ Download PDF'), h('button', {onClick:function(){ marketPdfOpen('survey', form, 'share'); }, className:'flex-1 py-3 rounded-[16px] bg-[#C9A86A] text-[#2D2A26] font-extrabold text-[13px]'}, '📤 Share PDF')),
+    h('p', {className:'text-[11px] text-[#8B7355] text-center'}, 'সেভ হলে উপরের লিস্টে জমা হবে। অফলাইনে সেভ হলে নেট আসলেই Auto Sync হবে।')
+  );
+}
+
 function RoutineSheet(props){
   var st = React.useState(''); var toast = st[0]; var setToast = st[1];
   var langNow = window.__routineLang || 'bn';
@@ -9222,6 +9521,7 @@ function RoutineSheet(props){
     : (langNow==='en' ? 'Market Survey' : 'মার্কেট সার্ভে');
   var Manager = props.type === 'daily_routine' ? M.DailyRoutineManager
     : props.type === 'travel' ? M.TravelManager : M.MarketSurveyManager;
+  var msTabSt = React.useState('file'); var msTab = msTabSt[0]; var setMsTab = msTabSt[1];
   React.useEffect(function(){
     if(!toast) return;
     var id = setTimeout(function(){ setToast(''); }, 3000);
@@ -9229,7 +9529,13 @@ function RoutineSheet(props){
   }, [toast]);
   return React.createElement('div', null,
     React.createElement(M.BottomSheet, { title: title, onClose: closeRoutineModule },
-      React.createElement(Manager, { t: tProxy, lang: langNow, setToast: setToast, onClose: closeRoutineModule })
+      (props.type === 'market_survey' ? React.createElement('div', null,
+        React.createElement('div', { style: { display: 'flex', gap: '8px', padding: '12px 16px 0', background: '#FFFBF7' } },
+          React.createElement('button', { onClick: function(){ setMsTab('survey'); }, style: { flex: 1, padding: '10px 0', borderRadius: '999px', border: '1px solid #E8E6DC', fontWeight: 800, fontSize: '13px', background: msTab === 'survey' ? '#1B4D3E' : '#fff', color: msTab === 'survey' ? '#fff' : '#2D2A26' } }, '📋 Survey'),
+          React.createElement('button', { onClick: function(){ setMsTab('file'); }, style: { flex: 1, padding: '10px 0', borderRadius: '999px', border: '1px solid #E8E6DC', fontWeight: 800, fontSize: '13px', background: msTab === 'file' ? '#1B4D3E' : '#fff', color: msTab === 'file' ? '#fff' : '#2D2A26' } }, '📁 File Making')
+        ),
+        msTab === 'survey' ? React.createElement(SurveyTab, { setToast: setToast }) : React.createElement(Manager, { t: tProxy, lang: langNow, setToast: setToast, onClose: closeRoutineModule })
+      ) : React.createElement(Manager, { t: tProxy, lang: langNow, setToast: setToast, onClose: closeRoutineModule }))
     ),
     toast ? React.createElement('div', { className: 'fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] bg-[#1A1A1A] text-white text-[13px] font-semibold px-4 py-2.5 rounded-full shadow-lg max-w-[92vw] text-center' }, toast) : null
   );
@@ -9297,7 +9603,17 @@ function RoutineSheet(props){
   <p id="rmHeard" style="font-size:12px;color:#2E7D32;min-height:16px;margin:6px 0"></p>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
     <div><label style="font-size:12px;font-weight:700">তারিখ</label><input id="rmDate" type="date" class="rmInp"></div>
-    <div><label style="font-size:12px;font-weight:700">সময় (AM/PM খেয়াল করুন)</label><input id="rmTime" type="time" class="rmInp"></div>
+    <div><label style="font-size:12px;font-weight:700">🕒 TIME / সময়</label><input id="rmTime" type="hidden">
+     <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #E8E6DC;border-radius:16px;padding:6px">
+       <select id="rmHour" class="rmInp" style="flex:1;background:#F9F6F0;border:1px solid #E8E6DC;border-radius:12px;padding:10px 4px;font-size:18px;font-weight:800;text-align:center;margin:0"></select>
+       <b style="font-size:18px">:</b>
+       <select id="rmMinute" class="rmInp" style="flex:1;background:#F9F6F0;border:1px solid #E8E6DC;border-radius:12px;padding:10px 4px;font-size:18px;font-weight:800;text-align:center;margin:0"></select>
+       <div style="flex:1.2;display:flex;border:1px solid #E8E6DC;border-radius:12px;overflow:hidden;background:#F9F6F0">
+         <button type="button" id="rmAM" onclick="rmSetAmpm('AM')" style="flex:1;padding:10px 0;font-size:15px;font-weight:700;border:0;background:transparent;color:#8B7355">AM</button>
+         <button type="button" id="rmPM" onclick="rmSetAmpm('PM')" style="flex:1;padding:10px 0;font-size:15px;font-weight:700;border:0;background:#1B9E4B;color:#fff">PM</button>
+       </div>
+     </div>
+     <p style="font-size:11px;color:#8B7355;margin:4px 0 0">ঘণ্টা ও মিনিট স্ক্রল করে সিলেক্ট করুন, AM/PM সেট করুন</p></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:10px">
     <select id="rmRepeat" class="rmInp"><option value="once">একবার</option><option value="daily">প্রতিদিন</option><option value="weekly">প্রতি সপ্তাহে</option></select>
@@ -9330,6 +9646,36 @@ function RoutineSheet(props){
   document.getElementById('rmOverlay').onclick=rmClose;
   // default date = today
   try{document.getElementById('rmDate').value=new Date().toISOString().slice(0,10)}catch(e){}
+
+   // Photo-style time picker (your file only): Hour + Minute dropdown + AM/PM toggle -> hidden #rmTime (24h). Old save logic untouched.
+   (function(){
+     var hEl=document.getElementById('rmHour'), mEl=document.getElementById('rmMinute');
+     if(!hEl||!mEl) return;
+     for(var i=1;i<=12;i++){ var o=document.createElement('option'); o.value=String(i).padStart(2,'0'); o.textContent=o.value; hEl.appendChild(o); }
+     for(var j=0;j<60;j++){ var o2=document.createElement('option'); o2.value=String(j).padStart(2,'0'); o2.textContent=o2.value; mEl.appendChild(o2); }
+     window.rmAmpm='PM';
+     window.rmSetAmpm=function(v){ window.rmAmpm=v; paintAmpm(); syncFromPicker(); };
+     function paintAmpm(){
+       var am=document.getElementById('rmAM'), pm=document.getElementById('rmPM');
+       if(!am||!pm) return;
+       var a=window.rmAmpm==='AM'?{background:'#1B9E4B',color:'#fff'}:{background:'transparent',color:'#8B7355'};
+       var pp=window.rmAmpm==='PM'?{background:'#1B9E4B',color:'#fff'}:{background:'transparent',color:'#8B7355'};
+       am.style.background=a.background; am.style.color=a.color; pm.style.background=pp.background; pm.style.color=pp.color;
+     }
+     function syncFromPicker(){
+       var h=parseInt(hEl.value,10)||12, mi=mEl.value||'00', hh=h%12 + (window.rmAmpm==='PM'?12:0);
+       var hid=document.getElementById('rmTime'); if(hid) hid.value=String(hh).padStart(2,'0')+':'+mi;
+     }
+     function syncFromHidden(){
+       var hid=document.getElementById('rmTime'); if(!hid||!hid.value) return;
+       var parts=hid.value.split(':'); var hh=parseInt(parts[0],10)||0, mi=parts[1]||'00';
+       window.rmAmpm=hh>=12?'PM':'AM'; var h12=hh%12||12;
+       hEl.value=String(h12).padStart(2,'0'); mEl.value=mi; paintAmpm();
+     }
+     hEl.onchange=syncFromPicker; mEl.onchange=syncFromPicker;
+     hEl.value='06'; mEl.value='03'; window.rmAmpm='PM'; paintAmpm(); syncFromPicker();
+     setInterval(function(){ var hid=document.getElementById('rmTime'); if(!hid) return; var h=parseInt(hEl.value,10)||12, hh=h%12+(window.rmAmpm==='PM'?12:0); var cur=String(hh).padStart(2,'0')+':'+mEl.value; if(hid.value && hid.value!==cur) syncFromHidden(); }, 800);
+   })();
   window.rmSave=function(){
     var text=document.getElementById('rmText').value.trim();
     var d=document.getElementById('rmDate').value, tm=document.getElementById('rmTime').value;
