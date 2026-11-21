@@ -4729,7 +4729,8 @@ function pdfPersonSectionsJpegs(data){
     for(let ln of pdfWrapText(ctx, 'Download: ' + fmtDownloadNow(), LEFT_W)){ ctx.fillText(ln, M, y); y += LH; }
     ctx.fillStyle = '#333';
     for(let l of userLines){ for(let ln of pdfWrapText(ctx, l, LEFT_W)){ ctx.fillText(ln, M, y); y += LH; } }
-    let ry = M + (blockH - rightH); // Developer block moved down: bottom-aligned with the left column, gap below it removed ctx.textAlign = 'right';
+    let ry = M + (blockH - rightH); // Developer block moved down: bottom-aligned with the left column, gap below it removed
+    ctx.textAlign = 'right';
     for(let i = 0; i < devLines.length; i++){
       ctx.font = i === 0 ? FB : F; ctx.fillStyle = '#333';
       for(let ln of pdfWrapText(ctx, devLines[i], RIGHT_W)){ ctx.fillText(ln, W - M, ry); ry += LH; }
