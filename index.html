@@ -1479,6 +1479,7 @@ function restoreViewState(){
   if(typeof r.hs === 'string') histSearch = r.hs;
   if(typeof r.hfr === 'string' && r.hfr) histFrom = r.hfr;
   if(typeof r.hto === 'string' && r.hto) histTo = r.hto;
+  if(currentView === 'history'){ histFrom = firstOfMonth(); if(!histTo || histTo < histFrom) histTo = today(); }
   if(typeof r.hc === 'string') histCat = r.hc;
   if(typeof r.ls === 'string') loansSearch = r.ls;
   if(typeof r.lfr === 'string' && r.lfr) loansFrom = r.lfr;
@@ -1551,8 +1552,8 @@ function render(){
   if(['duas','variousNamaz','fivePrayers','surahs','duasFolder','duaItem','variousNamazItem','fivePrayersItem','surahItem'].indexOf(currentView) >= 0){ currentView = 'islamic'; }
   window.__inIslamic = (currentView === 'islamic');
   try{ document.body.classList.toggle('isl-mode', window.__inIslamic); }catch(e){}
-  var _nd = window.__navDir || ''; window.__navDir = '';
-  if(_nd){ var _ap = document.getElementById('app'); if(_ap){ _ap.classList.remove('nav-anim-fwd','nav-anim-back'); void _ap.offsetWidth; _ap.classList.add(_nd === 'back' ? 'nav-anim-back' : 'nav-anim-fwd'); } }
+  window.__navDir = '';
+  try{ var _ap = document.getElementById('app'); if(_ap) _ap.classList.remove('nav-anim-fwd','nav-anim-back'); }catch(e){}
   document.title = t('appName');
   saveViewState();
   if(currentView === 'history'){ renderHistoryView(); return; }
@@ -1650,8 +1651,7 @@ function navPush(){
     const s = navSnapshot();
     const last = navStack[navStack.length - 1];
     if(last && JSON.stringify(last) === JSON.stringify(s)) return;
-    navStack.push(s);
-    if(navStack.length > 50) navStack.shift();
+    navStack.push(s); // ধাপের কোনো সীমা নেই: যত ভেতরে যান, Back-এ সব ধাপ একটা একটা করে ফিরবে।
     // Every app step = one browser history entry, so the phone's Back button
     // steps back exactly one app step. The popstate handler re-pushes after
     // each Back, so Back can never run out of history and leave the app.
@@ -1688,9 +1688,9 @@ function goBackStep(){
   return true;
 }
 function navGo(page){
-  if(page !== currentView) navPush();
+  if(page !== currentView){ navPush(); try{ window.scrollTo(0, 0); }catch(e){} }
   if(page === 'home'){ currentView = 'home'; setNavActive('home'); render(); return; }
-  if(page === 'history'){ currentView = 'history'; setNavActive('history'); render(); return; }
+  if(page === 'history'){ histFrom = firstOfMonth(); if(!histTo || histTo < histFrom) histTo = today(); currentView = 'history'; setNavActive('history'); render(); return; }
   if(page === 'profile'){ currentView = 'profile'; setNavActive('profile'); render(); return; }
   if(page === 'reports'){ currentView = 'reports'; setNavActive('reports'); render(); return; } /* reports live on History (PDF / Share) until the dedicated Reports page is built */
 }
@@ -1725,6 +1725,7 @@ function setNavActive(tab){
   });
 }
 function navGo(tab){
+  if(!(tab === 'home' && currentView === 'islamic')){ try{ window.scrollTo(0, 0); }catch(e){} }
   if(tab === 'home'){
     if(currentView === 'islamic'){ try{ window.scrollTo(0, 0); }catch(e){} return; }
     navPush(); currentView = 'islamic'; setNavActive(''); render(); return;
@@ -2879,17 +2880,16 @@ function goBackStep(){
 function appGoBack(){
   if(navStack.length){ goBackStep(); return true; }
   if(currentView && currentView !== 'islamic'){ goBackStep(); return true; }
-  var _now = Date.now();
-  if(window.__exitArmed && _now - window.__exitArmed < 2000){ return 'exit'; }
-  window.__exitArmed = _now;
-  try{ showToast(lang === 'en' ? 'Press Back again to exit' : 'আবার Back চাপলে অ্যাপ বন্ধ হবে'); }catch(e){}
+  window.__exitArmed = 0;
+  if(window.islExitToLifestyle){ window.islExitToLifestyle(); }
   return true;
 }
 /* merged: popstate owned by Lifestyle */
 
 function render(){
-  var _nd = window.__navDir || ''; window.__navDir = '';
-  if(_nd){ var _ap = document.getElementById('islApp'); if(_ap){ _ap.classList.remove('nav-anim-fwd','nav-anim-back'); void _ap.offsetWidth; _ap.classList.add(_nd === 'back' ? 'nav-anim-back' : 'nav-anim-fwd'); } }
+  window.__navDir = '';
+  try{ var _ap = document.getElementById('islApp'); if(_ap) _ap.classList.remove('nav-anim-fwd','nav-anim-back'); }catch(e){}
+  try{ localStorage.setItem('islamic_view_state', JSON.stringify({ v: currentView, dfk: duasFolderKey, di: duaIdx, vni: variousNamazIdx, fpi: fivePrayersIdx, si: surahIdx, hfk: hadithFolderKey, hi: hadithIdx, sq: searchQuery, ct: calTab })); }catch(e){}
   document.title = t('appName');
   setNavActive('');
   if(currentView === 'tasbih'){ renderTasbihView(); return; }
@@ -2935,6 +2935,25 @@ window.islEnter = function(){
     '</div>' +
     '<div id="islApp" class="min-h-screen"></div>' + '</div>';
     currentView = 'islamic';
+    try{ // Refresh only: reopen the same Islamic page (normal entry always starts on Islamic home)
+      var __nt = ''; try{ __nt = (performance.getEntriesByType('navigation')[0] || {}).type; }catch(e){}
+      if(__nt === 'reload' || __nt === 'back_forward'){
+        var __rs = JSON.parse(localStorage.getItem('islamic_view_state') || 'null');
+        var __views = ['islamic','duas','duasFolder','duaItem','variousNamaz','variousNamazItem','fivePrayers','fivePrayersItem','surahs','surahItem','hadith','hadithFolder','hadithItem','tasbih','bookmarks','search','qibla','iftar','roza','settings','calendar','azan'];
+        if(__rs && typeof __rs.v === 'string' && __views.indexOf(__rs.v) >= 0){
+          currentView = __rs.v;
+          if(typeof __rs.dfk === 'string') duasFolderKey = __rs.dfk;
+          if(typeof __rs.di === 'number') duaIdx = __rs.di;
+          if(typeof __rs.vni === 'number') variousNamazIdx = __rs.vni;
+          if(typeof __rs.fpi === 'number') fivePrayersIdx = __rs.fpi;
+          if(typeof __rs.si === 'number') surahIdx = __rs.si;
+          if(typeof __rs.hfk === 'string') hadithFolderKey = __rs.hfk;
+          if(typeof __rs.hi === 'number') hadithIdx = __rs.hi;
+          if(typeof __rs.sq === 'string') searchQuery = __rs.sq;
+          if(typeof __rs.ct === 'string') calTab = __rs.ct;
+        }
+      }
+    }catch(e){}
   }
   render();
 };
@@ -6417,8 +6436,26 @@ function exportCsv(){
   showToast(t('csvSaved'));
 }
 
+/* ---------- Refresh: no shake, screen stays exactly where it was ---------- */
+try{ if('scrollRestoration' in history) history.scrollRestoration = 'manual'; }catch(e){}
+var __scrollSavePending = false, __scrollRestored = false;
+function __saveScrollPos(){ try{ localStorage.setItem('lifestyle_scroll_pos', JSON.stringify({ y: window.scrollY || 0, v: currentView })); }catch(e){} }
+window.addEventListener('scroll', function(){ if(__scrollSavePending) return; __scrollSavePending = true; requestAnimationFrame(function(){ __scrollSavePending = false; __saveScrollPos(); }); }, { passive: true });
+window.addEventListener('pagehide', __saveScrollPos);
+document.addEventListener('visibilitychange', function(){ if(document.hidden) __saveScrollPos(); });
+function __restoreScrollPos(force){
+  try{
+    var s = JSON.parse(localStorage.getItem('lifestyle_scroll_pos') || 'null');
+    if(!s || typeof s.y !== 'number' || s.y <= 0) return;
+    if(s.v !== currentView) return;
+    if(!force && __scrollRestored && window.scrollY !== s.y) return; // user already moved: never yank back
+    window.scrollTo(0, s.y); __scrollRestored = true;
+  }catch(e){}
+}
 restoreViewState();
 render();
+__restoreScrollPos(true);
+window.addEventListener('load', function(){ __restoreScrollPos(false); });
 initCloud();
 
 /* ---------- Live clock: updates Time/Date/Day every second ---------- */
@@ -6452,10 +6489,9 @@ function appGoBack(){
   if(currentView === 'history' && histCat){ if(navStack.length) goBackStep(); else { histCat = ''; renderHistoryView(); } return true; }
   if(navStack.length){ goBackStep(); return true; }
   if(currentView && currentView !== 'home'){ goBackStep(); return true; }
-  var _now = Date.now();
-  if(window.__exitArmed && _now - window.__exitArmed < 2000){ return 'exit'; }
-  window.__exitArmed = _now;
-  try{ showToast(lang === 'en' ? 'Press Back again to exit' : 'আবার Back চাপলে অ্যাপ বন্ধ হবে'); }catch(e){}
+  // Home-এ এসেও Back চাপলে অ্যাপ কখনো বন্ধ হবে না — Home-এই থাকবে।
+  window.__exitArmed = 0;
+  try{ showToast(lang === 'en' ? "You're on Home" : 'আপনি Home-এ আছেন'); }catch(e){}
   return true;
 }
 if(typeof window !== 'undefined' && window.addEventListener){
@@ -6463,13 +6499,7 @@ if(typeof window !== 'undefined' && window.addEventListener){
   if(window.__exiting) return;
   window.__histDepth = Math.max(0, (window.__histDepth || 0) - 1);
   var _r = appGoBack();
-  if(_r === 'exit'){
-    window.__exiting = true;
-    var _n = window.__histDepth; window.__histDepth = 0; window.__exitArmed = 0;
-    setTimeout(function(){ window.__exiting = false; }, 800);
-    if(_n > 0){ try{ history.go(-_n); }catch(e){} }
-    return;
-  }
+  if(_r === 'exit'){ _r = true; } // Back দিয়ে অ্যাপ কখনো বন্ধ হবে না: 'exit' ফিরলেও ভেতরেই থাকবে।
   if(_r){ try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){} }
 });
   try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){}
@@ -9152,9 +9182,9 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
   const [date, setDate] = React.useState((()=>{ try{ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }catch(e){ return today(); } })());
   const [dateInput, setDateInput] = React.useState('');
   const [dailyDate, setDailyDate] = React.useState('');
-  const [hour, setHour] = React.useState('06');
-  const [minute, setMinute] = React.useState('03');
-  const [amPm, setAmPm] = React.useState('PM');
+  const [hour, setHour] = React.useState((()=>{ try{ const n=new Date(); return String(n.getHours()%12||12).padStart(2,'0'); }catch(e){ return '06'; } })());
+  const [minute, setMinute] = React.useState((()=>{ try{ const n=new Date(); return String(n.getMinutes()).padStart(2,'0'); }catch(e){ return '00'; } })());
+  const [amPm, setAmPm] = React.useState((()=>{ try{ return new Date().getHours()>=12 ? 'PM' : 'AM'; }catch(e){ return 'PM'; } })());
   const [taskTitle, setTaskTitle] = React.useState('');
   const [priority, setPriority] = React.useState('normal');
   const [notes, setNotes] = React.useState('');
@@ -9182,18 +9212,23 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
   React.useEffect(()=>{ var prevLS = null; try{ prevLS = localStorage.getItem('lifestyle_daily_tasks'); }catch(e){} try{ localStorage.setItem('lifestyle_daily_tasks', JSON.stringify(dailyTasks)); }catch(e){} if(prevLS !== null && prevLS !== JSON.stringify(dailyTasks)){ try{ if(typeof queueRoutineCloudUpload==='function') queueRoutineCloudUpload(); }catch(e){} } }, [dailyTasks]);
    React.useEffect(()=>{ function onCloudRoutine(ev){ try{ var d = (ev && ev.detail) || {}; if(Array.isArray(d.dailyTasks)) setDailyTasks(d.dailyTasks); }catch(e){} } window.addEventListener('lifestyle-cloud-routine', onCloudRoutine); return function(){ window.removeEventListener('lifestyle-cloud-routine', onCloudRoutine); }; }, []);
 
-  // LIVE DATE: every time component mounts or tab changes, set to today
-  React.useEffect(()=>{ 
-    const t = today(); 
-    setDailyDate(t); 
-    setDateInput(t); 
-    try{ 
-      const d=new Date(); 
-      const dd=String(d.getDate()).padStart(2,'0'); 
-      const mm=String(d.getMonth()+1).padStart(2,'0'); 
-      const yy=d.getFullYear(); 
-      setDate(dd+'/'+mm+'/'+yy); 
-    }catch(e){} 
+  // LIVE DATE + LIVE TIME: every time tab changes, default = today + now.
+  // Skip while editing a saved task, so its saved date/time is not overwritten.
+  React.useEffect(()=>{
+    if(editingDailyTaskId) return;
+    const t = today();
+    setDailyDate(t);
+    setDateInput(t);
+    try{
+      const d=new Date();
+      const dd=String(d.getDate()).padStart(2,'0');
+      const mm=String(d.getMonth()+1).padStart(2,'0');
+      const yy=d.getFullYear();
+      setDate(dd+'/'+mm+'/'+yy);
+      setHour(String(d.getHours()%12||12).padStart(2,'0'));
+      setMinute(String(d.getMinutes()).padStart(2,'0'));
+      setAmPm(d.getHours()>=12 ? 'PM' : 'AM');
+    }catch(e){}
   }, [activeTab]);
 
   // Also set live date on mount
@@ -9294,6 +9329,7 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
       const yy=d.getFullYear();
       setDate(dd+'/'+mm+'/'+yy);
     }catch(e){}
+    try{ const n=new Date(); setHour(String(n.getHours()%12||12).padStart(2,'0')); setMinute(String(n.getMinutes()).padStart(2,'0')); setAmPm(n.getHours()>=12 ? 'PM' : 'AM'); }catch(e){}
   }
 
   function handleLoadTask(task){
@@ -9368,9 +9404,7 @@ function DailyRoutineManager({t, lang, setToast, dailyTasks: propDailyTasks, set
       const yy=d.getFullYear();
       setDate(dd+'/'+mm+'/'+yy);
     }catch(e){}
-    setHour('06');
-    setMinute('03');
-    setAmPm('PM');
+    try{ const n=new Date(); setHour(String(n.getHours()%12||12).padStart(2,'0')); setMinute(String(n.getMinutes()).padStart(2,'0')); setAmPm(n.getHours()>=12 ? 'PM' : 'AM'); }catch(e){}
   }
 
   const inputClass = 'w-full bg-white border border-[#E8E6DC] rounded-[16px] px-4 py-3.5 text-[15px] text-[#1A1A1A] outline-none focus:border-[#1B4D3E]';
@@ -11292,7 +11326,7 @@ function RoutineSheet(props){
       return '<div style="border:1px solid #F3E8D3;border-radius:14px;padding:10px;margin-bottom:8px;background:'+(r.done?'#E8F5E9':'#fff')+'"><b style="font-size:14px">'+r.text+'</b><div style="font-size:12px;color:#5C4A32;margin-top:3px">'+st+'</div><div style="display:flex;gap:6px;margin-top:8px"><button onclick="rmDone(\''+r.id+'\')" class="rmBtn" style="background:#E8F5E9">Done</button><button onclick="rmSnooze(\''+r.id+'\')" class="rmBtn" style="background:#FFF3D6">১০ মিনিট পরে</button><button onclick="rmDel(\''+r.id+'\')" class="rmBtn" style="background:#FFEBEE;color:#B71C1C">মুছুন</button></div></div>';
     }).join('');
   }
-  window.rmOpen=function(){document.getElementById('rmSheet').classList.remove('hidden');document.getElementById('rmOverlay').classList.remove('hidden');render(); try{if('Notification' in window && Notification.permission==='default') Notification.requestPermission()}catch(e){}};
+  window.rmOpen=function(){try{var n=new Date(); var dEl=document.getElementById('rmDate'); if(dEl) dEl.value=n.toISOString().slice(0,10); var tEl=document.getElementById('rmTime'); if(tEl) tEl.value=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}catch(e){} document.getElementById('rmSheet').classList.remove('hidden');document.getElementById('rmOverlay').classList.remove('hidden');render(); try{if('Notification' in window && Notification.permission==='default') Notification.requestPermission()}catch(e){}};
   window.rmClose=function(){document.getElementById('rmSheet').classList.add('hidden');document.getElementById('rmOverlay').classList.add('hidden')};
   
   document.getElementById('rmOverlay').onclick=rmClose;
@@ -11435,7 +11469,7 @@ setInterval(function(){
     var a=JSON.parse(localStorage.getItem('lifestyle_reminders_v1')||'[]');
     if(!a.length){ el.innerHTML='<p style="font-size:12px;color:#8B7355;text-align:center">এখনো কোনো রিমাইন্ডার নেই।</p>'; return; }
     el.innerHTML=a.slice(0,5).map(function(r){
-      var d=new Date(r.when); return '<div style="border:1px solid #F3E8D3;border-radius:12px;padding:10px;background:#fff"><b style="font-size:13px">'+r.text+'</b><div style="font-size:11px;color:#5C4A32">'+d.toLocaleString('bn-BD',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true})+(r.done?' • ✅ সম্পন্ন':'')+'</div></div>';
+      var d=new Date(r.when); return '<div style="border:1px solid #F3E8D3;border-radius:12px;padding:10px;background:#fff"><b style="font-size:13px">'+r.text+'</b><div style="font-size:11px;color:#5C4A32">'+d.toLocaleString('bn-BD',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true})+(r.done?' • ✅ সম্পন্ন':'')+'</div><div style="margin-top:6px"><button onclick="if(confirm(\'এই রিমাইন্ডারটা মুছবো?\')) rmDel(\''+r.id+'\')" style="background:#FFEBEE;color:#B71C1C;border:1px solid #FFCDD2;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">🗑 মুছুন</button></div></div>';
     }).join('') + '<p style="font-size:11px;color:#8B7355;text-align:center">সব দেখতে উপরের বাটনে চাপ দিন</p>';
   }catch(e){}
 }, 1000);
