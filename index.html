@@ -585,8 +585,8 @@ body.dark [style*="background:#eee"]{background:#333 !important;color:#DDD !impo
         <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">কে দিয়েছে</label><select id="lePayPayer" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></select></div></div>
         <div class="flex gap-2 mb-2"><div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">চ্যানেল</label><select id="lePayChannel" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></select></div>
         <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">টাকার পরিমাণ</label><input id="lePayAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></div></div>
-        <div class="mb-2"><label class="text-[12px] font-bold text-[#8B7355]">Note (ঐচ্ছিক)</label><input id="lePayNote" type="text" placeholder="যেমন: এই মাসের কিস্তি" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></div>
-        <button type="button" onclick="addBankFormPayment()" class="w-full py-2.5 rounded-[12px] bg-[#2D2A26] text-white font-bold text-[13px]">+ পেমেন্ট যোগ করুন</button>
+        <div class="mb-2"><label class="text-[12px] font-bold text-[#8B7355]">Note (ঐচ্ছিক)</label><textarea id="lePayNote" rows="3" placeholder="যেমন: এই মাসের কিস্তি" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1 resize-y" style="min-height:72px"></textarea></div>
+        <button type="button" id="lePayAddBtn" onclick="addBankFormPayment()" class="w-full py-2.5 rounded-[12px] bg-[#2D2A26] text-white font-bold text-[13px]">+ পেমেন্ট যোগ করুন</button>
       </div>
     </div>
     <div id="leEmiWrap" class="hidden">
@@ -3589,7 +3589,7 @@ function historyListHtml(rows){
     groupsByKey[key].items.push(r);
   });
   const singleRowHtml = r => {
-    if(r.kind === 'bank' && typeof r.entryIdx === 'number' && (state.bankLoans || [])[r.entryIdx]){ return bankLoanCardHtml((state.bankLoans || [])[r.entryIdx]); }
+    if(r.kind === 'bank' && typeof r.entryIdx === 'number' && (state.bankLoans || [])[r.entryIdx]){ return bankLoanCardHtml((state.bankLoans || [])[r.entryIdx], true); }
     const _dp = String(r.date || '').split('-'); const _dmy = (_dp.length === 3 && _dp[0].length === 4) ? _dp[2] + '-' + _dp[1] + '-' + _dp[0] : r.date; const sub = [_dmy, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
     const catEsc = String(r.catEn || r.title || '').replace(/'/g, "\\'");
     const rowClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : (r.kind === 'income' || r.kind === 'expense') ? ' onclick="histGoCat(\'' + r.kind + '\',\'' + catEsc + '\')" style="cursor:pointer"' : '';
@@ -3934,7 +3934,7 @@ function blHomeUsersHtml(e){
   var stats = blPersonStats(e); if(!stats.length) return '';
   var html = '<div class="mt-2 text-[12px] leading-5 border-t border-[#F3E8D3] pt-2">';
   stats.forEach(function(s){
-    html += '<div>👤 ' + escA(s.name) + ': দিয়েছে <b>' + fmt(s.paid) + '</b> / দেওয়ার কথা ' + fmt(s.totalDue) + ' • বাকি <b>' + fmt(s.remaining) + '</b></div>';
+    html += '<div>👤 ' + escA(s.name) + ': ' + (String(s.name).trim() === 'আমি' ? 'দিয়েছি' : 'দিয়েছে') + ' <b>' + fmt(s.paid) + '</b> / দেওয়ার কথা ' + fmt(s.totalDue) + ' • বাকি <b>' + fmt(s.remaining) + '</b></div>';
     html += '<div class="text-[#4CAF50] font-bold">✓ ' + escA(s.name) + ' — ' + escA(blCoverText(s)) + '</div>';
   });
   return html + '</div>';
@@ -4140,6 +4140,7 @@ function renderBankUsersForm(){
   renderBankPaymentsForm();
 }
 let blFormPayments = [];
+let blEditPaymentId = null;
 function renderBankPaymentsForm(){
   var list = document.getElementById('lePayList');
   var ch = document.getElementById('lePayChannel');
@@ -4157,18 +4158,39 @@ function renderBankPaymentsForm(){
   var pays = blFormPayments.slice().sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); });
   list.innerHTML = pays.length ? pays.map(function(p){
     var nm = (blFormUsers[p.payer] || {}).name || (p.payer === 1 ? 'অন্যজন' : ('ব্যক্তি ' + (p.payer + 1)));
-    return '<div class="flex justify-between items-center text-[12px] py-1 border-t border-[#F3E8D3]"><span>' + escA(fmtDMY(p.date)) + ' • ' + escA(nm) + ' • ' + escA(p.channel) + (p.note ? ' • 📝 ' + escA(p.note) : '') + '</span><span class="flex items-center gap-2"><b>' + fmt(p.amount) + '</b><button type="button" onclick="deleteBankFormPayment(\'' + p.id + '\')" class="text-red-600 font-bold px-1">✕</button></span></div>';
+    return '<div class="flex justify-between items-center text-[12px] py-1 border-t border-[#F3E8D3]"><span>' + escA(fmtDMY(p.date)) + ' • ' + escA(nm) + ' • ' + escA(p.channel) + (p.note ? ' • 📝 ' + escA(p.note) : '') + '</span><span class="flex items-center gap-2"><b>' + fmt(p.amount) + '</b><button type="button" onclick="editBankFormPayment(\'' + p.id + '\')" class="px-2 py-1 rounded bg-white border border-[#F3E8D3] text-[11px] font-bold">Edit</button><button type="button" onclick="deleteBankFormPayment(\'' + p.id + '\')" class="px-2 py-1 rounded bg-white border border-[#FADBD8] text-[#C0392B] text-[11px] font-bold">Delete</button></span></div>';
   }).join('') : '<div class="text-[12px] text-[#8B7355] py-1">এখনো কোনো পেমেন্ট লেখা হয়নি।</div>';
 }
 function addBankFormPayment(){
   var amt = parseFloat(document.getElementById('lePayAmount').value) || 0;
   if(amt <= 0){ showToast('টাকার পরিমাণ দিন'); return; }
-  blFormPayments.push({ id: uid(), date: document.getElementById('lePayDate').value || today(), payer: parseInt(document.getElementById('lePayPayer').value) || 0, channel: document.getElementById('lePayChannel').value || 'Cash', amount: amt, note: (document.getElementById('lePayNote').value || '').trim() });
+  var data = { date: document.getElementById('lePayDate').value || today(), payer: parseInt(document.getElementById('lePayPayer').value) || 0, channel: document.getElementById('lePayChannel').value || 'Cash', amount: amt, note: (document.getElementById('lePayNote').value || '').trim() };
+  if(blEditPaymentId){
+    var ex = blFormPayments.find(function(p){ return p.id === blEditPaymentId; });
+    if(ex){ ex.date = data.date; ex.payer = data.payer; ex.channel = data.channel; ex.amount = data.amount; ex.note = data.note; }
+    blEditPaymentId = null;
+    var ab = document.getElementById('lePayAddBtn'); if(ab) ab.textContent = '+ পেমেন্ট যোগ করুন';
+  } else {
+    data.id = uid(); blFormPayments.push(data);
+  }
   document.getElementById('lePayAmount').value = '';
   document.getElementById('lePayNote').value = '';
   renderBankPaymentsForm();
 }
+function editBankFormPayment(pid){
+  var p = blFormPayments.find(function(x){ return x.id === pid; });
+  if(!p) return;
+  blEditPaymentId = pid;
+  var d = document.getElementById('lePayDate'); if(d) d.value = p.date || today();
+  var sel = document.getElementById('lePayPayer'); if(sel) sel.value = String(p.payer || 0);
+  var ch = document.getElementById('lePayChannel'); if(ch) ch.value = p.channel || 'Cash';
+  var am = document.getElementById('lePayAmount'); if(am) am.value = p.amount || '';
+  var nt = document.getElementById('lePayNote'); if(nt) nt.value = p.note || '';
+  var ab = document.getElementById('lePayAddBtn'); if(ab) ab.textContent = '✓ পেমেন্ট আপডেট করুন';
+  if(nt) nt.focus();
+}
 function deleteBankFormPayment(pid){
+  if(blEditPaymentId === pid){ blEditPaymentId = null; var ab = document.getElementById('lePayAddBtn'); if(ab) ab.textContent = '+ পেমেন্ট যোগ করুন'; }
   blFormPayments = blFormPayments.filter(function(p){ return p.id !== pid; });
   renderBankPaymentsForm();
 }
@@ -4303,7 +4325,7 @@ function homeBankLoansFiltered(){
   });
 }
 /* Shared Bank Loan card: Home and History use THE SAME card, so both look identical. */
-function bankLoanCardHtml(e){
+function bankLoanCardHtml(e, hideUsers){
     const ti = state.bankLoans.indexOf(e);
     const emi = Math.round(calcEmi(e.amount, blRate(e), blMonths(e)));
     const paid = blPaidArr(e).filter(Boolean).length;
@@ -4313,7 +4335,7 @@ function bankLoanCardHtml(e){
       '<div class="text-right shrink-0"><div class="font-extrabold text-[15px]">' + fmt(emi) + '/mo</div>' +
       '<div class="text-[12px] text-[#8B7355]">' + paid + '/' + blMonths(e) + ' Paid</div></div></div>' +
       '<div style="height:6px;background:#F3E8D3;border-radius:999px;margin-top:8px;overflow:hidden"><div style="width:' + (blMonths(e) ? Math.round(paid / blMonths(e) * 100) : 0) + '%;height:100%;background:#4CAF50;border-radius:999px"></div></div>' +
-      blHomeUsersHtml(e) +
+      (hideUsers ? '' : blHomeUsersHtml(e)) +
       '<div class="flex gap-2 mt-2 items-center">' +
       '<button onclick="openEmiChecklist(' + ti + ')" class="flex-1 py-2 text-left text-[13px] font-bold text-[#8B7355] underline">✓ ' + t('emiChecklist') + '</button>' +
       '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold">' + t('editBtn') + '</button>' +
