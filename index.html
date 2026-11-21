@@ -3589,7 +3589,7 @@ function historyListHtml(rows){
     groupsByKey[key].items.push(r);
   });
   const singleRowHtml = r => {
-    if(r.kind === 'bank' && typeof r.entryIdx === 'number' && (state.bankLoans || [])[r.entryIdx]){ return bankLoanCardHtml((state.bankLoans || [])[r.entryIdx], true); }
+    if(r.kind === 'bank' && typeof r.entryIdx === 'number' && (state.bankLoans || [])[r.entryIdx]){ return bankLoanCardHtml((state.bankLoans || [])[r.entryIdx]); }
     const _dp = String(r.date || '').split('-'); const _dmy = (_dp.length === 3 && _dp[0].length === 4) ? _dp[2] + '-' + _dp[1] + '-' + _dp[0] : r.date; const sub = [_dmy, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
     const catEsc = String(r.catEn || r.title || '').replace(/'/g, "\\'");
     const rowClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : (r.kind === 'income' || r.kind === 'expense') ? ' onclick="histGoCat(\'' + r.kind + '\',\'' + catEsc + '\')" style="cursor:pointer"' : '';
@@ -4325,7 +4325,7 @@ function homeBankLoansFiltered(){
   });
 }
 /* Shared Bank Loan card: Home and History use THE SAME card, so both look identical. */
-function bankLoanCardHtml(e, hideUsers){
+function bankLoanCardHtml(e){
     const ti = state.bankLoans.indexOf(e);
     const emi = Math.round(calcEmi(e.amount, blRate(e), blMonths(e)));
     const paid = blPaidArr(e).filter(Boolean).length;
@@ -4335,7 +4335,7 @@ function bankLoanCardHtml(e, hideUsers){
       '<div class="text-right shrink-0"><div class="font-extrabold text-[15px]">' + fmt(emi) + '/mo</div>' +
       '<div class="text-[12px] text-[#8B7355]">' + paid + '/' + blMonths(e) + ' Paid</div></div></div>' +
       '<div style="height:6px;background:#F3E8D3;border-radius:999px;margin-top:8px;overflow:hidden"><div style="width:' + (blMonths(e) ? Math.round(paid / blMonths(e) * 100) : 0) + '%;height:100%;background:#4CAF50;border-radius:999px"></div></div>' +
-      (hideUsers ? '' : blHomeUsersHtml(e)) +
+      '' +
       '<div class="flex gap-2 mt-2 items-center">' +
       '<button onclick="openEmiChecklist(' + ti + ')" class="flex-1 py-2 text-left text-[13px] font-bold text-[#8B7355] underline">✓ ' + t('emiChecklist') + '</button>' +
       '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold">' + t('editBtn') + '</button>' +
