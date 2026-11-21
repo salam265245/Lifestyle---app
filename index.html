@@ -3589,6 +3589,7 @@ function historyListHtml(rows){
     groupsByKey[key].items.push(r);
   });
   const singleRowHtml = r => {
+    if(r.kind === 'bank' && typeof r.entryIdx === 'number' && (state.bankLoans || [])[r.entryIdx]){ return bankLoanCardHtml((state.bankLoans || [])[r.entryIdx]); }
     const _dp = String(r.date || '').split('-'); const _dmy = (_dp.length === 3 && _dp[0].length === 4) ? _dp[2] + '-' + _dp[1] + '-' + _dp[0] : r.date; const sub = [_dmy, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
     const catEsc = String(r.catEn || r.title || '').replace(/'/g, "\\'");
     const rowClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : (r.kind === 'income' || r.kind === 'expense') ? ' onclick="histGoCat(\'' + r.kind + '\',\'' + catEsc + '\')" style="cursor:pointer"' : '';
@@ -4301,11 +4302,8 @@ function homeBankLoansFiltered(){
     return true;
   });
 }
-function homeBankLoansHtml(){
-  // Cards always show ALL bank loans (a loan is an ongoing liability, not a one-day transaction).
-  // The date filter still applies to the PDF/statement, which is a period report.
-  const loans = (state.bankLoans || []);
-  const cards = loans.map(e => {
+/* Shared Bank Loan card: Home and History use THE SAME card, so both look identical. */
+function bankLoanCardHtml(e){
     const ti = state.bankLoans.indexOf(e);
     const emi = Math.round(calcEmi(e.amount, blRate(e), blMonths(e)));
     const paid = blPaidArr(e).filter(Boolean).length;
@@ -4319,8 +4317,13 @@ function homeBankLoansHtml(){
       '<div class="flex gap-2 mt-2 items-center">' +
       '<button onclick="openEmiChecklist(' + ti + ')" class="flex-1 py-2 text-left text-[13px] font-bold text-[#8B7355] underline">✓ ' + t('emiChecklist') + '</button>' +
       '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold">' + t('editBtn') + '</button>' +
-      '<button onclick="deleteLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold text-red-600">' + t('deleteBtn') + '</button></div></div>';
-  }).join('');
+      '<button onclick="deleteLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold text-red-600">' + t('deleteBtn') + '</button></div>' + '<div class="flex gap-2 mt-2"><button onclick="downloadSingleBankLoanPdf(' + ti + ')" class="flex-1 py-2 rounded-full bg-[#EAF7EA] text-[13px] font-bold">📄 Download PDF</button>' + '<button onclick="openSingleBankLoanPdf(' + ti + ')" class="flex-1 py-2 rounded-full bg-white border border-[#F3E8D3] text-[13px] font-bold">👁 View</button>' + '<button onclick="shareSingleBankLoanPdf(' + ti + ')" class="flex-1 py-2 rounded-full bg-[#EAF7EA] text-[13px] font-bold">🔗 Share</button></div>' + '</div>';
+}
+function homeBankLoansHtml(){
+  // Cards always show ALL bank loans (a loan is an ongoing liability, not a one-day transaction).
+  // The date filter still applies to the PDF/statement, which is a period report.
+  const loans = (state.bankLoans || []);
+  const cards = loans.map(e => bankLoanCardHtml(e)).join('');
   return '<div class="card p-3 mb-2 mt-4">' +
     '<div class="flex gap-2 items-end mb-2">' +
     '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]" data-t="fromLbl">From</label><input type="date" value="' + escA(homeBankFrom) + '" onchange="homeBankSetFrom(this.value)" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-2 py-2 text-[13px] mt-1"></div>' +
@@ -4708,7 +4711,7 @@ function closePdfPreview(){
   document.getElementById('pdfOverlay').classList.add('hidden');
 }
 let pdfMode = 'history', pdfPrintHeader = '';
-function pdfDocHtml(){ const _b = pdfMode === 'marketSurvey' || pdfMode === 'marketFile' ? marketPdfHtml(window.__marketPdfEntry||{}, pdfMode) : pdfMode === 'person' ? personPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfStatementHtml(); return _b + sigPdfPreviewHtml(); }
+function pdfDocHtml(){ const _b = pdfMode === 'marketSurvey' || pdfMode === 'marketFile' ? marketPdfHtml(window.__marketPdfEntry||{}, pdfMode) : pdfMode === 'person' ? personPdfHtml() : pdfMode === 'singleBankLoan' ? singleBankLoanPdfHtml() : pdfMode === 'loans' ? loansPdfHtml() : pdfMode === 'homeBank' ? homeBankPdfHtml() : pdfMode === 'reports' ? reportPdfHtml() : pdfStatementHtml(); return _b + sigPdfPreviewHtml(); }
   var __marketSkipKeys = {id:1, updatedAt:1, _guarantorGenerated:1, businessTypeSearch:1, existingLoanSearch:1, _loansGenerated:1};
   function marketPdfLabel(k){ var m = {'businessName':'Business Name / ব্যবসার নাম','ownerName':'Owners Name / মালিকের নাম','businessAddress':'Business Address / ব্যবসার ঠিকানা','address':'Address / ঠিকানা','mobileNo':'Mobile No / মোবাইল','businessType':'Business Type / ব্যবসার ধরন','businessTypeBn':'Business Type (Bangla) / ব্যবসার ধরন (বাংলা)','stock':'Stock (Lac) / স্টক (লাখ)','receivables':'Receivables (Lac) / পাওনা (লাখ)','payables':'Payables (Lac) / দেনা (লাখ)','monthlySales':'Monthly Sales (Lac) / মাসিক বিক্রি (লাখ)','totalEmployee':'Total Employee No / মোট কর্মচারী','totalSalary':'Total Salary (Thousand) / মোট বেতন (হাজার)','wholesalePct':'Wholesale % / পাইকারি %','wholesaleMargin':'Wholesale Profit Margin % / পাইকারি লাভ %','retailPct':'Retail Sales % / খুচরা বিক্রি %','retailMargin':'Retail Profit Margin % / খুচরা লাভ %','avgMargin':'Average Margin % (Auto) / গড় মার্জিন %','existingLoanType':'Existing Loan Type / লোনের ধরন','existingLoanOrg':'Existing Loan Org / সংস্থা','othersNGO':'Others NGO Name / অন্যান্য NGO নাম','loanType':'Loan Type / লোনের টাইপ','disbursementDate':'Disbursement Date / বিতরণের তারিখ','disbursementAmount':'Disbursement Amount (Lac) / বিতরণের পরিমাণ (লাখ)','totalEMI':'Total EMI / মোট কিস্তি','currentOutstanding':'Current Outstanding (Lac) / বর্তমান বকেয়া (লাখ)','otherLoans':'অন্য Existing Loan থাকলে / Other Existing Loans','noOfLoan':'No of Loan / লোনের সংখ্যা','noOfGuarantor':'No of Guarantor / গ্যারান্টরের সংখ্যা','familyExpenseTotal':'Family Expense Total / পারিবারিক খরচ মোট','totalIncome':'Total Income / মোট আয়','netWorth':'Net Worth / নিট সম্পদ','totalValue':'Total Value / মোট মূল্য'}; if(m[k]) return m[k]; return k.replace(/([A-Z])/g, ' $1').replace(/^./, function(c){ return c.toUpperCase(); }); }
   function marketPdfIsEmpty(v){ if(v===null||v===undefined) return true; if(typeof v==='string') return v.trim()===''; if(Array.isArray(v)) return v.length===0; if(typeof v==='object') return Object.keys(v).length===0; return false; }
@@ -4725,6 +4728,9 @@ function pdfTextForMode(){
     const arr = personKind === 'given' ? (state.peopleGiven || []) : (state.peopleTaken || []);
     const person = arr[personIdx] || { name: '' };
     return statementText('History - ' + (person.name || ''), personStatementRows(), personFrom, personTo);
+  }
+  if(pdfMode === 'singleBankLoan'){
+    return bankLoanPdfText(singleBankLoan(), loansFrom, loansTo);
   }
   if(pdfMode === 'homeBank'){
     return bankLoanPdfText(homeBankLoansFiltered(), homeBankFrom, homeBankTo);
@@ -4809,6 +4815,7 @@ function pdfColsMode(){
   }
   if(pdfMode === 'reports') return 'noPerson';
   if(pdfMode === 'loans' && loansKind === 'bank') return 'noCategory';
+  if(pdfMode === 'singleBankLoan') return 'noCategory';
   if(pdfMode === 'homeBank') return 'noCategory';
   return 'both';
 }
@@ -4828,6 +4835,10 @@ function pdfStatementData(){
     const sec = personSectionData(person, personKind, personFrom, personTo);
     const rows = personStatementRows();
     return { prof: prof, title: 'History - ' + (person.name || ''), records: rows.length, period: statementPeriod(personFrom, personTo, rows), personSections: [sec] };
+  }
+  if(pdfMode === 'singleBankLoan'){
+    const loans = singleBankLoan();
+    return { prof: prof, title: 'History - Bank Loan', records: loans.length, period: statementPeriod(loansFrom, loansTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))), bankLoans: loans };
   }
   if(pdfMode === 'loans'){
     if(loansKind === 'bank'){
@@ -5828,6 +5839,7 @@ function pdfPersonFileName(){
 }
 function pdfFileName(){
   if(pdfMode === 'marketSurvey' || pdfMode === 'marketFile'){ var nm=(((window.__marketPdfEntry||{}).businessName||(window.__marketPdfEntry||{}).ownerName||'survey')+'').trim().replace(/[\\\/:*?"<>|]/g,'').replace(/\s+/g,'-').slice(0,60); return 'Lifestyle-Market-'+(pdfMode==='marketFile'?'FileMaking':'Survey')+'-'+(nm||'survey')+'-'+today()+'.pdf'; }
+  if(pdfMode === 'singleBankLoan'){ const nm = (((singleBankLoan()[0] || {}).bank || (singleBankLoan()[0] || {}).name || 'bank-loan') + '').trim().replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'-').slice(0,60); return 'Lifestyle-Bank-Loan-' + (nm || 'bank-loan') + '-' + today() + '.pdf'; }
   if(pdfMode === 'person') return pdfPersonFileName();
   return 'lifestyle-' + pdfMode + '-' + today() + '.pdf';
 }
@@ -6047,7 +6059,7 @@ function renderLoansView(){
         '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] text-red-600">-' + fmt(e.amount) + '</div>' +
         '<div class="flex gap-1 flex-nowrap"><button onclick="openEmiChecklist(' + ti + ')" class="px-3 py-1.5 rounded-full bg-[#FFF7EA] text-[12px] font-bold whitespace-nowrap">✓ ' + t('emiChecklist') + '</button>' +
         '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
-        '<button onclick="deleteLoanEntry(\'bank:0:l:' + ti + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
+        '<button onclick="deleteLoanEntry(\'bank:0:l:' + ti + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div>' + '<div class="flex gap-2 mt-2"><button onclick="downloadSingleBankLoanPdf(' + ti + ')" class="flex-1 py-2 rounded-full bg-[#EAF7EA] text-[13px] font-bold">📄 Download PDF</button>' + '<button onclick="openSingleBankLoanPdf(' + ti + ')" class="flex-1 py-2 rounded-full bg-white border border-[#F3E8D3] text-[13px] font-bold">👁 View</button>' + '<button onclick="shareSingleBankLoanPdf(' + ti + ')" class="flex-1 py-2 rounded-full bg-[#EAF7EA] text-[13px] font-bold">🔗 Share</button></div>' + '</div>';
     }).join('') : '<div class="text-center text-[13px] text-[#8B7355] py-8">' + t('noData') + '</div>';
     document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' + backBtn + '<h2 class="font-extrabold text-[18px] mb-3">' + title + '</h2>' +
       '<div class="flex items-center gap-1 bg-white border border-[#F3E8D3] rounded-full px-3 py-2 mb-3"><span class="text-[13px]">🔍</span><input type="text" value="' + escA(loansSearch) + '" placeholder="' + escA(t('searchPeople')) + '" oninput="loansSetSearch(this.value)" class="flex-1 text-[13px] bg-transparent" style="min-width:0"></div>' +
@@ -6241,6 +6253,13 @@ function pickPerson(pi){
   else if(pickerAction === 'loan') openLoanEntryForm('addloan', pickerKind, pi);
   else openPersonDetail(pickerKind, pi);
 }
+/* ---------- Single Bank Loan PDF: one loan = one PDF ---------- */
+let singleBankLoanIdx = -1;
+function singleBankLoan(){ const a = state.bankLoans || []; return (singleBankLoanIdx >= 0 && singleBankLoanIdx < a.length) ? [a[singleBankLoanIdx]] : []; }
+function singleBankLoanPdfHtml(){ const loans = singleBankLoan(); const period = statementPeriod(loansFrom, loansTo, loans.map(e => ({ date: e.date || e.loanDate || '' }))); return statementHeaderHtml('History - Bank Loan', loans.length, period) + bankLoanDetailHtml(loans); }
+function openSingleBankLoanPdf(ti){ singleBankLoanIdx = ti; pdfMode = 'singleBankLoan'; showStatementPreview(singleBankLoanPdfHtml()); }
+function downloadSingleBankLoanPdf(ti){ singleBankLoanIdx = ti; pdfMode = 'singleBankLoan'; downloadPdfFile(); }
+function shareSingleBankLoanPdf(ti){ singleBankLoanIdx = ti; pdfMode = 'singleBankLoan'; sharePdf(); }
 /* ---------- Phase 3: PDFs ---------- */
 function loansPdfHtml(){
   if(loansKind === 'bank'){
