@@ -565,6 +565,29 @@ body.dark [style*="background:#eee"]{background:#333 !important;color:#DDD !impo
       </div>
       <label class="text-[12px] font-bold text-[#8B7355]" data-t="emiEndLbl">EMI End Date (auto)</label>
       <input id="leEmiEnd" type="date" readonly class="w-full bg-[#F5EEDD] border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
+      <label class="text-[12px] font-bold text-[#8B7355]">EMI Amount (auto)</label>
+      <input id="leEmiAmountAuto" type="text" readonly class="w-full bg-[#F5EEDD] border border-[#F3E8D3] rounded-[14px] px-3 py-3 text-[14px] mt-1 mb-3">
+      <div class="border-t border-[#F3E8D3] pt-3 mt-1">
+        <div class="text-[14px] font-bold mb-2">লোন ব্যবহারকারী</div>
+        <div class="flex gap-2 mb-3">
+          <button type="button" id="leUsersBtn1" onclick="setBankUsersCount(1)" class="flex-1 py-2.5 rounded-[12px] border border-[#F3E8D3] font-bold text-[13px]">১ জন</button>
+          <button type="button" id="leUsersBtn2" onclick="setBankUsersCount(2)" class="flex-1 py-2.5 rounded-[12px] border border-[#F3E8D3] font-bold text-[13px]">২ জন</button>
+        </div>
+        <div id="leUsersWrap"></div>
+        <div id="leUsersHint" class="text-[12px] text-[#8B7355] mt-1"></div>
+      </div>
+    </div>
+    <div class="border-t border-[#F3E8D3] pt-3 mt-1">
+      <div class="text-[14px] font-bold mb-2">💸 পেমেন্ট যোগ করুন</div>
+      <div id="lePayList"></div>
+      <div class="border border-[#F3E8D3] rounded-[14px] p-3 mt-1">
+        <div class="flex gap-2 mb-2"><div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">তারিখ</label><input id="lePayDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></div>
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">কে দিয়েছে</label><select id="lePayPayer" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></select></div></div>
+        <div class="flex gap-2 mb-2"><div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">চ্যানেল</label><select id="lePayChannel" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></select></div>
+        <div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">টাকার পরিমাণ</label><input id="lePayAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></div></div>
+        <div class="mb-2"><label class="text-[12px] font-bold text-[#8B7355]">Note (ঐচ্ছিক)</label><input id="lePayNote" type="text" placeholder="যেমন: এই মাসের কিস্তি" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></div>
+        <button type="button" onclick="addBankFormPayment()" class="w-full py-2.5 rounded-[12px] bg-[#2D2A26] text-white font-bold text-[13px]">+ পেমেন্ট যোগ করুন</button>
+      </div>
     </div>
     <div id="leEmiWrap" class="hidden">
       <div class="flex justify-between items-center mt-1 mb-2">
@@ -597,6 +620,7 @@ body.dark [style*="background:#eee"]{background:#333 !important;color:#DDD !impo
   </div>
   <div class="px-5 pb-5">
     <div id="emiList" class="border border-[#F3E8D3] rounded-[14px] overflow-hidden"></div>
+    <div id="emiPayWrap" class="mt-4"></div>
   </div>
 </div>
 
@@ -3699,6 +3723,9 @@ function editLoanEntry(key){
     document.getElementById('leDisbursement').value = normDate(r.entry.date || r.entry.loanDate || r.entry.disbursementDate) || today();
     document.getElementById('leEmiStart').value = normDate(r.entry.emiStart || r.entry.emiStartDate || r.entry.date || r.entry.loanDate) || today();
     emiPaidDraft = normalizeEmiPaid(blPaidArr(r.entry), blMonths(r.entry)); renderBankEmiSheet();
+    blFormUsers = blUsers(r.entry).length ? blUsers(r.entry) : [{ name: '', monthlyShare: 0 }];
+    blFormPayments = blPayments(r.entry);
+    renderBankUsersForm();
   }
   loanFormKind = (r.kind === 'given' || r.kind === 'return') ? 'given' : 'taken';
   loanFormPersonIdx = r.pi;
@@ -3845,7 +3872,10 @@ function openLoanEntryForm(mode, kind, pi){
     document.getElementById('leDisbursement').value = today();
     document.getElementById('leEmiStart').value = today();
     emiPaidDraft = [];
+    blFormUsers = blFormDefaultUsers();
+    blFormPayments = [];
     renderBankEmiSheet();
+    renderBankUsersForm();
   }
   updatePersonSaveBtn();
   document.getElementById('loanEditSheet').classList.remove('hidden');
@@ -3868,6 +3898,46 @@ function calcEmi(P, rate, months){
 function blMonths(e){ return Math.floor(+(((e && e.months) || (e && e.termMonths)) || 0)); }
 function blRate(e){ return +(((e && e.rate) || (e && e.interestRate)) || 0); }
 function blPaidArr(e){ return Array.isArray(e && e.emiPaid) ? e.emiPaid : (Array.isArray(e && e.paidEmis) ? e.paidEmis : []); }
+/* ---------- Bank Loan: users (who used the loan) + payments (who paid me) ---------- */
+var BL_CHANNELS = ['Cash', 'Bank Transfer', 'bKash', 'Nagad', 'Rocket', 'অন্যান্য'];
+function blUsers(e){
+  if(!e || !Array.isArray(e.users)) return [];
+  return e.users.filter(function(u){ return u && String(u.name || '').trim() !== ''; }).map(function(u){ return { name: String(u.name).trim(), monthlyShare: +u.monthlyShare || 0 }; });
+}
+function blPayments(e){
+  if(!e || !Array.isArray(e.payments)) return [];
+  return e.payments.filter(function(p){ return p && +p.amount > 0; }).map(function(p){ return { id: p.id || '', date: normDate(p.date || '') || today(), payer: +p.payer || 0, channel: p.channel || 'Cash', amount: +p.amount || 0, note: p.note || '' }; });
+}
+function blPersonStats(e){
+  var users = blUsers(e), months = blMonths(e), pays = blPayments(e);
+  var emiStart = (e && (e.emiStart || e.emiStartDate || e.date || e.loanDate)) || '';
+  return users.map(function(u, idx){
+    var paid = 0; pays.forEach(function(p){ if(p.payer === idx) paid += p.amount; });
+    var share = u.monthlyShare, totalDue = share * months, remaining = Math.max(0, totalDue - paid);
+    var full = share > 0 ? Math.floor(paid / share) : 0;
+    var adv = share > 0 ? (paid - full * share) : 0;
+    var nextDueAmt = share > 0 ? (adv > 0 ? share - adv : share) : 0;
+    var coveredUntil = full > 0 ? addMonths(emiStart, full - 1) : '';
+    var nextDueDate = (remaining > 0 && months > 0) ? addMonths(emiStart, Math.min(full, months)) : '';
+    return { idx: idx, name: u.name, monthlyShare: share, totalDue: totalDue, paid: paid, remaining: remaining, fullMonths: Math.min(full, months), advance: adv, nextDueAmount: remaining > 0 ? nextDueAmt : 0, coveredUntil: coveredUntil, nextDueDate: nextDueDate };
+  });
+}
+function blCoverText(s){
+  if(!s) return '';
+  if(s.remaining <= 0) return 'সম্পূর্ণ পরিশোধ';
+  if(s.fullMonths > 0) return s.fullMonths + ' মাস কভার (' + fmtDMY(s.coveredUntil) + ' পর্যন্ত) • পরের কিস্তি ' + fmt(s.nextDueAmount);
+  if(s.paid > 0) return 'এই মাসে আর দিতে হবে ' + fmt(s.nextDueAmount);
+  return 'এখনো পেমেন্ট নেই';
+}
+function blHomeUsersHtml(e){
+  var stats = blPersonStats(e); if(!stats.length) return '';
+  var html = '<div class="mt-2 text-[12px] leading-5 border-t border-[#F3E8D3] pt-2">';
+  stats.forEach(function(s){
+    html += '<div>👤 ' + escA(s.name) + ': দিয়েছে <b>' + fmt(s.paid) + '</b> / দেওয়ার কথা ' + fmt(s.totalDue) + ' • বাকি <b>' + fmt(s.remaining) + '</b></div>';
+    html += '<div class="text-[#4CAF50] font-bold">✓ ' + escA(s.name) + ' — ' + escA(blCoverText(s)) + '</div>';
+  });
+  return html + '</div>';
+}
 function normalizeEmiPaid(arr, months){
   const out = Array.isArray(arr) ? arr.slice(0, months) : [];
   while(out.length < months) out.push(false);
@@ -3901,7 +3971,10 @@ function bankLoanPdfDetails(loans){
     const emiEnd = e.emiEnd || (months > 0 ? addMonths(emiStart, months - 1) : '');
     const nextDue = (months > 0 && paid < months) ? addMonths(emiStart, paid) : '';
     const status = (months > 0 && paid >= months) ? 'Completed' : 'Running';
-    return { bank: e.bank || e.name || e.bankName || '', amount: amount, rate: rate, months: months, date: disb, emiStart: emiStart, emiEnd: emiEnd, emi: emi, paid: paid, remaining: remaining, totalPayable: totalPayable, totalInterest: totalInterest, paidAmount: paidAmount, remainingAmount: remainingAmount, nextDue: nextDue, status: status, note: e.note || '' };
+    const pUsers = blUsers(e);
+    const pStats = blPersonStats(e);
+    const pPays = blPayments(e).map(p => ({ id: p.id, date: p.date, payer: p.payer, payerName: (pUsers[p.payer] || {}).name || ('ব্যক্তি ' + (p.payer + 1)), channel: p.channel, amount: p.amount }));
+    return { bank: e.bank || e.name || e.bankName || '', amount: amount, rate: rate, months: months, date: disb, emiStart: emiStart, emiEnd: emiEnd, emi: emi, paid: paid, remaining: remaining, totalPayable: totalPayable, totalInterest: totalInterest, paidAmount: paidAmount, remainingAmount: remainingAmount, nextDue: nextDue, status: status, note: e.note || '', users: pStats, payments: pPays };
   });
   const tot = { count: items.length, amount: 0, paidAmount: 0, remainingAmount: 0, totalPayable: 0, totalInterest: 0, paidCount: 0, remainingCount: 0 };
   items.forEach(x => { tot.amount += x.amount; tot.paidAmount += x.paidAmount; tot.remainingAmount += x.remainingAmount; tot.totalPayable += x.totalPayable; tot.totalInterest += x.totalInterest; tot.paidCount += x.paid; tot.remainingCount += x.remaining; });
@@ -3942,6 +4015,16 @@ function bankLoanDetailHtml(loans){
       row('Status', it.status)
     ];
     if(it.note) rows.splice(1, 0, row('Note', escA(it.note)));
+    (it.users || []).forEach(s => {
+      rows.push(row('👤 ' + s.name + ' — মাসে দেবে', fmt(s.monthlyShare)));
+      rows.push(row('👤 ' + s.name + ' — মোট দেওয়ার কথা', fmt(s.totalDue)));
+      rows.push(row('👤 ' + s.name + ' — দিয়েছে', fmt(s.paid)));
+      rows.push(row('👤 ' + s.name + ' — বাকি', fmt(s.remaining)));
+      rows.push(row('👤 ' + s.name + ' — কভার', blCoverText(s)));
+    });
+    (it.payments || []).forEach(p => {
+      rows.push(row('💸 পেমেন্ট — ' + fmtDMY(p.date) + ' — ' + (p.payerName || ''), fmt(p.amount) + ' • ' + p.channel));
+    });
     const pct = it.months ? Math.round(it.paid / it.months * 100) : 0;
     return '<div style="page-break-inside:avoid;margin-bottom:14px">' +
       '<div style="background:#F5EEDD;border:1px solid #ccc;padding:6px;font-weight:800;font-size:14px">🏦 ' + escA(it.bank || '') + '</div>' +
@@ -3985,6 +4068,8 @@ function bankLoanPdfText(loans, from, to){
       'Remaining Amount: ' + fmt(it.remainingAmount) + '\n' +
       'Next Due Date: ' + (fmtDMY(it.nextDue) || '—') + '\n' +
       'Status: ' + it.status + '\n';
+    (it.users || []).forEach(s => { out += '👤 ' + s.name + ' — মাসে দেবে: ' + fmt(s.monthlyShare) + '\n' + '👤 ' + s.name + ' — মোট দেওয়ার কথা: ' + fmt(s.totalDue) + '\n' + '👤 ' + s.name + ' — দিয়েছে: ' + fmt(s.paid) + '\n' + '👤 ' + s.name + ' — বাকি: ' + fmt(s.remaining) + '\n' + '👤 ' + s.name + ' — কভার: ' + blCoverText(s) + '\n'; });
+    (it.payments || []).forEach(p => { out += '💸 পেমেন্ট — ' + (fmtDMY(p.date) || '—') + ' — ' + (p.payerName || '') + ': ' + fmt(p.amount) + ' • ' + p.channel + '\n'; });
   });
   const tot = d.totals;
   out += '\nSummary\nTotal Loans: ' + tot.count + '\nTotal Loan Amount: ' + fmt(tot.amount) + '\nTotal Installments Paid: ' + tot.paidCount + '\nTotal Installments Remaining: ' + tot.remainingCount + '\nTotal Paid Amount: ' + fmt(tot.paidAmount) + '\nTotal Remaining Amount: ' + fmt(tot.remainingAmount) + '\nTotal Payable: ' + fmt(tot.totalPayable) + '\nTotal Interest: ' + fmt(tot.totalInterest);
@@ -4027,17 +4112,88 @@ function bankFormDraft(){
   const rate = parseFloat(document.getElementById('leRate').value) || 0;
   return { amount: amt, date: date, emiStart: emiStart, months: months, rate: rate, emiPaid: emiPaidDraft };
 }
+let blFormUsers = [];
+function blFormDefaultUsers(){
+  var prof = (typeof loadProfile === 'function' ? loadProfile() : {}) || {};
+  return [{ name: prof.name || '', monthlyShare: 0 }];
+}
+function setBankUsersCount(n){
+  var cur = blFormUsers.slice();
+  while(cur.length < n) cur.push({ name: '', monthlyShare: 0 });
+  blFormUsers = cur.slice(0, n);
+  renderBankUsersForm();
+}
+function renderBankUsersForm(){
+  var wrap = document.getElementById('leUsersWrap'); if(!wrap) return;
+  var one = blFormUsers.length <= 1;
+  var b1 = document.getElementById('leUsersBtn1'), b2 = document.getElementById('leUsersBtn2');
+  if(b1){ b1.style.background = one ? '#2D2A26' : '#fff'; b1.style.color = one ? '#fff' : '#2D2A26'; }
+  if(b2){ b2.style.background = !one ? '#2D2A26' : '#fff'; b2.style.color = !one ? '#fff' : '#2D2A26'; }
+  wrap.innerHTML = blFormUsers.map(function(u, i){
+    return '<div class="flex gap-2 mb-2">' +
+      '<input type="text" placeholder="নাম — ব্যক্তি ' + (i + 1) + '" value="' + escA(u.name || '') + '" oninput="blFormUsers[' + i + '].name=this.value;renderBankPaymentsForm()" class="flex-1 bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px]">' +
+      '<input type="number" inputmode="decimal" placeholder="মাসে দেবে" value="' + (u.monthlyShare || '') + '" oninput="blFormUsers[' + i + '].monthlyShare=parseFloat(this.value)||0;updateBankUsersHint()" class="w-[130px] bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px]">' +
+      '</div>';
+  }).join('');
+  updateBankUsersHint();
+  renderBankPaymentsForm();
+}
+let blFormPayments = [];
+function renderBankPaymentsForm(){
+  var list = document.getElementById('lePayList');
+  var ch = document.getElementById('lePayChannel');
+  if(ch && !ch.options.length){ ch.innerHTML = BL_CHANNELS.map(function(c){ return '<option value="' + escA(c) + '">' + escA(c) + '</option>'; }).join(''); }
+  var d = document.getElementById('lePayDate'); if(d && !d.value) d.value = today();
+  var sel = document.getElementById('lePayPayer');
+  if(sel){
+    var cur = sel.value;
+    var opts = blFormUsers.map(function(u, i){ return '<option value="' + i + '"' + (i === 1 ? ' selected' : '') + '>' + escA(u.name || ('ব্যক্তি ' + (i + 1))) + '</option>'; }).join('');
+    if(blFormUsers.length < 2){ opts += '<option value="1" selected>অন্যজন</option>'; }
+    sel.innerHTML = opts;
+    if(cur !== ''){ try{ sel.value = cur; }catch(e){} }
+  }
+  if(!list) return;
+  var pays = blFormPayments.slice().sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); });
+  list.innerHTML = pays.length ? pays.map(function(p){
+    var nm = (blFormUsers[p.payer] || {}).name || (p.payer === 1 ? 'অন্যজন' : ('ব্যক্তি ' + (p.payer + 1)));
+    return '<div class="flex justify-between items-center text-[12px] py-1 border-t border-[#F3E8D3]"><span>' + escA(fmtDMY(p.date)) + ' • ' + escA(nm) + ' • ' + escA(p.channel) + (p.note ? ' • 📝 ' + escA(p.note) : '') + '</span><span class="flex items-center gap-2"><b>' + fmt(p.amount) + '</b><button type="button" onclick="deleteBankFormPayment(\'' + p.id + '\')" class="text-red-600 font-bold px-1">✕</button></span></div>';
+  }).join('') : '<div class="text-[12px] text-[#8B7355] py-1">এখনো কোনো পেমেন্ট লেখা হয়নি।</div>';
+}
+function addBankFormPayment(){
+  var amt = parseFloat(document.getElementById('lePayAmount').value) || 0;
+  if(amt <= 0){ showToast('টাকার পরিমাণ দিন'); return; }
+  blFormPayments.push({ id: uid(), date: document.getElementById('lePayDate').value || today(), payer: parseInt(document.getElementById('lePayPayer').value) || 0, channel: document.getElementById('lePayChannel').value || 'Cash', amount: amt, note: (document.getElementById('lePayNote').value || '').trim() });
+  document.getElementById('lePayAmount').value = '';
+  document.getElementById('lePayNote').value = '';
+  renderBankPaymentsForm();
+}
+function deleteBankFormPayment(pid){
+  blFormPayments = blFormPayments.filter(function(p){ return p.id !== pid; });
+  renderBankPaymentsForm();
+}
+function updateBankUsersHint(){
+  var el = document.getElementById('leUsersHint'); if(!el) return;
+  var emi = Math.round(calcEmi(parseFloat(document.getElementById('leBankAmount').value) || 0, parseFloat(document.getElementById('leRate').value) || 0, parseFloat(document.getElementById('leMonths').value) || 0));
+  var sum = 0; blFormUsers.forEach(function(u){ sum += +u.monthlyShare || 0; });
+  el.innerHTML = 'মাসে মোট ভাগ: <b>' + fmt(sum) + '</b> • মাসিক EMI: <b>' + fmt(emi) + '</b>' + ((sum !== emi && emi > 0) ? ' <span style="color:#C0392B">— ভাগের যোগফল EMI-এর সমান হতে হবে</span>' : '');
+}
+function collectBankUsers(){
+  return blFormUsers.filter(function(u){ return String(u.name || '').trim() !== ''; }).map(function(u){ return { name: String(u.name).trim(), monthlyShare: +u.monthlyShare || 0 }; });
+}
 function renderBankEmiSheet(){
   const wrap = document.getElementById('leEmiWrap'); if(!wrap) return;
   if(document.getElementById('leBankFields').classList.contains('hidden')){ wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
   const d = bankFormDraft();
+  const emiAutoEl = document.getElementById('leEmiAmountAuto');
+  if(emiAutoEl) emiAutoEl.value = fmt(Math.round(calcEmi(d.amount, d.rate, d.months)));
   const endEl = document.getElementById('leEmiEnd');
   if(endEl) endEl.value = d.months > 0 ? addMonths(d.emiStart, Math.max(0, d.months - 1)) : '';
   const r = emiTableHtml(d, 'toggleEmiPaid');
   document.getElementById('leEmiSheet').innerHTML = r.html;
   document.getElementById('leEmiPaidCount').textContent = r.paid + '/' + r.total + ' Paid';
   updateBankSaveBtn();
+  updateBankUsersHint();
 }
 function toggleEmiPaid(i){
   emiPaidDraft[i] = !emiPaidDraft[i];
@@ -4045,10 +4201,12 @@ function toggleEmiPaid(i){
 }
 /* ---------- Bank Loan: EMI Checklist (tick installments) ---------- */
 let emiCheckIdx = -1;
+let blPayDraft = [];
 function openEmiChecklist(ei){
   const e = (state.bankLoans || [])[ei]; if(!e) return;
   emiCheckIdx = ei;
   emiPaidDraft = blPaidArr(e).slice();
+  blPayDraft = blPayments(e).map(p => ({ id: p.id || uid(), date: p.date, payer: p.payer, channel: p.channel, amount: p.amount, note: p.note || '' }));
   document.getElementById('emiTitle').textContent = (e.bank || e.name || t('fBank')) + ' — EMI Checklist';
   renderEmiChecklist();
   document.getElementById('emiSheet').classList.remove('hidden');
@@ -4061,6 +4219,7 @@ function renderEmiChecklist(){
   document.getElementById('emiSummary').innerHTML = '<div class="text-[13px] text-[#8B7355]">' + fmt(e.amount) + ' • ' + blMonths(e) + 'mo • ' + blRate(e) + '%</div>' +
     '<div class="text-[14px] font-bold mt-1">' + fmt(emi) + '/mo • ' + r.paid + '/' + r.total + ' Paid</div>';
   document.getElementById('emiPaidCount').textContent = r.paid + '/' + r.total + ' Paid';
+  renderEmiPayments();
   document.getElementById('emiList').innerHTML = r.html;
 }
 function toggleEmiCheck(i){
@@ -4074,9 +4233,60 @@ function saveEmiChecklist(){
   if(e.rate == null && e.interestRate != null) e.rate = e.interestRate;
   if(e.interestRate == null && e.rate != null) e.interestRate = e.rate;
   e.emiPaid = normalizeEmiPaid(emiPaidDraft, _m);
+  e.payments = blPayDraft.map(p => ({ id: p.id, date: p.date, payer: p.payer, channel: p.channel, amount: p.amount, note: p.note || '' }));
   e.paidEmis = e.emiPaid.slice();
   e.updatedAt = new Date().toISOString();
   persist(); render(); flashSaved(document.getElementById('emiSaveBtn'), () => { closeEmiChecklist(); showToast(t('saved')); });
+}
+function renderEmiPayments(){
+  var wrap = document.getElementById('emiPayWrap'); if(!wrap) return;
+  var e = (state.bankLoans || [])[emiCheckIdx]; if(!e){ wrap.innerHTML = ''; return; }
+  var users = blUsers(e);
+  var prev = null;
+  var pd = document.getElementById('emiPayDate');
+  if(pd) prev = { date: pd.value, payer: document.getElementById('emiPayPayer').value, channel: document.getElementById('emiPayChannel').value, amount: document.getElementById('emiPayAmount').value };
+  var draftEntry = Object.assign({}, e, { payments: blPayDraft });
+  var stats = blPersonStats(draftEntry);
+  var sumHtml = stats.map(function(s){
+    return '<div class="flex justify-between text-[13px] py-1"><span>👤 ' + escA(s.name) + ' <span class="text-[#8B7355]">(মাসে ' + fmt(s.monthlyShare) + ')</span></span><span class="font-bold">দিয়েছে ' + fmt(s.paid) + ' • বাকি ' + fmt(s.remaining) + '</span></div>' +
+      '<div class="text-[12px] text-[#4CAF50] font-bold pb-1">✓ ' + escA(blCoverText(s)) + '</div>';
+  }).join('');
+  var pays = blPayDraft.slice().sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); });
+  var listHtml = pays.length ? pays.map(function(p){
+    var nm = (users[p.payer] || {}).name || (p.payer === 1 ? 'অন্যজন' : ('ব্যক্তি ' + (p.payer + 1)));
+    return '<div class="flex justify-between items-center text-[13px] py-1.5 border-t border-[#F3E8D3]"><span>' + escA(fmtDMY(p.date)) + ' • 👤 ' + escA(nm) + ' • ' + escA(p.channel) + (p.note ? ' • 📝 ' + escA(p.note) : '') + '</span><span class="flex items-center gap-2"><b>' + fmt(p.amount) + '</b><button onclick="deleteEmiPayment(\'' + p.id + '\')" class="text-red-600 font-bold px-1">✕</button></span></div>';
+  }).join('') : '<div class="text-[12px] text-[#8B7355] py-1">এখনো কোনো পেমেন্ট লেখা হয়নি।</div>';
+  var opts = users.map(function(u, i){ return '<option value="' + i + '"' + (i === 1 ? ' selected' : '') + '>' + escA(u.name) + '</option>'; }).join('');
+  if(users.length < 2){ opts += '<option value="1" selected>অন্যজন</option>'; }
+  var chOpts = BL_CHANNELS.map(function(c){ return '<option value="' + escA(c) + '">' + escA(c) + '</option>'; }).join('');
+  wrap.innerHTML = '<div class="border border-[#F3E8D3] rounded-[14px] p-3">' +
+    '<div class="text-[14px] font-bold mb-1">💸 পেমেন্ট (কে আমাকে কত দিলো)</div>' + sumHtml +
+    '<div class="mt-2">' + listHtml + '</div>' +
+    '<div class="border-t border-[#F3E8D3] mt-2 pt-3">' +
+    '<div class="text-[13px] font-bold mb-2">+ পেমেন্ট যোগ করুন</div>' +
+    '<div class="flex gap-2 mb-2"><div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">তারিখ</label><input id="emiPayDate" type="date" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></div>' +
+    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">কে দিয়েছে</label><select id="emiPayPayer" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1">' + opts + '</select></div></div>' +
+    '<div class="flex gap-2 mb-2"><div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">চ্যানেল</label><select id="emiPayChannel" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1">' + chOpts + '</select></div>' +
+    '<div class="flex-1"><label class="text-[12px] font-bold text-[#8B7355]">টাকার পরিমাণ</label><input id="emiPayAmount" type="number" inputmode="decimal" placeholder="0" class="w-full bg-white border border-[#F3E8D3] rounded-[12px] px-3 py-2.5 text-[14px] mt-1"></div></div>' +
+    '<button onclick="addEmiPayment()" class="w-full py-2.5 rounded-[12px] bg-[#2D2A26] text-white font-bold text-[13px]">পেমেন্ট যোগ করুন</button></div></div>';
+  var d2 = document.getElementById('emiPayDate');
+  if(d2) d2.value = (prev && prev.date) || today();
+  if(prev){
+    var pp = document.getElementById('emiPayPayer'); if(pp) pp.value = prev.payer;
+    var cc = document.getElementById('emiPayChannel'); if(cc) cc.value = prev.channel;
+    var am = document.getElementById('emiPayAmount'); if(am) am.value = prev.amount;
+  }
+}
+function addEmiPayment(){
+  var amt = parseFloat(document.getElementById('emiPayAmount').value) || 0;
+  if(amt <= 0){ showToast('টাকার পরিমাণ দিন'); return; }
+  blPayDraft.push({ id: uid(), date: document.getElementById('emiPayDate').value || today(), payer: parseInt(document.getElementById('emiPayPayer').value) || 0, channel: document.getElementById('emiPayChannel').value || 'Cash', amount: amt });
+  var am = document.getElementById('emiPayAmount'); if(am) am.value = '';
+  renderEmiPayments();
+}
+function deleteEmiPayment(id){
+  blPayDraft = blPayDraft.filter(function(p){ return p.id !== id; });
+  renderEmiPayments();
 }
 function closeEmiChecklist(){
   document.getElementById('emiSheet').classList.add('hidden');
@@ -4105,6 +4315,7 @@ function homeBankLoansHtml(){
       '<div class="text-right shrink-0"><div class="font-extrabold text-[15px]">' + fmt(emi) + '/mo</div>' +
       '<div class="text-[12px] text-[#8B7355]">' + paid + '/' + blMonths(e) + ' Paid</div></div></div>' +
       '<div style="height:6px;background:#F3E8D3;border-radius:999px;margin-top:8px;overflow:hidden"><div style="width:' + (blMonths(e) ? Math.round(paid / blMonths(e) * 100) : 0) + '%;height:100%;background:#4CAF50;border-radius:999px"></div></div>' +
+      blHomeUsersHtml(e) +
       '<div class="flex gap-2 mt-2 items-center">' +
       '<button onclick="openEmiChecklist(' + ti + ')" class="flex-1 py-2 text-left text-[13px] font-bold text-[#8B7355] underline">✓ ' + t('emiChecklist') + '</button>' +
       '<button onclick="editLoanEntry(\'bank:0:l:' + ti + '\')" class="flex-1 py-2 rounded-lg border border-[#F3E8D3] text-[13px] font-bold">' + t('editBtn') + '</button>' +
@@ -4186,6 +4397,7 @@ function saveLoanEntry(){
       entry.emiEnd = addMonths(entry.emiStart, Math.max(0, entry.months - 1));
       entry.emiPaid = normalizeEmiPaid(emiPaidDraft, entry.months);
       entry.termMonths = entry.months; entry.interestRate = entry.rate; entry.paidEmis = entry.emiPaid.slice();
+      entry.users = collectBankUsers(); entry.payments = blFormPayments.map(function(p){ return { id: p.id || uid(), date: p.date, payer: p.payer, channel: p.channel, amount: p.amount, note: p.note || '' }; });
       entry.bankName = entry.bank; entry.loanDate = entry.date; entry.disbursementDate = entry.date; entry.emiStartDate = entry.emiStart; entry.emiEndDate = entry.emiEnd;
       state.bankLoans = [...(state.bankLoans || []), entry];
       currentView = 'loans'; loansKind = 'bank';
@@ -4226,6 +4438,7 @@ function saveLoanEntry(){
     r.entry.emiEnd = addMonths(r.entry.emiStart, Math.max(0, r.entry.months - 1));
     r.entry.emiPaid = normalizeEmiPaid(emiPaidDraft, r.entry.months);
     r.entry.termMonths = r.entry.months; r.entry.interestRate = r.entry.rate; r.entry.paidEmis = r.entry.emiPaid.slice();
+    r.entry.users = collectBankUsers(); r.entry.payments = blFormPayments.map(function(p){ return { id: p.id || uid(), date: p.date, payer: p.payer, channel: p.channel, amount: p.amount, note: p.note || '' }; });
     r.entry.bankName = r.entry.bank; r.entry.loanDate = r.entry.date; r.entry.disbursementDate = r.entry.date; r.entry.emiStartDate = r.entry.emiStart; r.entry.emiEndDate = r.entry.emiEnd;
   } else {
     r.entry.amount = parseFloat(document.getElementById('leAmount').value) || 0;
@@ -5037,6 +5250,16 @@ function pdfBankLoansJpegs(data){
       ['Status', it.status]
     ];
     if(it.note) rows.splice(1, 0, ['Note', it.note]);
+    (it.users || []).forEach(s => {
+      rows.push(['👤 ' + s.name + ' — মাসে দেবে', fmt(s.monthlyShare)]);
+      rows.push(['👤 ' + s.name + ' — মোট দেওয়ার কথা', fmt(s.totalDue)]);
+      rows.push(['👤 ' + s.name + ' — দিয়েছে', fmt(s.paid)]);
+      rows.push(['👤 ' + s.name + ' — বাকি', fmt(s.remaining)]);
+      rows.push(['👤 ' + s.name + ' — কভার', blCoverText(s)]);
+    });
+    (it.payments || []).forEach(p => {
+      rows.push(['💸 পেমেন্ট — ' + fmtDMY(p.date) + ' — ' + (p.payerName || ''), fmt(p.amount) + ' • ' + p.channel]);
+    });
     return rows;
   };
   const blocks = [];
@@ -5111,7 +5334,8 @@ function pdfBankLoansJpegs(data){
     pdfWrapText(ctx, 'Download: ' + fmtDownloadNow(), LEFT_W).forEach(ln => { ctx.fillText(ln, M, y); y += LH; });
     ctx.fillStyle = '#333';
     userLines.forEach(l => { pdfWrapText(ctx, l, LEFT_W).forEach(ln => { ctx.fillText(ln, M, y); y += LH; }); });
-    let ry = M + (blockH - rightH); // Developer block moved down: bottom-aligned with the left column, gap below it removed ctx.textAlign = 'right';
+    let ry = M + (blockH - rightH); // Developer block moved down: bottom-aligned with the left column, gap below it removed
+    ctx.textAlign = 'right';
     devLines.forEach((dl, i) => {
       ctx.font = i === 0 ? FB : F; ctx.fillStyle = '#333';
       pdfWrapText(ctx, dl, RIGHT_W).forEach(ln => { ctx.fillText(ln, W - M, ry); ry += LH; });
@@ -6243,7 +6467,7 @@ function nowTimeStr(){
   return new Date().toLocaleTimeString('bn-BD', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 }
 
-function addMonths(dateStr, n){ const d = new Date(dateStr); d.setMonth(d.getMonth()+n); return d.toISOString().slice(0,10); }
+function addMonths(dateStr, n){ const d = new Date(normDate(dateStr) + 'T00:00:00'); d.setMonth(d.getMonth() + n); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 function fmtMoney(n){ n = Math.round(n||0); return '\u09F3 ' + n.toLocaleString('en-US'); }
 function formatDateForPdf(d){
   if(!d) return '';
@@ -11202,7 +11426,6 @@ setInterval(function(){
   // 3 - REMOVED as requested: Today summary deleted, 1 and 4 kept.
   // Remove any old summary box if present:
   setTimeout(function(){ var el=document.getElementById('homeTodaySummary'); if(el) el.remove(); }, 500);
-});
 })();
 </script>
 
