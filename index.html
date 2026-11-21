@@ -3926,7 +3926,7 @@ function blPersonStats(e){
 function blCoverText(s){
   if(!s) return '';
   if(s.remaining <= 0) return 'সম্পূর্ণ পরিশোধ';
-  if(s.fullMonths > 0) return s.fullMonths + ' মাস কভার (' + fmtDMY(s.coveredUntil) + ' পর্যন্ত) • পরের কিস্তি ' + fmt(s.nextDueAmount);
+  if(s.fullMonths > 0) return s.fullMonths + ' মাস কভার (' + fmtDMY(s.coveredUntil) + ' পর্যন্ত)' + (s.advance > 0 ? ' • ' + fmtDMY(s.coveredUntil) + '-এর কিস্তি পরিশোধের পর অবশিষ্ট আছে ' + fmt(s.advance) : '') + ' • পরের কিস্তি ' + fmt(s.nextDueAmount);
   if(s.paid > 0) return 'এই মাসে আর দিতে হবে ' + fmt(s.nextDueAmount);
   return 'এখনো পেমেন্ট নেই';
 }
