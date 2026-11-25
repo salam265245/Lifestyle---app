@@ -17,7 +17,13 @@
 .nav-anim-fwd{animation:navSlideFwd .22s ease-out}
 
   html,body{overflow-anchor:none}body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
-  .card{background:#fff;border:1px solid #F3E8D3;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,0.04);}
+  .card{background:#fff;border:1px solid #F3E8D3;border-radius:20px;box-shadow:0 4px 16px rgba(0,0,0,0.05);}
+.money-num{font-weight:800;font-size:clamp(18px,5.6vw,26px);line-height:1.2;letter-spacing:-0.3px;font-variant-numeric:tabular-nums;overflow-wrap:break-word}
+.money-lbl{font-size:12px;font-weight:700;color:#8B7355}
+button{transition:transform .12s ease}button:active{transform:scale(.97)}
+.tick-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:9999}
+.tick-circle{width:74px;height:74px;border-radius:50%;background:#1E7B34;color:#fff;font-size:40px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:tickPop .85s ease forwards;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+@keyframes tickPop{0%{transform:scale(.3);opacity:0}35%{transform:scale(1.12);opacity:1}55%{transform:scale(1)}80%{transform:scale(1);opacity:1}100%{transform:scale(1);opacity:0}}
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} #formSheet:not(.hidden){display:flex;flex-direction:column;overflow:hidden;height:92vh;} #formSheet .formSheetBody{overflow-y:auto;flex:1;min-height:0;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
   .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#E3F2FD;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:100;white-space:nowrap;}
@@ -38,7 +44,7 @@
 /* --- Islamic section (merged) --- */
 
 body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
-.card{background:#fff;border:1px solid #F3E8D3;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,0.04);}
+.card{background:#fff;border:1px solid #F3E8D3;border-radius:20px;box-shadow:0 4px 16px rgba(0,0,0,0.05);}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#E3F2FD;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:100;white-space:nowrap;}
 @keyframes navSlideBack{from{transform:translateX(-28px);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes navSlideFwd{from{transform:translateX(28px);opacity:0}to{transform:translateX(0);opacity:1}}
@@ -721,6 +727,13 @@ const T = {
     repExpense:'খরচ',
     repBalance:'ব্যালেন্স',
     categoryWise:'ক্যাটাগরি অনুযায়ী %',
+  monthSummaryTitle:'মাসের সারাংশ', thisMonthLbl:'এই মাস', prevMonthsLbl:'আগের মাসগুলো',
+  topExpCat:'সবচেয়ে বেশি খরচ', vsLastMonth:'গত মাসের চেয়ে', noPrevMonth:'গত মাসে কোনো হিসাব নেই',
+  noMonthData:'এই মাসে এখনো কোনো হিসাব নেই', moreExp:'বেশি খরচ', lessExp:'কম খরচ',
+  sameExp:'গত মাসের সমান খরচ', moreInc:'বেশি আয়', lessInc:'কম আয়', sameInc:'গত মাসের সমান আয়',
+  tapToView:'বিস্তারিত দেখতে চাপ দিন', noPrevMonths:'আগের কোনো মাসের হিসাব নেই', ofExpense:'মোট খরচের',
+  budgetTitle:'মাসের বাজেট', budgetNote:'প্রতি খাতে এই মাসের বাজেট বসান — ৮০% হলে হলুদ, ১০০% হলে লাল সতর্কতা আসবে',
+  budgetPlaceholder:'বাজেট ৳', budgetAlert80:'বাজেটের ৮০% শেষ', budgetAlert100:'বাজেট শেষ!', noBudgetYet:'এখনো কোনো বাজেট বসানো হয়নি',
     expenseTrend:'খরচের ট্রেন্ড - বাড়া / কমা %',
     trendNote:'লাল = বেড়েছে, সবুজ = কমেছে',
     vsLastWeek:'গত সপ্তাহের তুলনায়',
@@ -788,6 +801,13 @@ const T = {
     repExpense:'Expense',
     repBalance:'Balance',
     categoryWise:'Category-wise %',
+  monthSummaryTitle:'Monthly Summary', thisMonthLbl:'This Month', prevMonthsLbl:'Previous Months',
+  topExpCat:'Top Expense Category', vsLastMonth:'vs Last Month', noPrevMonth:'No data for last month',
+  noMonthData:'No entries this month yet', moreExp:'more expense', lessExp:'less expense',
+  sameExp:'same expense as last month', moreInc:'more income', lessInc:'less income', sameInc:'same income as last month',
+  tapToView:'Tap to view details', noPrevMonths:'No previous months yet', ofExpense:'of total expense',
+  budgetTitle:'Monthly Budget', budgetNote:'Set this month\'s budget per category — yellow at 80%, red at 100%',
+  budgetPlaceholder:'Budget ৳', budgetAlert80:'80% of budget used', budgetAlert100:'Budget reached!', noBudgetYet:'No budget set yet',
     expenseTrend:'Expense Trend - Increase / Decrease %',
     trendNote:'Red = increased, Green = decreased',
     vsLastWeek:'vs Last Week',
@@ -819,7 +839,7 @@ const T = {
     cloudSetupTitle:'How to set up (once)', bazarTitle:'Today Bazar', bzTotal:'Total', bzBought:'Bought', bzRemaining:'Remaining', bzPasteTitle:'📋 Paste message', bzMakeList:'✨ Create List', bzClear:'Clear', bzPasteNote:'Comma, space or new line will auto-split into a list', bzItemName:'Item Name *', bzItemNamePh:'e.g. Potato', bzPriceOpt:'Price (optional)', bzPricePh:'0 - you can add later', bzCatOpt:'Expense Category (optional)', bzCatPh:'Select category (optional)', bzAddToList:'Add to List', bzPricePending:'Price pending', bzNeedName:'Write the item name first', bazarList:'Bazar List', bought:'Bought', notBought:'Not Bought', itemsLbl:'items', addNote:'Add Note', notePh:'e.g. Potato, Onion, Garlic or one per line', editBtn:'Edit', yesBtn:'Yes', noBtn:'No', deleteBtn:'Delete', priceLbl:'Price', needPriceCat:'Select price and category first', addedToExpense:'Added to expense', notBoughtYet:'Not bought yet', confirmDelete:'Delete this item?', allLbl:'All', buyTitle:'Bought — Save to Expense', editItemTitle:'Edit Item', itemLbl:'Item', emptyBazar:'Nothing here yet', boughtNote:'This item is already in expense — editing here changes only the bazar list', writeNote:'Write a note first', movedBack:'Moved back to Not Bought — expense removed',   fAll:'All', fIncome:'Income', fExpense:'Expense', fGiven:'Given', fTaken:'Taken', fReturn:'Return', fRepay:'Repayment', fBank:'Bank Loan', histSearchPh:'Search transactions…', addPerson:'Add Person', addReturn:'Add Return', addRepay:'Add Repayment', pdfBtn:'PDF', viewBtn:'View', shareBtn:'Share', fromLbl:'From', toLbl:'To', dateClear:'Date Clear', filterByCat:'Filter by Category', filtered:'Filtered', records:'records', noData:'No data yet', editIncome:'Edit Income', editExpense:'Edit Expense', confirmDeleteTx:'Delete this transaction?', deletedTx:'Transaction deleted', loanEntryTitle:'Edit Loan Entry', personCol:'Person', commentCol:'Comment', fromCol:'From', toCol:'To', amountCol:'Amount', totalIncome:'Total Income', totalExpense:'Total Expense', netBalance:'Net Balance', printPdf:'Print / Save PDF', pdfFail:'Could not make PDF. Please try again.', closeBtn:'Close', fromToSep:' to ', loansGivenPage:'Loans Given', loansTakenPage:'Loans Taken', bankLoansPage:'Bank Loans', searchPeople:'Search people…', peopleLbl:'people', entriesLbl:'entries', youWillGet:'You will get', youWillPay:'You will pay', loanEntries:'Loan Entries', paymentsSec:'Payments', summaryLbl:'Summary', overdueLbl:'Overdue', dueTodayLbl:'today', daysLateLbl:'days late', dueBoxTitle:'⏰ Returns Due', backupTitle:'Data Backup', backupNote:'Save your full data to your phone, restore it anytime.', exportBackupBtn:'📥 Download Backup', importBackupBtn:'📤 Restore Backup', backupExported:'Backup downloaded', backupInvalid:'Not a valid backup file', backupConfirmImport:'Restoring will replace all current data. Continue?', descLbl:'Description', dateLbl:'Date', noteLbl:'Note', addLoanBtn:'+ Add Loan', addPaymentBtn:'+ Add Payment', addBankLoanBtn:'+ Add Bank Loan', personName:'Person name', mobileNo:'Mobile number', selectPerson:'Select person', bankNameLbl:'Bank Name', saveLoan:'Save Loan', loanAmountLbl:'Loan Amount', termLbl:'Tenure (months)', disbursementLbl:'Disbursement Date', emiStartLbl:'EMI Start Date', emiEndLbl:'EMI End Date (auto)', selectBank:'Select bank', monthsLbl:'Months', rateLbl:'Interest Rate %', backBtn:'←', balanceLbl:'Balance', totalLbl:'Total', addLoanTitle:'Add Loan', addPersonLoanTitle:'+ Add Person', nameLbl:'Name', mobileContactLbl:'Mobile / Contact Number', fromChannelLbl:'From Channel', toChannelLbl:'To Channel', expectedReturnLbl:'Expected Return Date', newPersonNamePh:'New person name', typeManuallyPh:'Type manually or pick from contacts', newPerson:'New person', addPaymentTitle:'Add Payment', addPersonTitle:'Add Person', addBankLoanTitle:'Bank Loan', needName:'Enter a name', personAdded:'Person added', loanAdded:'Loan added', paymentAdded:'Payment added', bankLoanAdded:'Bank loan added', noPeople:'No people yet', editPersonTitle:'Edit Person', confirmDeletePerson:'Delete this person and all their entries?', personDeleted:'Person deleted', personUpdated:'Person updated', excelBtn:'⬇ Excel (CSV)', csvSaved:'Excel file downloaded', profileTitle:'My Profile', fullName:'Full Name', designation:'Designation / Title', addressLbl:'Address', mobileLbl:'Mobile Number', emailLbl:'Email', dobLbl:'Date of Birth', bloodLbl:'Blood Group', nidLbl:'NID Number', tapToEdit:'Tap name to edit profile', yourName:'Your Name', profileSaved:'Profile saved' }
 };
 let lang = loadLS('lifestyle_lang', 'bn');
-let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []) };
+let state = { transactions: loadLS('lifestyle_transactions', []), peopleGiven: loadLS('lifestyle_people_given', []), peopleTaken: loadLS('lifestyle_people_taken', []), bankLoans: loadLS('lifestyle_bank_loans', []), recycle: loadLS('lifestyle_recycle', []), budgets: loadLS('lifestyle_budgets', {}) };
 state.deleted = loadLS('lifestyle_deleted', []);
 let formType = 'income', selCat = null, selSub = null, catSearch = '', editingTxId = null;
 /* PROFILE: one object, one key. Migrates from V25's separate keys (user_name/designation/address/mobile) so old profile data carries over. */
@@ -854,6 +874,15 @@ function firstOfMonth(){ return thisMonth() + '-01'; }
 function normDate(d){ try{ if(!d) return ''; d = String(d).trim(); let m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[1]).slice(-2); m = d.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/); if(m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2); return d.slice(0,10); }catch(e){ return ''; } }
 function fmt(n){ return '৳ ' + Math.round(n || 0).toLocaleString('en-US'); }
 function emptyHtml(){ return '<div style="text-align:center;padding:22px 10px"><div style="font-size:28px;line-height:1">📭</div><div style="font-size:13px;color:#8B7355;margin-top:8px">' + t('noData') + '</div></div>'; }
+function showSaveTick(){
+  try{
+    const d = document.createElement('div');
+    d.className = 'tick-overlay';
+    d.innerHTML = '<div class="tick-circle">\u2713</div>';
+    document.body.appendChild(d);
+    setTimeout(() => { try{ d.remove(); }catch(e){} }, 850);
+  }catch(e){}
+}
 function showToast(msg){ const box = document.getElementById('toastBox'); box.innerHTML = '<div class="toast">' + msg + '</div>'; const dur = String(msg).length > 80 ? 6000 : 2000; setTimeout(()=>{ box.innerHTML = ''; }, dur); }
 
 /* ---------- ONE save path ---------- */
@@ -865,7 +894,7 @@ function saveTransaction(tx){
   state.transactions = exists ? state.transactions.map(x => x.id === tx.id ? tx : x) : [tx, ...state.transactions];
   persist();
   render();
-  showToast(t('saved'));
+  showToast(t('saved')); showSaveTick();
 }
 let cloudUser = null, cloudListener = null, cloudUploadTimer = null, applyingCloud = false;
 function persist(){
@@ -881,6 +910,7 @@ function persist(){
   saveLS('lifestyle_user_mobile', profile.mobile || '');
   saveLS('lifestyle_deleted', state.deleted || []);
   saveLS('lifestyle_recycle', state.recycle || []);
+  saveLS('lifestyle_budgets', state.budgets || {});
   if(!applyingCloud) queueCloudUpload();
 }
 
@@ -1024,7 +1054,7 @@ function mergeProfile(lp, cp){
   return out;
 }
 function mergeCloudState(local, cloud){
-  if(!cloud) return { transactions: local.transactions || [], peopleGiven: local.peopleGiven || [], peopleTaken: local.peopleTaken || [], bankLoans: local.bankLoans || [], bazar: local.bazar || [], profile: local.profile || {}, deleted: local.deleted || [], dailyTasks: local.dailyTasks || [], travelList: local.travelList || [], reminders: local.reminders || [] };
+  if(!cloud) return { transactions: local.transactions || [], peopleGiven: local.peopleGiven || [], peopleTaken: local.peopleTaken || [], bankLoans: local.bankLoans || [], bazar: local.bazar || [], profile: local.profile || {}, deleted: local.deleted || [], dailyTasks: local.dailyTasks || [], travelList: local.travelList || [], reminders: local.reminders || [], budgets: local.budgets || {} };
   const del = new Set([...(local.deleted || []).map(d => d.id), ...(cloud.deleted || []).map(d => d.id)]);
     getRestoreIds().forEach(id => del.delete(id));
   const dropDeleted = arr => (arr || []).filter(it => it && it.id && !del.has(it.id));
@@ -1035,6 +1065,7 @@ function mergeCloudState(local, cloud){
     bankLoans: dropDeleted(mergeById(local.bankLoans || [], cloud.bankLoans || [])),
     bazar: dropDeleted(mergeById(local.bazar || [], cloud.bazar || [])),
     profile: mergeProfile(local.profile || {}, cloud.profile || {}),
+    budgets: Object.assign({}, cloud.budgets || {}, local.budgets || {}),
     dailyTasks: dropDeleted(mergeById(local.dailyTasks || [], cloud.dailyTasks || [])),
     travelList: dropDeleted(mergeById(local.travelList || [], cloud.travelList || [])),
     reminders: dropDeleted(mergeById(local.reminders || [], cloud.reminders || [])),
@@ -1059,6 +1090,7 @@ function applyMerged(m){
   bazar = m.bazar || [];
   profile = m.profile || {};
   state.deleted = m.deleted || [];
+  state.budgets = m.budgets || {};
   ensureIds(false);
   persist();
   render();
@@ -1068,7 +1100,7 @@ function applyMerged(m){
 const DEFAULT_FIREBASE_CONFIG = { apiKey:'AIzaSyDn4xc_Z2etlIEVzuNtHcR-2-3B81D2kaU', authDomain:'lifestyle-app-d4bc0.firebaseapp.com', projectId:'lifestyle-app-d4bc0', storageBucket:'lifestyle-app-d4bc0.firebasestorage.app', messagingSenderId:'494296989508', appId:'1:494296989508:web:aa6b3aa501e3f65fcd2111' };
 function cloudCfg(){ try{ const saved = JSON.parse(localStorage.getItem('lifestyle_cloud_config') || 'null'); if(saved && saved.apiKey && saved.projectId) return saved; }catch(e){} return DEFAULT_FIREBASE_CONFIG; }
 
-let cloudBusy = false, firebaseReady = null;
+let cloudBusy = false, firebaseReady = null, cloudRetryScheduled = false;
 function loadFirebaseSDK(){
   if(firebaseReady) return firebaseReady;
   firebaseReady = new Promise((resolve, reject) => { if(typeof navigator!=='undefined' && !navigator.onLine){ reject(new Error('offline')); return; }
@@ -1089,6 +1121,7 @@ function loadFirebaseSDK(){
     };
     next();
   });
+  firebaseReady.catch(function(){ firebaseReady = null; });
   return firebaseReady;
 }
 async function cloudConnect(){
@@ -1103,7 +1136,7 @@ async function cloudConnect(){
 }
 async function cloudSync(mode, quiet){
   if(typeof navigator!=='undefined' && !navigator.onLine){ try{localStorage.setItem('lifestyle_pending_sync','1');}catch(e){} try{updateOfflineUI();}catch(e){} return; }
-  if(cloudBusy){ if(!quiet) showToast(t('cloudSyncing')); return; }
+  if(cloudBusy){ if(!quiet) showToast(t('cloudSyncing')); if(!cloudRetryScheduled){ cloudRetryScheduled = true; setTimeout(function(){ cloudRetryScheduled = false; try{ cloudSync(mode, quiet); }catch(e){} }, 2000); } return; }
   if(!cloudUser){ if(!quiet) showToast(t('loginToSync')); navGo('profile'); return; }
   cloudBusy = true;
   try{
@@ -1131,7 +1164,7 @@ async function cloudSync(mode, quiet){
 function readRoutineLS(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ return []; } }
 function routineLocal(){ return { dailyTasks: readRoutineLS('lifestyle_daily_tasks'), travelList: readRoutineLS('lifestyle_travel_list') }; }
 function queueRoutineCloudUpload(){ if(!applyingCloud) queueCloudUpload(); }
-function cloudDocData(){ var rt = routineLocal(); var rem=[]; try{ rem=JSON.parse(localStorage.getItem('lifestyle_reminders_v1')||'[]'); }catch(e){} return { transactions: state.transactions, peopleGiven: state.peopleGiven, peopleTaken: state.peopleTaken, bankLoans: state.bankLoans, bazar: bazar, profile: profile, deleted: state.deleted, dailyTasks: rt.dailyTasks, travelList: rt.travelList, reminders: rem }; }
+function cloudDocData(){ var rt = routineLocal(); var rem=[]; try{ rem=JSON.parse(localStorage.getItem('lifestyle_reminders_v1')||'[]'); }catch(e){} return { transactions: state.transactions, peopleGiven: state.peopleGiven, peopleTaken: state.peopleTaken, bankLoans: state.bankLoans, bazar: bazar, profile: profile, deleted: state.deleted, budgets: state.budgets, dailyTasks: rt.dailyTasks, travelList: rt.travelList, reminders: rem }; }
 function queueCloudUpload(){
   try{localStorage.setItem('lifestyle_pending_sync','1');}catch(e){} try{updateOfflineUI();}catch(e){} if(!cloudUser) return;
   if(typeof navigator!=='undefined' && !navigator.onLine) return;
@@ -1151,7 +1184,7 @@ async function startCloudListener(){
   try{
     const ref = await cloudConnect();
     if(cloudListener) cloudListener();
-    cloudListener = ref.onSnapshot(onCloudSnapshot, () => {});
+    cloudListener = ref.onSnapshot(onCloudSnapshot, function(){ cloudListener = null; });
   }catch(e){}
 }
 async function initCloud(){
@@ -1298,6 +1331,119 @@ function catTotalsIn(from, to){
   return m;
 }
 function pctChange(cur, prev){ if(!prev) return cur > 0 ? 100 : 0; return Math.round((cur - prev) / prev * 100); }
+
+/* ---------- STEP 2: Monthly Summary (auto-computed from saved transactions) ---------- */
+let msOpenMonth = '';
+function prevMonthKey(mk){ const d = new Date(+mk.slice(0,4), +mk.slice(5,7) - 1, 1); d.setMonth(d.getMonth() - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function monthBounds(mk){ const last = new Date(+mk.slice(0,4), +mk.slice(5,7), 0).getDate(); return { from: mk + '-01', to: mk + '-' + String(last).padStart(2, '0') }; }
+function monthSummaryData(mk){
+  const b = monthBounds(mk);
+  const inM = x => { const d = normDate(x.date || ''); return d >= b.from && d <= b.to; };
+  const tx = (state.transactions || []).filter(inM);
+  const income = tx.filter(x => x.type === 'income').reduce((sm, x) => sm + (+x.amount || 0), 0);
+  const expense = tx.filter(x => x.type === 'expense').reduce((sm, x) => sm + (+x.amount || 0), 0);
+  const cats = catTotalsIn(b.from, b.to);
+  let top = null;
+  Object.keys(cats).forEach(k => { if(!top || cats[k].amt > top.amt) top = { name: lang === 'en' ? cats[k].en : (cats[k].bn || cats[k].en), amt: cats[k].amt }; });
+  const pb = monthBounds(prevMonthKey(mk));
+  const ptx = (state.transactions || []).filter(x => { const d = normDate(x.date || ''); return d >= pb.from && d <= pb.to; });
+  const pIncome = ptx.filter(x => x.type === 'income').reduce((sm, x) => sm + (+x.amount || 0), 0);
+  const pExpense = ptx.filter(x => x.type === 'expense').reduce((sm, x) => sm + (+x.amount || 0), 0);
+  return { mk: mk, income: income, expense: expense, balance: income - expense, top: top,
+    hasPrev: ptx.length > 0, pIncome: pIncome, pExpense: pExpense,
+    dInc: income - pIncome, dExp: expense - pExpense,
+    pctInc: pctChange(income, pIncome), pctExp: pctChange(expense, pExpense) };
+}
+function monthLabel(mk){ return new Date(+mk.slice(0,4), +mk.slice(5,7) - 1, 1).toLocaleString(lang === 'en' ? 'en-US' : 'bn-BD', { month: 'long', year: 'numeric' }); }
+function toggleMonthSummary(mk){ msOpenMonth = (msOpenMonth === mk ? '' : mk); saveViewState(); render(); }
+function monthSummaryChangeHtml(diff, pct, moreKey, lessKey, sameKey, moreIsBad){
+  if(diff > 0) return '<span style="color:' + (moreIsBad ? '#C0392B' : '#1E7B34') + ';font-weight:800">' + fmt(Math.abs(diff)) + ' ' + t(moreKey) + ' (' + (pct > 0 ? '+' : '') + pct + '%)</span>';
+  if(diff < 0) return '<span style="color:' + (moreIsBad ? '#1E7B34' : '#C0392B') + ';font-weight:800">' + fmt(Math.abs(diff)) + ' ' + t(lessKey) + ' (' + (pct > 0 ? '+' : '') + pct + '%)</span>';
+  return '<span style="color:#8B7355;font-weight:800">' + t(sameKey) + '</span>';
+}
+function monthSummaryDetailHtml(d){
+  let h = '<div class="grid grid-cols-3 gap-2 mb-3">' +
+    '<div><div class="money-lbl" style="color:#1E7B34">' + t('repIncome') + '</div><div class="money-num" style="color:#1E7B34">' + fmt(d.income) + '</div></div>' +
+    '<div><div class="money-lbl" style="color:#C0392B">' + t('repExpense') + '</div><div class="money-num" style="color:#C0392B">' + fmt(d.expense) + '</div></div>' +
+    '<div><div class="money-lbl">' + t('repBalance') + '</div><div class="money-num">' + fmt(d.balance) + '</div></div></div>';
+  h += '<div class="text-[13px] mb-1"><span class="font-bold">' + t('topExpCat') + ': </span>' +
+    (d.top ? escA(d.top.name) + ' — ' + fmt(d.top.amt) + ' <span class="text-[#8B7355]">(' + t('ofExpense') + ' ' + (d.expense ? Math.round(d.top.amt / d.expense * 100) : 0) + '%)</span>' : '—') + '</div>';
+  h += '<div class="text-[13px]"><span class="font-bold">' + t('vsLastMonth') + ': </span>';
+  if(!d.hasPrev){ h += '<span class="text-[#8B7355]">' + t('noPrevMonth') + '</span>'; }
+  else{
+    h += t('repExpense') + ' ' + monthSummaryChangeHtml(d.dExp, d.pctExp, 'moreExp', 'lessExp', 'sameExp', true) + '<br>' +
+      t('repIncome') + ' ' + monthSummaryChangeHtml(d.dInc, d.pctInc, 'moreInc', 'lessInc', 'sameInc', false);
+  }
+  h += '</div>';
+  return h;
+}
+function monthSummaryHtml(){
+  const cur = thisMonth();
+  const curD = monthSummaryData(cur);
+  let h = '<div class="card p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-1">\uD83D\uDCCA ' + t('monthSummaryTitle') + '</h3>' +
+    '<div class="text-[12px] text-[#8B7355] mb-3">' + t('thisMonthLbl') + ' · ' + monthLabel(cur) + '</div>';
+  if(!curD.income && !curD.expense){ h += '<p class="text-[13px] text-[#8B7355] mb-2">' + t('noMonthData') + '</p>'; }
+  h += monthSummaryDetailHtml(curD) + '</div>';
+  const months = {};
+  (state.transactions || []).forEach(x => { const dd = normDate(x.date || ''); if(dd.length >= 7) months[dd.slice(0, 7)] = 1; });
+  const prev = Object.keys(months).filter(m => m !== cur).sort().reverse();
+  h += '<div class="card p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-3">' + t('prevMonthsLbl') + '</h3>';
+  if(!prev.length){ h += '<p class="text-[13px] text-[#8B7355]">' + t('noPrevMonths') + '</p>'; }
+  prev.forEach((mk, i) => {
+    const d = monthSummaryData(mk);
+    const open = msOpenMonth === mk;
+    h += '<div class="cursor-pointer ' + (i ? 'border-t border-[#F3E8D3] ' : '') + 'py-2.5" onclick="toggleMonthSummary(\'' + mk + '\')">' +
+      '<div class="flex justify-between items-center"><span class="font-bold text-[14px]">' + monthLabel(mk) + '</span><span class="text-[12px] text-[#8B7355]">' + (open ? '▲' : '▼') + '</span></div>' +
+      '<div class="text-[12px] text-[#8B7355] mt-0.5">' + t('repExpense') + ' ' + fmt(d.expense) + ' · ' + t('repIncome') + ' ' + fmt(d.income) + '</div>' +
+      '<div class="text-[11px] text-[#8B7355]">' + t('tapToView') + '</div></div>';
+    if(open) h += '<div class="pb-2">' + monthSummaryDetailHtml(d) + '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+
+/* ---------- STEP 3: Monthly Budget (per expense category) ---------- */
+function monthBudgetCats(){
+  const b = monthBounds(thisMonth());
+  const cats = catTotalsIn(b.from, b.to);
+  const budgets = state.budgets || {};
+  const rows = [];
+  Object.keys(cats).forEach(k => { rows.push({ key: k, name: lang === 'en' ? cats[k].en : (cats[k].bn || cats[k].en), spent: cats[k].amt, budget: +budgets[k] || 0 }); });
+  Object.keys(budgets).forEach(k => { if(!cats[k] && +budgets[k] > 0) rows.push({ key: k, name: k, spent: 0, budget: +budgets[k] }); });
+  rows.sort((a, b) => b.spent - a.spent);
+  return rows;
+}
+function setBudget(idx, val){
+  const rows = monthBudgetCats();
+  const row = rows[idx]; if(!row) return;
+  const v = parseFloat(val);
+  state.budgets = state.budgets || {};
+  if(!v || v <= 0) delete state.budgets[row.key]; else state.budgets[row.key] = Math.round(v);
+  persist(); render();
+}
+function monthBudgetHtml(){
+  const rows = monthBudgetCats();
+  let h = '<div class="card p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-1">\uD83C\uDFAF ' + t('budgetTitle') + '</h3>' +
+    '<p class="text-[12px] text-[#8B7355] mb-3">' + t('budgetNote') + '</p>';
+  if(!rows.length){ h += '<p class="text-[13px] text-[#8B7355]">' + t('noBudgetYet') + '</p>'; }
+  rows.forEach((r, i) => {
+    const pct = r.budget > 0 ? Math.round(r.spent / r.budget * 100) : 0;
+    const barColor = pct >= 100 ? '#C0392B' : pct >= 80 ? '#F9A825' : '#4CAF50';
+    const warn = r.budget > 0 && pct >= 100 ? '<div class="text-[12px] font-bold" style="color:#C0392B">\uD83D\uDED1 ' + t('budgetAlert100') + '</div>' :
+      r.budget > 0 && pct >= 80 ? '<div class="text-[12px] font-bold" style="color:#B8860B">\u26A0\uFE0F ' + t('budgetAlert80') + '</div>' : '';
+    h += '<div class="py-2.5' + (i ? ' border-t border-[#F3E8D3]' : '') + '">' +
+      '<div class="flex justify-between items-center gap-2"><span class="font-bold text-[14px]">' + escA(r.name) + '</span>' +
+      '<span class="text-[13px] font-bold">' + fmt(r.spent) + (r.budget > 0 ? ' / ' + fmt(r.budget) : '') + '</span></div>' +
+      (r.budget > 0 ? '<div class="w-full h-2.5 bg-[#F3E8D3] rounded-full overflow-hidden mt-1.5"><div class="h-full rounded-full" style="width:' + Math.min(pct, 100) + '%;background:' + barColor + '"></div></div>' +
+      '<div class="flex justify-between items-center mt-1"><span class="text-[11px] text-[#8B7355]">' + pct + '%</span>' + warn + '</div>' : '') +
+      '<input type="number" inputmode="numeric" min="0" step="1" value="' + (r.budget > 0 ? r.budget : '') + '" placeholder="' + t('budgetPlaceholder') + '" onchange="setBudget(' + i + ', this.value)" class="w-full mt-1.5 px-3 py-2 rounded-[10px] border border-[#F3E8D3] text-[13px] font-bold" style="background:#FFFBF7">' +
+      '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
 function reportsData(){
   const r = repRange();
   const tx = (state.transactions || []).filter(x => { const d = normDate(x.date || ''); return d >= r.from && d <= r.to; });
@@ -1405,12 +1551,14 @@ function renderReportsView(){
   h += '<div class="px-4 pt-4">';
   h += '<h2 class="font-extrabold text-[20px] mb-3">' + t('reportsPageTitle') + '</h2>';
   h += '<div class="grid grid-cols-3 gap-2 mb-4">' +
-    '<div class="bg-[#E6F4EA] rounded-[16px] p-3"><div class="text-[12px] font-bold text-[#1E7B34]">' + t('repIncome') + '</div><div class="font-extrabold text-[16px]">' + fmt(d.income) + '</div></div>' +
-    '<div class="bg-[#FDE8E8] rounded-[16px] p-3"><div class="text-[12px] font-bold text-[#C0392B]">' + t('repExpense') + '</div><div class="font-extrabold text-[16px]">' + fmt(d.expense) + '</div></div>' +
-    '<div class="bg-[#FBF6EC] rounded-[16px] p-3"><div class="text-[12px] font-bold text-[#8B7355]">' + t('repBalance') + '</div><div class="font-extrabold text-[16px]">' + fmt(d.balance) + '</div></div>' +
+    '<div class="bg-[#E6F4EA] rounded-[20px] p-4"><div class="money-lbl" style="color:#1E7B34">' + t('repIncome') + '</div><div class="money-num">' + fmt(d.income) + '</div></div>' +
+    '<div class="bg-[#FDE8E8] rounded-[20px] p-4"><div class="money-lbl" style="color:#C0392B">' + t('repExpense') + '</div><div class="money-num">' + fmt(d.expense) + '</div></div>' +
+    '<div class="bg-[#FBF6EC] rounded-[20px] p-4"><div class="money-lbl">' + t('repBalance') + '</div><div class="money-num">' + fmt(d.balance) + '</div></div>' +
   '</div>';
   h += '</div></div>';
   h += '<div class="px-4 pb-6">';
+  h += monthSummaryHtml();
+  h += monthBudgetHtml();
   h += '<div class="bg-white rounded-[22px] border border-[#F3E8D3] p-4 mb-4"><h3 class="font-extrabold text-[15px] mb-3">' + t('categoryWise') + '</h3>';
   if(!d.list.length){ h += '<p class="text-[13px] text-[#8B7355]">' + t('noExpense') + '</p>'; }
   d.list.forEach(it => {
@@ -1457,7 +1605,7 @@ function saveViewState(){
       v: currentView, lk: loansKind, pk: personKind, pi: personIdx,
       hf: histFilter, hs: histSearch, hfr: histFrom, hto: histTo, hc: histCat,
       ls: loansSearch, lfr: loansFrom, lto: loansTo, pfr: personFrom, pto: personTo,
-      hbf: homeBankFrom, hbt: homeBankTo, cd: catDetail, et: emiTab, rf: repFrom, rt: repTo
+      hbf: homeBankFrom, hbt: homeBankTo, cd: catDetail, et: emiTab, rf: repFrom, rt: repTo, ms: msOpenMonth
     }));
   }catch(e){}
 }
@@ -1488,6 +1636,7 @@ function restoreViewState(){
   if(typeof r.lto === 'string' && r.lto) loansTo = r.lto;
   if(typeof r.rf === 'string') repFrom = r.rf;
   if(typeof r.rt === 'string') repTo = r.rt;
+  if(typeof r.ms === 'string') msOpenMonth = r.ms;
   if(typeof r.pfr === 'string' && r.pfr) personFrom = r.pfr;
   if(typeof r.pto === 'string' && r.pto) personTo = r.pto;
   if(typeof r.hbf === 'string' && r.hbf) homeBankFrom = r.hbf;
@@ -1553,9 +1702,10 @@ function logoHeaderH(){
   return 24;
 }
 function render(){
-  var _sy = 0, _sv = '';
-  try{ _sy = window.scrollY || 0; _sv = currentView; }catch(e){}
+  var _sy = 0, _sv = '', _nd = '';
+  try{ _sy = window.scrollY || 0; _sv = currentView; _nd = window.__navDir || ''; }catch(e){}
   renderMainCore();
+  if(_nd === 'fwd' || _nd === 'back'){ try{ var _ap = document.getElementById('app'); if(_ap) _ap.classList.add(_nd === 'fwd' ? 'nav-anim-fwd' : 'nav-anim-back'); }catch(e){} }
   /* Same view re-render (refresh) -> pin screen EXACTLY where it was, same task, before paint. View changed -> navigation: leave it, nav handler decides. */
   if(currentView === _sv && currentView === __lastRenderedView){ __scrollToY(_sy); }
   try{ __lastRenderedView = currentView; }catch(e){}
@@ -1610,15 +1760,15 @@ function renderMainCore(){
       '</div>' +
       '<h3 class="mt-5 mb-2 font-extrabold text-[15px]">' + (lang==='en' ? 'Today' : 'আজ') + '</h3>' +
       '<div class="grid grid-cols-3 gap-2">' +
-        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayIncome\')"><div class="text-[11px] text-[#8B7355]">' + t('todayIncome') + '</div><div class="font-extrabold text-[15px] text-green-700">' + fmt(tot.tIn) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayExpense\')"><div class="text-[11px] text-[#8B7355]">' + t('todayExpense') + '</div><div class="font-extrabold text-[15px] text-red-600">' + fmt(tot.tEx) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayBalance\')"><div class="text-[11px] text-[#8B7355]">' + t('todayBalance') + '</div><div class="font-extrabold text-[15px]">' + fmt(tot.tIn - tot.tEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayIncome\')"><div class="money-lbl">' + t('todayIncome') + '</div><div class="money-num text-green-700">' + fmt(tot.tIn) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayExpense\')"><div class="money-lbl">' + t('todayExpense') + '</div><div class="money-num text-red-600">' + fmt(tot.tEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'todayBalance\')"><div class="money-lbl">' + t('todayBalance') + '</div><div class="money-num">' + fmt(tot.tIn - tot.tEx) + '</div></div>' +
       '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + (lang==='en' ? 'This Month' : 'এই মাস') + '</h3>' +
       '<div class="grid grid-cols-3 gap-2">' +
-        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthIncome\')"><div class="text-[11px] text-[#8B7355]">' + t('monthIncome') + '</div><div class="font-extrabold text-[15px] text-green-700">' + fmt(tot.mIn) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthExpense\')"><div class="text-[11px] text-[#8B7355]">' + t('monthExpense') + '</div><div class="font-extrabold text-[15px] text-red-600">' + fmt(tot.mEx) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthBalance\')"><div class="text-[11px] text-[#8B7355]">' + t('monthBalance') + '</div><div class="font-extrabold text-[15px]">' + fmt(tot.mIn - tot.mEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthIncome\')"><div class="money-lbl">' + t('monthIncome') + '</div><div class="money-num text-green-700">' + fmt(tot.mIn) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthExpense\')"><div class="money-lbl">' + t('monthExpense') + '</div><div class="money-num text-red-600">' + fmt(tot.mEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" onclick="openHomeCard(\'monthBalance\')"><div class="money-lbl">' + t('monthBalance') + '</div><div class="money-num">' + fmt(tot.mIn - tot.mEx) + '</div></div>' +
       '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + t('bazarTitle') + '</h3>' +
       '<div class="grid grid-cols-3 gap-2">' +
@@ -1628,17 +1778,14 @@ function renderMainCore(){
       '</div>' + routineWorkHtml() +
       '<div class="grid grid-cols-3 gap-2 mt-2">' +
       '<div class="card p-2.5 cursor-pointer" style="background:#EAF7EA;border-color:#A5D6A7;border-radius:20px" onclick="openIslamic()">' +
-      '<div class="flex items-center gap-1.5"><div class="text-[22px]">🕌</div><div class="flex-1" style="min-width:0">' +
-      '<div class="font-extrabold" style="font-size:13px;color:#1B5E20">' + (lang==='en' ? 'Islamic Lifestyle' : 'ইসলামিক জীবনযাপন') + '</div>' +
-      '</div></div></div>' +
+      '<div class="font-extrabold leading-tight" style="font-size:13px;color:#1B5E20">' + (lang==='en' ? 'Islamic <span style="font-size:17px">🕌</span>' : 'ইসলামিক <span style="font-size:17px">🕌</span>') + '</div>' +
+      '<div class="font-extrabold leading-tight" style="font-size:13px;color:#1B5E20">' + (lang==='en' ? 'Lifestyle' : 'জীবনযাপন') + '</div></div>' +
       '<div class="card p-2.5 cursor-pointer" style="background:#E8EEFF;border-color:#A8BFFF;border-radius:20px" onclick="openAgeCalc()">' +
-      '<div class="flex items-center gap-1.5"><div class="text-[22px]">🎂</div><div class="flex-1" style="min-width:0">' +
-      '<div class="font-extrabold" style="font-size:13px;color:#1B4D8F">' + (lang==='en' ? 'Age Calculator' : 'বয়স ক্যালকুলেটর') + '</div>' +
-      '</div></div></div>' +
+      '<div class="font-extrabold leading-tight" style="font-size:13px;color:#1B4D8F">' + (lang==='en' ? 'Age <span style="font-size:17px">🎂</span>' : 'বয়স <span style="font-size:17px">🎂</span>') + '</div>' +
+      '<div class="font-extrabold leading-tight" style="font-size:13px;color:#1B4D8F">' + (lang==='en' ? 'Calculator' : 'ক্যালকুলেটর') + '</div></div>' +
       '<div class="card p-2.5 cursor-pointer" style="background:#FFF4E0;border-color:#F0C060;border-radius:20px" onclick="openEmiCalc()">' +
-      '<div class="flex items-center gap-1.5"><div class="text-[22px]">🏦</div><div class="flex-1" style="min-width:0">' +
-      '<div class="font-extrabold" style="font-size:13px;color:#8B5A00">' + (lang==='en' ? 'EMI Calculator' : 'EMI ক্যালকুলেটর') + '</div>' +
-      '</div></div></div>' +
+      '<div class="font-extrabold leading-tight" style="font-size:13px;color:#8B5A00">' + (lang==='en' ? 'EMI <span style="font-size:17px">🏦</span>' : 'EMI <span style="font-size:17px">🏦</span>') + '</div>' +
+      '<div class="font-extrabold leading-tight" style="font-size:13px;color:#8B5A00">' + (lang==='en' ? 'Calculator' : 'ক্যালকুলেটর') + '</div></div>' +
       '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + t('loansTitle') + '</h3>' +
       '<div class="grid grid-cols-2 gap-2">' +
@@ -1717,6 +1864,7 @@ function goBackStep(){
 }
 function navGo(page){
   if(page !== currentView){ navPush(); try{ window.scrollTo(0, 0); }catch(e){} }
+  if(page !== currentView) window.__navDir = (page === 'home' ? 'back' : 'fwd');
   if(page === 'home'){ currentView = 'home'; setNavActive('home'); render(); return; }
   if(page === 'history'){ if(!histTo || histTo < histFrom) histTo = today(); currentView = 'history'; setNavActive('history'); render(); return; }
   if(page === 'profile'){ currentView = 'profile'; setNavActive('profile'); render(); return; }
@@ -4105,7 +4253,7 @@ function addBazarNote(){
   }
   inp.value = '';
   saveBazar();
-  showToast(t('saved'));
+  showToast(t('saved')); showSaveTick();
 }
 function renderBazarList(){
   const st = bazarStats();
@@ -4162,7 +4310,7 @@ function addBazarQuick(){
   if(priceEl) priceEl.value = '';
   if(dateEl) dateEl.value = today();
   if(catEl) catEl.value = '';
-  showToast(t('saved'));
+  showToast(t('saved')); showSaveTick();
 }
 function setBzCatSearch(v){
   bzCatSearch = (v || '').trim();
@@ -4268,7 +4416,7 @@ function saveBazarForm(){
       it.text = text; it.price = price; it.catIdx = bzCatIdx; it.date = date;
       it.updatedAt = new Date().toISOString();
       saveBazar();
-      flashSaved(document.querySelector('button[onclick="saveBazarForm()"]'), () => { closeBazarForm(); showToast(t('saved')); });
+      flashSaved(document.querySelector('button[onclick="saveBazarForm()"]'), () => { closeBazarForm(); showToast(t('saved')); showSaveTick(); });
       return;
     }
     const tx = {
@@ -4290,7 +4438,7 @@ function saveBazarForm(){
     it.date = date;
     it.updatedAt = new Date().toISOString();
     saveBazar();
-    flashSaved(document.querySelector('button[onclick="saveBazarForm()"]'), () => { closeBazarForm(); showToast(t('saved')); });
+    flashSaved(document.querySelector('button[onclick="saveBazarForm()"]'), () => { closeBazarForm(); showToast(t('saved')); showSaveTick(); });
   }
 }
 function bazarNo(id){
@@ -5061,7 +5209,7 @@ function saveEmiChecklist(){
   e.payments = blPayDraft.map(p => ({ id: p.id, date: p.date, payer: p.payer, channel: p.channel, amount: p.amount, note: p.note || '' }));
   e.paidEmis = e.emiPaid.slice();
   e.updatedAt = new Date().toISOString();
-  persist(); render(); flashSaved(document.getElementById('emiSaveBtn'), () => { closeEmiChecklist(); showToast(t('saved')); });
+  persist(); render(); flashSaved(document.getElementById('emiSaveBtn'), () => { closeEmiChecklist(); showToast(t('saved')); showSaveTick(); });
 }
 function renderEmiPayments(){
   var wrap = document.getElementById('emiPayWrap'); if(!wrap) return;
@@ -5290,7 +5438,7 @@ function saveLoanEntry(){
   r.entry.updatedAt = new Date().toISOString();
   persist();
   render();
-  flashSaved(loanEntrySaveBtn(), () => { closeLoanEntryForm(); showToast(t('saved')); });
+  flashSaved(loanEntrySaveBtn(), () => { closeLoanEntryForm(); showToast(t('saved')); showSaveTick(); });
 }
 function deleteLoanEntry(key){
   const r = loanEntryByKey(key);
@@ -12035,6 +12183,7 @@ function RoutineSheet(props){
     try{ updateOfflineUI(); }catch(e){}
     if(typeof navigator!=='undefined' && !navigator.onLine) return;
     try{
+      if(typeof cloudUser!=='undefined' && cloudUser && !cloudListener && typeof startCloudListener==='function'){ try{ startCloudListener(); }catch(e){} }
       if(typeof cloudUser!=='undefined' && cloudUser && typeof cloudSync==='function'){ cloudSync('sync', true); }
       else if(typeof initCloud==='function'){ initCloud(); }
     }catch(e){}
