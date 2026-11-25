@@ -2891,7 +2891,7 @@ function renderCalendarView(){
   var start = bengaliMonthStart(bp0.y, bp0.m), len = bnMonthLens(bp0.y)[bp0.m];
   var firstDt = start, hp0 = hijriParts(firstDt);
   var title = bp0.mName + ' ' + bnNum(bp0.y);
-  var subTitle = '<div style="color:#0B2A8A;font-weight:800">' + EN_GREG_MONTHS[firstDt.getMonth()] + ' ' + firstDt.getFullYear() + '</div><div style="color:#6B2D00;font-weight:800">' + (HIJRI_BN_MONTHS[hp0.m - 1] || hp0.mName) + ' ' + bnNum(hp0.y) + ' ' + (L ? 'AH' : 'হিজরি') + '</div>';
+  var subTitle = '<div style="color:#0B2A8A;font-weight:800;font-size:18px">' + EN_GREG_MONTHS[firstDt.getMonth()] + ' ' + firstDt.getFullYear() + '</div><div style="color:#6B2D00;font-weight:800;font-size:12px">' + (HIJRI_BN_MONTHS[hp0.m - 1] || hp0.mName) + ' ' + bnNum(hp0.y) + ' ' + (L ? 'AH' : 'হিজরি') + '</div>';
   var wd = L ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] : ['রবি','সোম','মঙ্গল','বুধ','বৃহ','শুক্র','শনি'];
   var head = wd.map(function(w){ return '<div class="text-center text-[12px] font-extrabold" style="color:#8B7355">' + w + '</div>'; }).join('');
   var cells = '';
@@ -2905,8 +2905,8 @@ function renderCalendarView(){
     var iso = dt.getFullYear() + '-' + (dt.getMonth() + 1 < 10 ? '0' : '') + (dt.getMonth() + 1) + '-' + (dt.getDate() < 10 ? '0' : '') + dt.getDate();
     var c1 = '#063E23', c2 = '#0B2A8A', c3 = '#6B2D00';
     cells += '<div class="' + cls + '" onclick="isl_calSelect(\'' + iso + '\')">' +
-      '<div style="font-weight:800;font-size:15px;color:' + c1 + '">' + bnNum(d) + '</div>' +
-      '<div style="font-size:11px;color:' + c2 + ';font-weight:800">' + dt.getDate() + '</div>' +
+      '<div style="font-weight:800;font-size:13px;color:' + c1 + '">' + bnNum(d) + '</div>' +
+      '<div style="font-size:16px;color:' + c2 + ';font-weight:800">' + dt.getDate() + '</div>' +
       '<div style="font-size:11px;color:' + c3 + ';font-weight:800">' + bnNum(hp.d) + '</div></div>';
   }
   var loc = userLoc || { lat: 23.8103, lon: 90.4125 };
@@ -2926,12 +2926,12 @@ function renderCalendarView(){
       '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#DCE6FF;color:#0B2A8A;border:1.5px solid #0B2A8A">● English</span>' +
       '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#FBE9D0;color:#6B2D00;border:1.5px solid #6B2D00">● ' + (L ? 'Arabic (Hijri)' : 'আরবি (হিজরি)') + '</span></div>' +
     '<div class="flex items-center justify-between mb-2"><button onclick="isl_calMove(-1)" class="px-3 py-2 rounded-full font-extrabold" style="background:#F3E8D3">◀</button>' +
-    '<div class="text-center"><div class="font-extrabold text-[16px]" style="color:#063E23">' + title + '</div><div class="text-[12px] font-bold">' + subTitle + '</div></div>' +
+    '<div class="text-center"><div class="font-extrabold text-[15px]" style="color:#063E23">' + title + '</div><div class="text-[12px] font-bold">' + subTitle + '</div></div>' +
     '<button onclick="isl_calMove(1)" class="px-3 py-2 rounded-full font-extrabold" style="background:#F3E8D3">▶</button></div>' +
     '<div class="cal-grid mb-1">' + head + '</div><div class="cal-grid">' + cells + '</div>' +
-    '<div class="card p-3 mt-3"><div class="font-extrabold text-[14px] mb-1" style="color:#0B2A8A">📅 ' + gregLabel(sel, true) + '</div>' +
-    '<div class="text-[13px]" style="color:#063E23;font-weight:800">🗓️ ' + bengaliLabel(sel) + '</div>' +
-    '<div class="text-[13px]" style="color:#6B2D00;font-weight:800">🌙 ' + hijriLabel(sel, false) + '</div>' +
+    '<div class="card p-3 mt-3"><div class="font-extrabold text-[16px] mb-1" style="color:#0B2A8A">📅 ' + gregLabel(sel, true) + '</div>' +
+    '<div class="text-[14px]" style="color:#063E23;font-weight:800">🗓️ ' + bengaliLabel(sel) + '</div>' +
+    '<div class="text-[12px]" style="color:#6B2D00;font-weight:800">🌙 ' + hijriLabel(sel, false) + '</div>' +
     '<div class="text-[13px] mt-1">⏰ ' + (L ? 'Sehri ends: ' : 'সেহরি শেষ: ') + fmtTime(pt.fajr) + ' • ' + (L ? 'Iftar: ' : 'ইফতার: ') + fmtTime(pt.maghrib) + '</div>' +
     '<div class="text-[12px] mt-1" style="color:#8B7355">' + (L ? 'Tap any date — the card and the events list below update on this same screen.' : 'যেকোনো তারিখে ট্যাপ করলে এই স্ক্রিনেই নিচে ঐ দিনের কার্ড ও ঘটনার লিস্ট বদলে যাবে।') + '</div></div>' + evHtml + '</div>';
 }
