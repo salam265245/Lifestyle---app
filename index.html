@@ -1743,61 +1743,57 @@ function ageOrdinal(n){ if(lang === 'en'){ var s = ['th','st','nd','rd'], v = n 
 function ageSetText(id, val){ var el = document.getElementById(id); if(el) el.textContent = val; }
 function ageCalcTick(){ var st = window.__ageDobTs; if(!st) return; var now = new Date(); var t = ageTotals(new Date(st), now); ageSetText('ageTotYears', ageFmt(t.years)); ageSetText('ageTotMonths', ageFmt(t.months)); ageSetText('ageTotWeeks', ageFmt(t.weeks)); ageSetText('ageTotDays', ageFmt(t.days)); ageSetText('ageTotHours', ageFmt(t.hours)); ageSetText('ageTotMins', ageFmt(t.mins)); ageSetText('ageTotSecs', ageFmt(t.secs)); }
 function openAgeCalc(){ navPush(); currentView = 'ageCalc'; setNavActive(''); render(); }
-function ageCalcSave(){ var dEl = document.getElementById('ageDob'); var tEl = document.getElementById('ageTime'); var dv = dEl ? dEl.value : ''; if(!dv){ showToast(lang === 'en' ? 'Enter a valid date of birth' : 'সঠিক জন্ম তারিখ দিন'); return; } var parts = dv.split('-'); var dob = new Date(+parts[0], +parts[1] - 1, +parts[2], 0, 0, 0, 0); var tv = tEl ? tEl.value : ''; if(tv){ var tp = tv.split(':'); dob.setHours(+tp[0] || 0, +tp[1] || 0, 0, 0); } if(isNaN(dob.getTime())){ showToast(lang === 'en' ? 'Enter a valid date of birth' : 'সঠিক জন্ম তারিখ দিন'); return; } if(dob.getTime() > Date.now()){ showToast(lang === 'en' ? 'Date of birth cannot be in the future' : 'জন্ম তারিখ ভবিষ্যতে হতে পারে না'); return; } saveLS('lifestyle_agecalc_dob', { dob: dv, time: tv || '' }); render(); }
-function ageCalcClear(){ try{ localStorage.removeItem('lifestyle_agecalc_dob'); }catch(e){} render(); }
+function ageCalcLoad(){ var sv = loadLS('lifestyle_agecalc_dob', null); var t = new Date(); var tStr = t.getFullYear() + '-' + (t.getMonth() + 1 < 10 ? '0' : '') + (t.getMonth() + 1) + '-' + (t.getDate() < 10 ? '0' : '') + t.getDate(); var st = { dob: tStr, calc: tStr, done: false }; if(sv){ if(sv.dob) st.dob = sv.dob; if(sv.calc) st.calc = sv.calc; if(sv.done) st.done = true; else if(sv.dob) st.done = true; } return st; }
+function ageCalcSaveSt(st){ saveLS('lifestyle_agecalc_dob', st); }
+function ageParseYMD(str){ var pp = String(str).split('-'); return new Date(+pp[0], +pp[1] - 1, +pp[2]); }
+function ageYMD(dt){ return dt.getFullYear() + '-' + (dt.getMonth() + 1 < 10 ? '0' : '') + (dt.getMonth() + 1) + '-' + (dt.getDate() < 10 ? '0' : '') + dt.getDate(); }
+function ageDaysInMonth(y, m){ return new Date(y, m + 1, 0).getDate(); }
+function ageNum(n){ var ss = String(Math.floor(n)); return (lang === 'en') ? ss : ageBnNum(ss); }
+var AGE_PICK_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function agePickStep(which, part, delta){ var st = ageCalcLoad(); var dt = ageParseYMD(which === 'dob' ? st.dob : st.calc); var nd; if(part === 'd'){ nd = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + delta); } else if(part === 'm'){ var nm = new Date(dt.getFullYear(), dt.getMonth() + delta, 1); nd = new Date(nm.getFullYear(), nm.getMonth(), Math.min(dt.getDate(), ageDaysInMonth(nm.getFullYear(), nm.getMonth()))); } else { var ny = new Date(dt.getFullYear() + delta, dt.getMonth(), 1); nd = new Date(ny.getFullYear(), ny.getMonth(), Math.min(dt.getDate(), ageDaysInMonth(ny.getFullYear(), ny.getMonth()))); } if(which === 'dob') st.dob = ageYMD(nd); else st.calc = ageYMD(nd); ageCalcSaveSt(st); render(); }
+function agePickCol(which, part, prevTxt, curTxt, nextTxt){ var row = function(txt, faded, delta){ return '<div onclick="agePickStep(\'' + which + '\',\'' + part + '\',' + delta + ')" style="padding:7px 0;text-align:center;font-size:' + (faded ? 15 : 17) + 'px;color:' + (faded ? '#9AA3AD' : '#222') + ';font-weight:' + (faded ? 400 : 700) + ';cursor:pointer' + (faded ? '' : ';border-top:2px solid #2F7CF6;border-bottom:2px solid #2F7CF6') + '">' + txt + '</div>'; }; return '<div style="flex:1">' + row(prevTxt, true, -1) + row(curTxt, false, 0) + row(nextTxt, true, 1) + '</div>'; }
+function agePickCard(which, label){ var st = ageCalcLoad(); var dt = ageParseYMD(which === 'dob' ? st.dob : st.calc); var m = dt.getMonth(), d = dt.getDate(), y = dt.getFullYear(); var pd = new Date(y, m, d - 1), nd2 = new Date(y, m, d + 1); return '<div class="card p-3 mb-3" style="display:flex;align-items:stretch"><div style="width:32%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:19px;font-weight:700;line-height:1.35;color:#222">' + label + '</div><div style="width:1px;background:#C9C9C9;margin:2px 0"></div><div style="flex:1;display:flex;padding-left:6px">' + agePickCol(which, 'm', AGE_PICK_MONTHS[(m + 11) % 12], AGE_PICK_MONTHS[m], AGE_PICK_MONTHS[(m + 1) % 12]) + agePickCol(which, 'd', String(pd.getDate()), String(d), String(nd2.getDate())) + agePickCol(which, 'y', String(y - 1), String(y), String(y + 1)) + '</div></div>'; }
+function ageCalcDo(){ var st = ageCalcLoad(); var dob = ageParseYMD(st.dob), calc = ageParseYMD(st.calc); if(dob.getTime() > calc.getTime()){ showToast(lang === 'en' ? 'Date of birth cannot be after the calculation date' : 'জন্ম তারিখ হিসাবের দিনের পরে হতে পারে না'); return; } st.done = true; ageCalcSaveSt(st); render(); }
+function ageCalcClear(){ var t = new Date(); var st = { dob: ageYMD(t), calc: ageYMD(t), done: false }; ageCalcSaveSt(st); render(); }
+function ageNextBday(dob, calc){ var y = calc.getFullYear(); var cand = new Date(y, dob.getMonth(), Math.min(dob.getDate(), ageDaysInMonth(y, dob.getMonth()))); var c0 = new Date(calc.getFullYear(), calc.getMonth(), calc.getDate()); var d0 = new Date(cand.getFullYear(), cand.getMonth(), cand.getDate()); if(d0.getTime() < c0.getTime()){ y++; cand = new Date(y, dob.getMonth(), Math.min(dob.getDate(), ageDaysInMonth(y, dob.getMonth()))); d0 = new Date(cand.getFullYear(), cand.getMonth(), cand.getDate()); } return { date: cand, daysLeft: Math.round((d0.getTime() - c0.getTime()) / 86400000) }; }
+function ageBdayLine(dt){ return dt.getDate() + ' ' + AGE_GREG_EN[dt.getMonth()] + ' ' + dt.getFullYear() + ' ' + AGE_WEEK_EN[dt.getDay()]; }
 function renderAgeCalcView(){
   var L = (lang === 'en');
-  var saved = loadLS('lifestyle_agecalc_dob', null);
-  var dob = null;
-  if(saved && saved.dob){ var p = String(saved.dob).split('-'); dob = new Date(+p[0], +p[1] - 1, +p[2], 0, 0, 0, 0); if(saved.time){ var tp = String(saved.time).split(':'); dob.setHours(+tp[0] || 0, +tp[1] || 0, 0, 0); } if(isNaN(dob.getTime())) dob = null; }
-  var now = new Date();
-  var formHtml = '<div class="card p-3.5 mb-3">' +
-    '<div class="font-extrabold text-[14px] mb-2">' + (L ? 'Date of Birth' : 'জন্ম তারিখ') + '</div>' +
-    '<input id="ageDob" type="date" value="' + (saved && saved.dob ? saved.dob : '') + '" class="w-full p-2.5 rounded-xl border" style="border-color:#D8CDBB" />' +
-    '<div class="font-extrabold text-[14px] mt-3 mb-2">' + (L ? 'Birth time (optional)' : 'জন্ম সময় (ইচ্ছা হলে)') + '</div>' +
-    '<input id="ageTime" type="time" value="' + (saved && saved.time ? saved.time : '') + '" class="w-full p-2.5 rounded-xl border" style="border-color:#D8CDBB" />' +
-    '<div class="flex gap-2 mt-3"><button onclick="ageCalcSave()" class="flex-1 py-2.5 rounded-full font-extrabold text-[14px]" style="background:#1B4D8F;color:#fff">' + (L ? 'Save' : 'সেভ করুন') + '</button>' +
-    (dob ? '<button onclick="ageCalcClear()" class="px-4 py-2.5 rounded-full font-extrabold text-[14px]" style="background:#F5EFE6;color:#8B7355">' + (L ? 'Clear' : 'মুছুন') + '</button>' : '') + '</div></div>';
+  var st = ageCalcLoad();
+  var dob = ageParseYMD(st.dob), calc = ageParseYMD(st.calc);
   var resHtml = '';
-  if(!dob){
-    resHtml = '<div class="text-[13px] text-[#8B7355] text-center py-2">' + (L ? 'Enter your date of birth to see the calculation.' : 'জন্ম তারিখ দিন, হিসাব দেখুন।') + '</div>';
+  if(!st.done){
+    resHtml = '<div class="text-[13px] text-[#8B7355] text-center py-2">' + (L ? 'Select the dates and press Calculate.' : 'তারিখ বেছে Calculate চাপুন।') + '</div>';
   } else {
-    var ex = ageExact(dob, now); var tt = ageTotals(dob, now); var bds = ageNextBirthdays(dob, now);
-    window.__ageDobTs = dob.getTime();
-    var dobLines = '<div class="text-[13px] text-[#8B7355]">' + ageGregLabel(dob) + '</div>' +
-      '<div class="text-[13px] text-[#8B7355]">' + ageBnLabel(dob) + '</div>' +
-      (ageHijriLabel(dob) ? '<div class="text-[13px] text-[#8B7355]">' + ageHijriLabel(dob) + '</div>' : '');
-    resHtml = '<div class="card p-3.5 mb-3" style="background:#E8EEFF;border-color:#A8BFFF">' +
-      '<div class="text-[12px] text-[#8B7355]">' + (L ? 'Current Age' : 'বর্তমান বয়স') + '</div>' +
-      '<div class="font-extrabold text-[22px]" style="color:#1B4D8F">' + ageFmt(ex.y) + (L ? ' years ' : ' বছর ') + ageFmt(ex.m) + (L ? ' months ' : ' মাস ') + ageFmt(ex.d) + (L ? ' days' : ' দিন') + '</div>' +
-      '<div class="text-[13px] mt-1">' + (L ? 'Born on ' : 'জন্মেছিলেন ') + ageWeekday(dob) + '</div>' + dobLines + '</div>';
-    resHtml += '<div class="font-extrabold text-[15px] mt-1 mb-2">' + (L ? 'Total time lived so far' : 'এখন পর্যন্ত মোট অতিবাহিত সময়') + '</div>' +
-      '<div class="grid grid-cols-2 gap-2 mb-3">' +
-      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total years' : 'মোট বছর') + '</div><div id="ageTotYears" class="font-extrabold text-[16px]">' + ageFmt(tt.years) + '</div></div>' +
-      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total months' : 'মোট মাস') + '</div><div id="ageTotMonths" class="font-extrabold text-[16px]">' + ageFmt(tt.months) + '</div></div>' +
-      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total weeks' : 'মোট সপ্তাহ') + '</div><div id="ageTotWeeks" class="font-extrabold text-[16px]">' + ageFmt(tt.weeks) + '</div></div>' +
-      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total days' : 'মোট দিন') + '</div><div id="ageTotDays" class="font-extrabold text-[16px]">' + ageFmt(tt.days) + '</div></div>' +
-      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total hours' : 'মোট ঘণ্টা') + '</div><div id="ageTotHours" class="font-extrabold text-[16px]">' + ageFmt(tt.hours) + '</div></div>' +
-      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total minutes' : 'মোট মিনিট') + '</div><div id="ageTotMins" class="font-extrabold text-[16px]">' + ageFmt(tt.mins) + '</div></div>' +
-      '</div>' +
-      '<div class="card p-3.5 mb-3 text-center" style="background:#FFF8E1;border-color:#FFE082"><div class="text-[12px] text-[#8B7355]">' + (L ? 'Total seconds (live)' : 'মোট সেকেন্ড (লাইভ)') + '</div><div id="ageTotSecs" class="font-extrabold text-[24px]" style="color:#8B5A00">' + ageFmt(tt.secs) + '</div></div>';
-    var bdRows = bds.map(function(b){
-      var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      var daysLeft = Math.ceil((b.date.getTime() - today0.getTime()) / 86400000);
-      var bHj = ageHijriLabel(b.date);
-      return '<div class="card p-3 mb-2"><div class="font-extrabold text-[14px]">' + ageOrdinal(b.age) + (L ? ' Birthday' : ' জন্মদিন') + (daysLeft === 0 ? ' • ' + (L ? 'Today!' : 'আজই!') : ' • ' + ageFmt(daysLeft) + (L ? ' days left' : ' দিন বাকি')) + '</div>' +
-        '<div class="text-[13px]">' + ageGregLabel(b.date) + ' • ' + ageWeekday(b.date) + '</div>' +
-        '<div class="text-[13px] text-[#8B7355]">' + ageBnLabel(b.date) + '</div>' +
-        (bHj ? '<div class="text-[13px] text-[#8B7355]">' + bHj + '</div>' : '') + '</div>';
-    }).join('');
-    resHtml += '<div class="font-extrabold text-[15px] mt-1 mb-2">' + (L ? 'Upcoming Birthdays' : 'আগামী জন্মদিন') + '</div>' + bdRows;
+    var ex = ageExact(dob, calc);
+    var totalDays = Math.floor((calc.getTime() - dob.getTime()) / 86400000);
+    var totalMonths = ex.y * 12 + ex.m;
+    var weeks = Math.floor(totalDays / 7), weekRem = totalDays % 7;
+    var hours = totalDays * 24, mins = hours * 60, secs = mins * 60;
+    var nb = ageNextBday(dob, calc);
+    var ageLine = ageNum(ex.y) + (L ? ' years ' : ' বছর ') + ageNum(ex.m) + (L ? ' months ' : ' মাস ') + ageNum(ex.d) + (L ? ' days' : ' দিন');
+    resHtml = '<div class="card p-4 mb-3 text-center"><div style="color:#1E88E5;font-size:16px;font-weight:700;margin-bottom:6px">' + (L ? 'Age' : 'বয়স') + '</div><div style="color:#F57C00;font-size:28px;font-weight:800">' + ageLine + '</div></div>';
+    resHtml += '<div class="card p-4 mb-3 text-center"><div style="color:#1E88E5;font-size:16px;font-weight:700;margin-bottom:6px">' + (L ? 'Next Birthday' : 'পরবর্তী জন্মদিন') + '</div><div style="color:#F57C00;font-size:21px;font-weight:700">' + ageBdayLine(nb.date) + '</div><div style="color:#222;font-size:26px;font-weight:700;margin-top:10px">' + (nb.daysLeft === 0 ? (L ? 'Today' : 'আজ') : ageNum(nb.daysLeft) + (L ? ' days later' : ' দিন পরে')) + '</div></div>';
+    var rowT = function(v){ return '<div style="display:flex;font-size:19px;color:#333;padding:2px 0"><span style="min-width:92px">' + (L ? 'Total :' : 'সর্বমোট :') + '</span><span>' + v + '</span></div>'; };
+    resHtml += '<div class="card p-4 mb-3"><div style="color:#1E88E5;font-size:16px;font-weight:700;margin-bottom:8px">' + (L ? 'Elapsed Time' : 'অতিবাহিত সময়') + '</div>' +
+      rowT(ageNum(totalMonths) + (L ? ' months ' : ' মাস ') + ageNum(ex.d) + (L ? ' days' : ' দিন')) +
+      rowT(ageNum(weeks) + (L ? ' weeks ' : ' সপ্তাহ ') + ageNum(weekRem) + (L ? ' days' : ' দিন')) +
+      rowT(ageNum(totalDays) + (L ? ' days' : ' দিন')) +
+      rowT(ageNum(hours) + (L ? ' hours' : ' ঘণ্টা')) +
+      rowT(ageNum(mins) + (L ? ' minutes' : ' মিনিট')) +
+      rowT(ageNum(secs) + (L ? ' seconds' : ' সেকেন্ড')) + '</div>';
+    var upRows = '';
+    for(var i = 0; i < 11; i++){ var yy = nb.date.getFullYear() + i; var ud = new Date(yy, dob.getMonth(), Math.min(dob.getDate(), ageDaysInMonth(yy, dob.getMonth()))); upRows += '<div style="font-size:19px;color:#333;padding:2px 0">' + ageBdayLine(ud) + '</div>'; }
+    resHtml += '<div class="card p-4 mb-3"><div style="color:#1E88E5;font-size:16px;font-weight:700;margin-bottom:8px">' + (L ? 'Upcoming Birthdays' : 'আসন্ন জন্মদিন সমূহ') + '</div>' + upRows + '</div>';
   }
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
     '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-3">🎂 ' + (L ? 'Age Calculator' : 'বয়স ক্যালকুলেটর') + '</h2>' +
-    formHtml + resHtml + '</div>';
-  if(window.__ageTimer){ try{ clearInterval(window.__ageTimer); }catch(e){} window.__ageTimer = null; }
-  if(dob){ ageCalcTick(); window.__ageTimer = setInterval(ageCalcTick, 1000); }
+    agePickCard('calc', L ? 'Select Calculation Date' : 'হিসাবের দিন নির্বাচন করুন') +
+    agePickCard('dob', L ? 'Select Birthday' : 'জন্মদিন নির্বাচন করুন') +
+    '<div class="flex gap-3 my-4"><button onclick="ageCalcDo()" class="flex-1 py-3 rounded-full font-extrabold text-[16px]" style="background:#2F7CF6;color:#fff">Calculate</button>' +
+    '<button onclick="ageCalcClear()" class="flex-1 py-3 rounded-full font-extrabold text-[16px]" style="background:#2F7CF6;color:#fff">Clear</button></div>' +
+    resHtml + '</div>';
 }
 
 
@@ -2879,19 +2875,29 @@ function calSetTab(tab){ calTab = tab; calSelected = null; render(); }
 function calSelect(iso){ calSelected = new Date(iso + 'T00:00:00'); render(); }
 function calMove(dir){
   var c = calCursor;
-  var bp = bengaliParts(c), nm = bp.m + dir, ny = bp.y;
-  if(nm < 0){ nm = 11; ny--; } if(nm > 11){ nm = 0; ny++; }
-  calCursor = bengaliMonthStart(ny, nm);
+  calCursor = new Date(c.getFullYear(), c.getMonth() + dir, 1);
   calSelected = null; render();
 }
 function renderCalendarView(){
   var L = (lang === 'en');
   var today = dayStart(new Date());
-  var bp0 = bengaliParts(calCursor);
-  var start = bengaliMonthStart(bp0.y, bp0.m), len = bnMonthLens(bp0.y)[bp0.m];
-  var firstDt = start, hp0 = hijriParts(firstDt);
-  var title = bp0.mName + ' ' + bnNum(bp0.y);
-  var subTitle = '<div style="color:#0B2A8A;font-weight:800;font-size:18px">' + EN_GREG_MONTHS[firstDt.getMonth()] + ' ' + firstDt.getFullYear() + '</div><div style="color:#6B2D00;font-weight:800;font-size:12px">' + (HIJRI_BN_MONTHS[hp0.m - 1] || hp0.mName) + ' ' + bnNum(hp0.y) + ' ' + (L ? 'AH' : 'হিজরি') + '</div>';
+  var start = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1), len = new Date(calCursor.getFullYear(), calCursor.getMonth() + 1, 0).getDate();
+  var firstDt = start;
+  var bnSeen = {}, hjSeen = {}, bnList = [], hjList = [];
+  for(var _d = 0; _d < len; _d++){
+    var _dt = new Date(start.getTime() + _d * 86400000);
+    var _bp = bengaliParts(_dt), _bk = _bp.y + '-' + _bp.m;
+    if(!bnSeen[_bk]){ bnSeen[_bk] = 1; bnList.push({ n: _bp.mName, y: _bp.y }); }
+    var _hp = hijriParts(_dt), _hk = _hp.y + '-' + _hp.m;
+    if(!hjSeen[_hk]){ hjSeen[_hk] = 1; hjList.push({ n: (L ? (HIJRI_EN_MONTHS[_hp.m - 1] || _hp.mName) : (HIJRI_BN_MONTHS[_hp.m - 1] || _hp.mName)), y: _hp.y }); }
+  }
+  function joinMonths(list){
+    if(list.length === 1) return list[0].n + ' ' + bnNum(list[0].y);
+    if(list[0].y === list[list.length - 1].y) return list.map(function(x){ return x.n; }).join('\u2013') + ' ' + bnNum(list[0].y);
+    return list.map(function(x){ return x.n + ' ' + bnNum(x.y); }).join('\u2013');
+  }
+  var title = EN_GREG_MONTHS[firstDt.getMonth()] + ' ' + firstDt.getFullYear();
+  var subTitle = '<div style="color:#063E23;font-weight:800;font-size:13px">' + joinMonths(bnList) + '</div><div style="color:#6B2D00;font-weight:800;font-size:12px">' + joinMonths(hjList) + ' ' + (L ? 'AH' : 'হিজরি') + '</div>';
   var wd = L ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] : ['রবি','সোম','মঙ্গল','বুধ','বৃহ','শুক্র','শনি'];
   var head = wd.map(function(w){ return '<div class="text-center text-[12px] font-extrabold" style="color:#8B7355">' + w + '</div>'; }).join('');
   var cells = '';
@@ -2899,13 +2905,14 @@ function renderCalendarView(){
   for(var d = 1; d <= len; d++){
     var dt = new Date(start.getTime() + (d - 1) * 86400000);
     var hp = hijriParts(dt);
+    var bp = bengaliParts(dt);
     var isT = dt.getTime() === today.getTime();
     var isS = calSelected && dt.getTime() === dayStart(calSelected).getTime();
     var cls = 'cal-cell' + (isT ? ' cal-today' : '') + (isS ? ' cal-sel' : '');
     var iso = dt.getFullYear() + '-' + (dt.getMonth() + 1 < 10 ? '0' : '') + (dt.getMonth() + 1) + '-' + (dt.getDate() < 10 ? '0' : '') + dt.getDate();
     var c1 = '#063E23', c2 = '#0B2A8A', c3 = '#6B2D00';
     cells += '<div class="' + cls + '" onclick="isl_calSelect(\'' + iso + '\')">' +
-      '<div style="font-weight:800;font-size:13px;color:' + c1 + '">' + bnNum(d) + '</div>' +
+      '<div style="font-weight:800;font-size:13px;color:' + c1 + '">' + bnNum(bp.d) + '</div>' +
       '<div style="font-size:16px;color:' + c2 + ';font-weight:800">' + dt.getDate() + '</div>' +
       '<div style="font-size:11px;color:' + c3 + ';font-weight:800">' + bnNum(hp.d) + '</div></div>';
   }
@@ -2926,7 +2933,7 @@ function renderCalendarView(){
       '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#DCE6FF;color:#0B2A8A;border:1.5px solid #0B2A8A">● English</span>' +
       '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#FBE9D0;color:#6B2D00;border:1.5px solid #6B2D00">● ' + (L ? 'Arabic (Hijri)' : 'আরবি (হিজরি)') + '</span></div>' +
     '<div class="flex items-center justify-between mb-2"><button onclick="isl_calMove(-1)" class="px-3 py-2 rounded-full font-extrabold" style="background:#F3E8D3">◀</button>' +
-    '<div class="text-center"><div class="font-extrabold text-[15px]" style="color:#063E23">' + title + '</div><div class="text-[12px] font-bold">' + subTitle + '</div></div>' +
+    '<div class="text-center"><div class="font-extrabold" style="color:#0B2A8A;font-size:18px">' + title + '</div><div class="text-[12px] font-bold">' + subTitle + '</div></div>' +
     '<button onclick="isl_calMove(1)" class="px-3 py-2 rounded-full font-extrabold" style="background:#F3E8D3">▶</button></div>' +
     '<div class="cal-grid mb-1">' + head + '</div><div class="cal-grid">' + cells + '</div>' +
     '<div class="card p-3 mt-3"><div class="font-extrabold text-[16px] mb-1" style="color:#0B2A8A">📅 ' + gregLabel(sel, true) + '</div>' +
