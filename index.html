@@ -2728,12 +2728,12 @@ function renderCalendarView(){
     var isS = calSelected && dt.getTime() === dayStart(calSelected).getTime();
     var cls = 'cal-cell' + (isT ? ' cal-today' : '');
     var iso = dt.getFullYear() + '-' + (dt.getMonth() + 1 < 10 ? '0' : '') + (dt.getMonth() + 1) + '-' + (dt.getDate() < 10 ? '0' : '') + dt.getDate();
-    var c1 = isT ? '#fff' : '#0B2A8A', c2 = isT ? '#fff' : '#063E23', c3 = isT ? '#fff' : '#C62828';
+    var c1 = isT ? '#000' : '#0B2A8A', c2 = isT ? '#000' : '#063E23', c3 = isT ? '#000' : '#C62828';
     var cellStyle = isT ? ' style="background:#063E23;border:3px solid ' + (isS ? '#FFD700' : '#063E23') + '"' : (isS ? ' style="background:#E8F5EC;border:3px solid #063E23"' : '');
     cells += '<div class="' + cls + '" onclick="isl_calSelect(\'' + iso + '\')"' + cellStyle + '>' +
-      '<div style="font-weight:' + (isS ? '900' : '800') + ';font-size:16px;color:' + c1 + '">' + dt.getDate() + '</div>' +
-      '<div style="font-size:11px;color:' + c2 + ';font-weight:' + (isS ? '900' : '800') + '">' + bnNum(bp.d) + '</div>' +
-      '<div style="font-size:11px;color:' + c3 + ';font-weight:' + (isS ? '900' : '800') + '">' + bnNum(hp.d) + '</div></div>';
+      '<div style="font-weight:' + ((isT || isS) ? '900' : '800') + ';font-size:16px;color:' + c1 + '">' + dt.getDate() + '</div>' +
+      '<div style="font-size:11px;color:' + c2 + ';font-weight:' + ((isT || isS) ? '900' : '800') + '">' + bnNum(bp.d) + '</div>' +
+      '<div style="font-size:11px;color:' + c3 + ';font-weight:' + ((isT || isS) ? '900' : '800') + '">' + bnNum(hp.d) + '</div></div>';
   }
   var loc = userLoc || { lat: 23.8103, lon: 90.4125 };
   var sel = calSelected ? dayStart(calSelected) : today;
