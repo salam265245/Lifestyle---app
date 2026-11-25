@@ -16,7 +16,7 @@
 .nav-anim-back{animation:navSlideBack .22s ease-out}
 .nav-anim-fwd{animation:navSlideFwd .22s ease-out}
 
-  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
+  html,body{overflow-anchor:none}body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#FFFBF7;}
   .card{background:#fff;border:1px solid #F3E8D3;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,0.04);}
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} #formSheet:not(.hidden){display:flex;flex-direction:column;overflow:hidden;height:92vh;} #formSheet .formSheetBody{overflow-y:auto;flex:1;min-height:0;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
@@ -676,7 +676,7 @@ body.dark [style*="background:#eee"]{background:#333 !important;color:#DDD !impo
 ========================================================================= */
 const INCOME_CATEGORIES = [{"en": "Salary", "bn": "বেতন", "icon": "💼"}, {"en": "Business", "bn": "ব্যবসা", "icon": "🏢"}, {"en": "Freelance", "bn": "ফ্রিল্যান্স", "icon": "💻"}, {"en": "Investment", "bn": "বিনিয়োগ", "icon": "📈"}, {"en": "Gift", "bn": "উপহার", "icon": "🎁"}, {"en": "Other", "bn": "অন্যান্য", "icon": "💵"}];
 const EXPENSE_CATEGORIES = [{"key": "baby", "en": "Baby & Mother", "bn": "শিশু ও মা", "icon": "👶", "items": [{"en": "Pregnancy & Childbirth", "bn": "গর্ভাবস্থা ও প্রসব", "icon": "🤰"}, {"en": "Baby Food", "bn": "শিশুর খাবার", "icon": "🍼"}, {"en": "Baby Clothing", "bn": "শিশুর পোশাক", "icon": "👶"}, {"en": "Baby Toys", "bn": "শিশুর খেলনা", "icon": "🧸"}]}, {"key": "food", "en": "Food & Grocery", "bn": "খাবার ও বাজার", "icon": "🛒", "items": [{"en": "Grocery Store", "bn": "মুদি দোকান", "icon": "🛒"}, {"en": "Vegetable Market", "bn": "কাঁচা বাজার", "icon": "🥬"}, {"en": "Fish", "bn": "মাছ", "icon": "🐟"}, {"en": "Meat", "bn": "মাংস", "icon": "🥩"}, {"en": "Milk", "bn": "দুধ", "icon": "🥛"}, {"en": "Eggs", "bn": "ডিম", "icon": "🥚"}, {"en": "Fruits", "bn": "ফল", "icon": "🍎"}, {"en": "Sweets", "bn": "মিষ্টি", "icon": "🍬"}, {"en": "Tea, Coffee & Juice", "bn": "চা/কফি ও জুস", "icon": "☕"}, {"en": "Restaurant & Hotel", "bn": "রেস্টুরেন্ট ও হোটেল", "icon": "🍽️"}, {"en": "Fast Food & Biryani", "bn": "ফাস্ট ফুড ও বিরিয়ানি", "icon": "🍔"}, {"en": "Betel Leaf & Nut", "bn": "পান-সুপারি", "icon": "🍃"}, {"en": "Cigarettes", "bn": "সিগারেট", "icon": "🚬"}, {"en": "Breakfast", "bn": "সকালের নাস্তা", "icon": "🍳"}, {"en": "Lunch", "bn": "দুপুরের খাবার", "icon": "🍛"}, {"en": "Dinner", "bn": "রাতের খাবার", "icon": "🍽️"}]}, {"key": "home", "en": "Home & Bills", "bn": "বাসা ও বিল", "icon": "🏠", "items": [{"en": "House Rent", "bn": "বাড়ি ভাড়া", "icon": "🏠"}, {"en": "Electricity Bill", "bn": "বিদ্যুৎ বিল", "icon": "💡"}, {"en": "Gas Bill", "bn": "গ্যাস বিল", "icon": "🔥"}, {"en": "Water Bill", "bn": "পানি বিল", "icon": "💧"}, {"en": "Waste / Garbage Bill", "bn": "ময়লা বিল", "icon": "🗑️"}, {"en": "Internet Bill", "bn": "ইন্টারনেট বিল", "icon": "🌐"}, {"en": "Dish / Cable TV Bill", "bn": "ডিস বিল", "icon": "📺"}, {"en": "Mobile Recharge", "bn": "মোবাইল রিচার্জ", "icon": "📱"}, {"en": "Mobile Purchase / Servicing", "bn": "মোবাইল ক্রয়/সার্ভিসিং", "icon": "📱"}, {"en": "Furniture", "bn": "ফার্নিচার", "icon": "🪑"}, {"en": "Crockery", "bn": "ক্রোকারিজ", "icon": "🍽️"}, {"en": "Hardware", "bn": "হার্ডওয়্যার", "icon": "🔧"}, {"en": "Electric & Electronics Purchase / Servicing", "bn": "ইলেকট্রিক, ইলেক্ট্রনিক্স ক্রয়/সার্ভিসিং", "icon": "🔌"}, {"en": "House Construction & Repair", "bn": "বাড়ি নির্মাণ ও মেরামত", "icon": "🏗️"}, {"en": "Maid & Security Guard", "bn": "কাজের বুয়া ও দারোয়ান", "icon": "🧹"}, {"en": "Mobile Purchase & Servicing", "bn": "মোবাইল ক্রয় ও সার্ভিসিং", "icon": "📱"}, {"en": "Computer & Laptop Purchase / Servicing", "bn": "কম্পিউটার, ল্যাপটপ ক্রয় ও সার্ভিসিং", "icon": "💻"}, {"en": "Courier & Parcel", "bn": "কুরিয়ার ও পার্সেল", "icon": "📦"}, {"en": "Subscriptions", "bn": "সাবস্ক্রিপশন", "icon": "🔁"}]}, {"key": "personal", "en": "Personal & Clothing", "bn": "ব্যক্তিগত ও পোশাক", "icon": "👤", "items": [{"en": "Clothing", "bn": "পোশাক", "icon": "👕"}, {"en": "Shoes, Bags & Umbrella", "bn": "জুতা,ব্যাগ,ছাতা", "icon": "👟"}, {"en": "Winter Clothing", "bn": "শীতের কাপড়", "icon": "🧥"}, {"en": "Tailors", "bn": "টেইলার্স", "icon": "✂️"}, {"en": "Needle, Thread & Sequins", "bn": "সুই-সুতা, চুমকি", "icon": "🧵"}, {"en": "Bedding Items", "bn": "বেডিং আইটেম", "icon": "🛏️"}, {"en": "Cosmetics", "bn": "কসমেটিকস", "icon": "💄"}, {"en": "Salon / Parlor", "bn": "সেলুন/পার্লার", "icon": "💈"}, {"en": "Laundry", "bn": "লন্ড্রি", "icon": "🧺"}, {"en": "Jewelry & Gold", "bn": "জুয়েলারি ও স্বর্ণ", "icon": "💍"}, {"en": "Watch & Glasses", "bn": "ঘড়ি, চশমা", "icon": "⌚"}]}, {"key": "transport", "en": "Transport & Vehicle", "bn": "যাতায়াত ও যানবাহন", "icon": "🏍️", "items": [{"en": "Transport Fare - Rickshaw, Auto, Bus, Train, Launch, Flight", "bn": "রিকশা, অটো, বাস, ট্রেন, লঞ্চ, বিমান ভাড়া", "icon": "🚌"}, {"en": "Bike / Car Purchase", "bn": "বাইক/গাড়ি ক্রয়", "icon": "🏍️"}, {"en": "Bike / Car Fuel & Engine Oil", "bn": "বাইক/গাড়ি জ্বালানি ও মবিল", "icon": "⛽"}, {"en": "Bike / Car Servicing & Wash", "bn": "বাইক/গাড়ি সার্ভিসিং ও ধোয়া", "icon": "🧽"}, {"en": "Loan Installment & Credit Card", "bn": "ঋণের কিস্তি ও ক্রেডিট কার্ড", "icon": "💳"}]}, {"key": "education", "en": "Education", "bn": "শিক্ষা", "icon": "🎓", "items": [{"en": "School / College Admission Fee", "bn": "স্কুল/কলেজ/ভর্তি ফি", "icon": "🎓"}, {"en": "Exam Fee & Online Application", "bn": "পরীক্ষা ফি ও অনলাইন আবেদন", "icon": "📝"}, {"en": "Private Tutor / Coaching", "bn": "প্রাইভেট/কোচিং ও টিউশন", "icon": "📚"}, {"en": "Books, Stationery & Library", "bn": "বই, খাতা, স্টেশনারি, লাইব্রেরি", "icon": "📚"}, {"en": "School, College, Madrasa Expenses", "bn": "স্কুল, কলেজ, মাদ্রাসা খরচ", "icon": "🏫"}, {"en": "Photocopy", "bn": "ফটোকপি", "icon": "🖨️"}, {"en": "Office Expenses", "bn": "অফিস খরচ", "icon": "🏢"}]}, {"key": "medical", "en": "Medical", "bn": "চিকিৎসা", "icon": "🏥", "items": [{"en": "Doctor Fee", "bn": "ডাক্তার ফি", "icon": "🩺"}, {"en": "Medicine", "bn": "ওষুধ", "icon": "💊"}, {"en": "Hospital & Ambulance", "bn": "হাসপাতাল ও অ্যাম্বুলেন্স", "icon": "🏥"}, {"en": "Medical Test", "bn": "মেডিকেল টেস্ট", "icon": "🧪"}, {"en": "Dentist & Eye Doctor", "bn": "দাঁত ও চোখের ডাক্তার", "icon": "🦷"}, {"en": "Vaccine & Physiotherapy", "bn": "টিকা ও ফিজিওথেরাপি", "icon": "💉"}, {"en": "Gym & Fitness", "bn": "জিম ও শরীরচর্চা", "icon": "🏋️"}]}, {"key": "finance", "en": "Finance & Savings", "bn": "ঋণ ও সঞ্চয়", "icon": "💰", "items": [{"en": "Cattle & Poultry Feed", "bn": "গরু, ছাগল, হাঁস-মুরগি পশু ও মাছের খাবার", "icon": "🐄"}, {"en": "Seeds, Fertilizer & Pesticides", "bn": "বীজ, সার, কীটনাশক", "icon": "🌱"}, {"en": "Farming, Irrigation & Labor", "bn": "জমি চাষ, সেচ ও লেবার", "icon": "🚜"}, {"en": "Pets & Gardening", "bn": "পোষা প্রাণী ও বাগান", "icon": "🐾"}, {"en": "Insurance, Savings, DPS, FDR", "bn": "বীমা, সঞ্চয়, DPS, FDR", "icon": "🏦"}, {"en": "Investment", "bn": "বিনিয়োগ", "icon": "📈"}, {"en": "Staff Salary", "bn": "কর্মচারীর বেতন", "icon": "💰"}, {"en": "Government Fee - Passport, Visa, NID, Driving License, BRTA, Vehicle Papers", "bn": "সরকারি ফি - পাসপোর্ট, ভিসা, NID, ড্রাইভিং লাইসেন্স, BRTA গাড়ির কাগজপত্র - ফিটনেস, ট্যাক্স টোকেন, ইন্স্যুরেন্স", "icon": "🏛️"}, {"en": "Legal Expense - Lawyer, Deed", "bn": "আইনি খরচ - উকিল, দলিল", "icon": "⚖️"}, {"en": "Land Deed / Documents", "bn": "জমির দলিল", "icon": "📜"}, {"en": "Lost / Damage", "bn": "হারানো/ক্ষতি", "icon": "⚠️"}]}, {"key": "social", "en": "Social & Religious", "bn": "সামাজিক ও ধর্মীয়", "icon": "🕌", "items": [{"en": "Wedding & Reception", "bn": "বিয়ে ও বৌভাত", "icon": "💒"}, {"en": "Birthday & Social Events", "bn": "জন্মদিন ও সামাজিক অনুষ্ঠান", "icon": "🎂"}, {"en": "Eid Shopping", "bn": "ঈদ বাজার", "icon": "🌙"}, {"en": "Qurbani, Zakat & Fitra", "bn": "কোরবানি, যাকাত, ফিতরা", "icon": "🐐"}, {"en": "Donation & Mosque/Madrasa", "bn": "দান ও মসজিদ/মাদ্রাসা", "icon": "🕌"}, {"en": "Milad / Religious Gathering", "bn": "মিলাদ", "icon": "📖"}, {"en": "Gifts", "bn": "উপহার প্রদান", "icon": "🎁"}, {"en": "Relatives Expenses", "bn": "আত্মীয় খরচ", "icon": "👨‍👩‍👧‍👦"}, {"en": "Travel & Hotel", "bn": "ভ্রমণ ও হোটেল", "icon": "✈️"}, {"en": "Park, Resort & Cinema", "bn": "পার্ক, রিসোর্ট, সিনেমা", "icon": "🎡"}, {"en": "Death & Burial / Funeral", "bn": "মৃত্যু ও কাফন-দাফন", "icon": "⚰️"}, {"en": "Graveyard, Kulkhani, Chollisha", "bn": "কবরস্থান, কুলখানি, চল্লিশা", "icon": "🪦"}, {"en": "Hajj / Umrah", "bn": "হজ্জ / ওমরাহ", "icon": "🕋"}]}, {"key": "others", "en": "Others", "bn": "অন্যান্য", "icon": "📌", "items": [{"en": "Sports & Toys", "bn": "খেলাধুলা ও খেলনা", "icon": "⚽"}, {"en": "Online Shopping", "bn": "অনলাইন শপিং", "icon": "🛒"}, {"en": "Others", "bn": "অন্যান্য", "icon": "📦"}]}];
-const MEDIUMS = [{"id": "bKash", "en": "bKash", "bn": "বিকাশ"}, {"id": "Nagad", "en": "Nagad", "bn": "নগদ"}, {"id": "Rocket", "en": "Rocket", "bn": "রকেট"}, {"id": "Bank", "en": "Bank Account", "bn": "ব্যাংক একাউন্ট"}, {"id": "Cash", "en": "Cash", "bn": "ক্যাশ"}, {"id": "Credit", "en": "Bought on Credit", "bn": "বাকিতে ক্রয় করেছি"}];
+const MEDIUMS = [{"id": "bKash", "en": "bKash", "bn": "বিকাশ"}, {"id": "Nagad", "en": "Nagad", "bn": "নগদ"}, {"id": "Rocket", "en": "Rocket", "bn": "রকেট"}, {"id": "Bank", "en": "Bank Account", "bn": "ব্যাংক একাউন্ট"}, {"id": "Cash", "en": "Cash", "bn": "ক্যাশ"}];
 
 /* Expense shows NO groups - all sub-items flat, directly. EN + BN + icon per item. */
 const EXPENSE_FLAT = EXPENSE_CATEGORIES.flatMap(g => g.items.map(it => ({ en: it.en, bn: it.bn, icon: it.icon })));
@@ -1549,6 +1549,15 @@ function logoHeaderH(){
   return 24;
 }
 function render(){
+  var _sy = 0, _sv = '';
+  try{ _sy = window.scrollY || 0; _sv = currentView; }catch(e){}
+  renderMainCore();
+  /* Same view re-render (refresh) -> pin screen EXACTLY where it was, same task, before paint. View changed -> navigation: leave it, nav handler decides. */
+  if(currentView === _sv && currentView === __lastRenderedView){ __scrollToY(_sy); }
+  try{ __lastRenderedView = currentView; }catch(e){}
+}
+function renderMainCore(){
+  if(window.__ageTimer){ try{ clearInterval(window.__ageTimer); }catch(e){} window.__ageTimer = null; }
   if(['duas','variousNamaz','fivePrayers','surahs','duasFolder','duaItem','variousNamazItem','fivePrayersItem','surahItem'].indexOf(currentView) >= 0){ currentView = 'islamic'; }
   window.__inIslamic = (currentView === 'islamic');
   try{ document.body.classList.toggle('isl-mode', window.__inIslamic); }catch(e){}
@@ -1562,6 +1571,8 @@ function render(){
   if(currentView === 'profile'){ renderProfileView(); return; }
   if(currentView === 'reports'){ renderReportsView(); return; }
   if(currentView === 'islamic'){ renderIslamicView(); return; }
+  if(currentView === 'ageCalc'){ renderAgeCalcView(); return; }
+  if(currentView === 'emiCalc'){ renderEmiCalcView(); return; }
   if(currentView === 'duas'){ renderDuasView(); return; } if(currentView === 'variousNamaz'){ renderVariousNamazView(); return; } if(currentView === 'fivePrayers'){ renderFivePrayersView(); return; } if(currentView === 'surahs'){ renderSurahsView(); return; } if(currentView === 'duasFolder'){ renderDuasFolderView(); return; } if(currentView === 'duaItem'){ renderDuaItemView(); return; } if(currentView === 'variousNamazItem'){ renderVariousNamazItemView(); return; } if(currentView === 'fivePrayersItem'){ renderFivePrayersItemView(); return; } if(currentView === 'surahItem'){ renderSurahItemView(); return; }
   const now = new Date();
   const dateStr = String(now.getDate()).padStart(2,'0') + ' ' + now.toLocaleString('en-US', {month:'long'}) + ' ' + now.getFullYear();
@@ -1610,11 +1621,23 @@ function render(){
         '<div class="card p-3 cursor-pointer" style="background:#EAF7EA" onclick="openBazar(\'bought\')"><div class="text-[11px] text-[#8B7355]">' + t('bought') + '</div><div class="font-extrabold text-[15px] text-green-700">' + bz.bought.n + ' ' + t('itemsLbl') + '</div><div class="font-extrabold text-[15px] text-green-700">' + fmt(bz.bought.sum) + '</div></div>' +
         '<div class="card p-3 cursor-pointer" style="background:#FDECEC" onclick="openBazar(\'pending\')"><div class="text-[11px] text-[#8B7355]">' + t('notBought') + '</div><div class="font-extrabold text-[15px] text-red-600">' + bz.pending.n + ' ' + t('itemsLbl') + '</div><div class="font-extrabold text-[15px] text-red-600">' + fmt(bz.pending.sum) + '</div></div>' +
       '</div>' + routineWorkHtml() +
-      '<div class="card p-3.5 cursor-pointer mt-2" style="background:#EAF7EA;border-color:#A5D6A7;border-radius:20px" onclick="openIslamic()">' +
-      '<div class="flex items-center gap-3"><div class="text-[28px]">🕌</div><div class="flex-1" style="min-width:0">' +
-      '<div class="font-extrabold" style="font-size:16px;color:#1B5E20">' + (lang==='en' ? 'Islamic Lifestyle' : 'ইসলামিক জীবনযাপন') + '</div>' +
-      '<div class="text-[12px]" style="color:#2E7D32">' + (lang==='en' ? 'Duas • Prayer rules • Short Surahs' : 'দোয়া • নামাজের নিয়ম • ছোট সূরা') + '</div>' +
-      '</div><div class="font-extrabold" style="font-size:20px;color:#2E7D32">›</div></div></div>' +
+      '<div class="grid grid-cols-3 gap-2 mt-2">' +
+      '<div class="card p-2.5 cursor-pointer" style="background:#EAF7EA;border-color:#A5D6A7;border-radius:20px" onclick="openIslamic()">' +
+      '<div class="flex items-center gap-1.5"><div class="text-[22px]">🕌</div><div class="flex-1" style="min-width:0">' +
+      '<div class="font-extrabold" style="font-size:13px;color:#1B5E20">' + (lang==='en' ? 'Islamic Lifestyle' : 'ইসলামিক জীবনযাপন') + '</div>' +
+      '<div class="text-[10px]" style="color:#2E7D32">' + (lang==='en' ? 'Duas • Prayer rules • Short Surahs' : 'দোয়া • নামাজের নিয়ম • ছোট সূরা') + '</div>' +
+      '</div><div class="font-extrabold" style="font-size:16px;color:#2E7D32">›</div></div></div>' +
+      '<div class="card p-2.5 cursor-pointer" style="background:#E8EEFF;border-color:#A8BFFF;border-radius:20px" onclick="openAgeCalc()">' +
+      '<div class="flex items-center gap-1.5"><div class="text-[22px]">🎂</div><div class="flex-1" style="min-width:0">' +
+      '<div class="font-extrabold" style="font-size:13px;color:#1B4D8F">' + (lang==='en' ? 'Age Calculator' : 'বয়স ক্যালকুলেটর') + '</div>' +
+      '<div class="text-[10px]" style="color:#2E5FA3">' + (lang==='en' ? 'Age • Birthdays • Total time' : 'বয়স • জন্মদিন • মোট সময়') + '</div>' +
+      '</div><div class="font-extrabold" style="font-size:16px;color:#2E5FA3">›</div></div></div>' +
+      '<div class="card p-2.5 cursor-pointer" style="background:#FFF4E0;border-color:#F0C060;border-radius:20px" onclick="openEmiCalc()">' +
+      '<div class="flex items-center gap-1.5"><div class="text-[22px]">🏦</div><div class="flex-1" style="min-width:0">' +
+      '<div class="font-extrabold" style="font-size:13px;color:#8B5A00">' + (lang==='en' ? 'EMI Calculator' : 'EMI ক্যালকুলেটর') + '</div>' +
+      '<div class="text-[10px]" style="color:#A86E00">' + (lang==='en' ? 'EMI • Interest • Schedule' : 'EMI • সুদ • কিস্তির হিসাব') + '</div>' +
+      '</div><div class="font-extrabold" style="font-size:16px;color:#A86E00">›</div></div></div>' +
+      '</div>' +
       '<h3 class="mt-4 mb-2 font-extrabold text-[15px]">' + t('loansTitle') + '</h3>' +
       '<div class="grid grid-cols-2 gap-2">' +
         '<div class="card p-3 cursor-pointer" onclick="openLoansPage(\'given\')"><div class="font-bold text-[13px]">↗️ ' + t('totalGiven') + '</div><div class="text-[12px] text-[#8B7355]">' + t('given') + ': ' + fmt(tot.given) + '</div><div class="text-[12px] text-[#8B7355]">' + t('returned') + ': ' + fmt(tot.returned) + '</div><div class="text-[12px] font-bold text-green-700" style="display:inline-block;background:#EAF7EA;border-radius:8px;padding:2px 6px;margin-top:2px">' + t('dueLbl') + ': ' + fmt(tot.given - tot.returned) + '</div></div>' +
@@ -1695,6 +1718,215 @@ function navGo(page){
   if(page === 'reports'){ currentView = 'reports'; setNavActive('reports'); render(); return; } /* reports live on History (PDF / Share) until the dedicated Reports page is built */
 }
 function phaseLater(name){ showToast(name + ' - ' + t('comingSoon')); }
+
+
+/* ---------- বয়স ক্যালকুলেটর (Age Calculator) — Home কার্ড থেকে খোলে ---------- */
+var AGE_WEEK_BN = ['রবিবার','সোমবার','মঙ্গলবার','বুধবার','বৃহস্পতিবার','শুক্রবার','শনিবার'];
+var AGE_WEEK_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var AGE_GREG_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var AGE_GREG_BN = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+var AGE_BN_MONTHS = ['বৈশাখ','জ্যৈষ্ঠ','আষাঢ়','শ্রাবণ','ভাদ্র','আশ্বিন','কার্তিক','অগ্রহায়ণ','পৌষ','মাঘ','ফাল্গুন','চৈত্র'];
+var AGE_HIJRI_BN = ['মহররম','সফর','রবিউল আউয়াল','রবিউস সানি','জমাদিউল আউয়াল','জমাদিউস সানি','রজব','শাবান','রমজান','শাওয়াল','জিলকদ','জিলহজ'];
+var AGE_HIJRI_EN = ['Muharram','Safar','Rabi I','Rabi II','Jumada I','Jumada II','Rajab','Shaban','Ramadan','Shawwal','Dhu al-Qadah','Dhu al-Hijjah'];
+function ageBnNum(n){ var d = ['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return String(n).split('').map(function(c){ return (c >= '0' && c <= '9') ? d[+c] : c; }).join(''); }
+function ageFmt(n){ var s = Math.floor(n).toLocaleString('en-US'); return (lang === 'en') ? s : ageBnNum(s); }
+function ageIsLeap(y){ return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+function ageBnMonthLens(by){ return [31,31,31,31,31,30,30,30,30,30, ageIsLeap(by + 594) ? 31 : 30, 30]; }
+function ageBengaliParts(date){ var y = date.getFullYear(); var start = new Date(y, 3, 14); var by, base; if(date >= start){ by = y - 593; base = start; } else { by = y - 594; base = new Date(y - 1, 3, 14); } var base0 = new Date(base.getFullYear(), base.getMonth(), base.getDate()); var d0 = new Date(date.getFullYear(), date.getMonth(), date.getDate()); var diff = Math.floor((d0 - base0) / 86400000); var lens = ageBnMonthLens(by), m = 0; while(diff >= lens[m]){ diff -= lens[m]; m++; } return { d: diff + 1, m: m, mName: AGE_BN_MONTHS[m], y: by }; }
+function ageHijriParts(date){ var d = 0, m = 0, y = 0; try{ new Intl.DateTimeFormat('en-u-ca-islamic', { day: 'numeric', month: 'numeric', year: 'numeric' }).formatToParts(date).forEach(function(pp){ if(pp.type === 'day') d = +pp.value; if(pp.type === 'month') m = +pp.value; if(pp.type === 'year') y = +pp.value; }); }catch(e){} if(!(m >= 1 && m <= 12 && d >= 1 && d <= 30 && y > 1300)) return null; return { d: d, m: m, y: y }; }
+function ageGregLabel(dt){ if(lang === 'en') return AGE_GREG_EN[dt.getMonth()] + ' ' + dt.getDate() + ', ' + dt.getFullYear(); return ageBnNum(dt.getDate()) + ' ' + AGE_GREG_BN[dt.getMonth()] + ' ' + ageBnNum(dt.getFullYear()); }
+function ageBnLabel(dt){ var p = ageBengaliParts(dt); if(lang === 'en') return 'Bangla ' + p.d + ' ' + p.mName + ' ' + p.y; return ageBnNum(p.d) + ' ' + p.mName + ' ' + ageBnNum(p.y); }
+function ageHijriLabel(dt){ var p = ageHijriParts(dt); if(!p) return ''; if(lang === 'en') return (AGE_HIJRI_EN[p.m - 1] || '') + ' ' + p.d + ', ' + p.y + ' AH'; return ageBnNum(p.d) + ' ' + (AGE_HIJRI_BN[p.m - 1] || '') + ' ' + ageBnNum(p.y) + ' হিজরি'; }
+function ageWeekday(dt){ return (lang === 'en' ? AGE_WEEK_EN : AGE_WEEK_BN)[dt.getDay()]; }
+function ageExact(dob, now){ var y = now.getFullYear() - dob.getFullYear(); var m = now.getMonth() - dob.getMonth(); var d = now.getDate() - dob.getDate(); if(d < 0){ m--; var prev = new Date(now.getFullYear(), now.getMonth(), 0); d += prev.getDate(); } if(m < 0){ y--; m += 12; } return { y: y, m: m, d: d }; }
+function ageTotals(dob, now){ var ex = ageExact(dob, now); var diff = now.getTime() - dob.getTime(); var secs = Math.floor(diff / 1000); var mins = Math.floor(secs / 60); var hrs = Math.floor(mins / 60); var days = Math.floor(hrs / 24); return { years: ex.y, months: ex.y * 12 + ex.m, weeks: Math.floor(days / 7), days: days, hours: hrs, mins: mins, secs: secs }; }
+function ageNextBirthdays(dob, now){ var out = []; var by = dob.getFullYear(), bm = dob.getMonth(), bd = dob.getDate(); var startY = now.getFullYear(); for(var y = startY; y <= startY + 6 && out.length < 5; y++){ var dd = bd; if(bm === 1 && bd === 29 && !ageIsLeap(y)) dd = 28; var cand = new Date(y, bm, dd, dob.getHours(), dob.getMinutes(), 0, 0); if(cand <= now) continue; out.push({ date: cand, age: y - by }); } return out; }
+function ageOrdinal(n){ if(lang === 'en'){ var s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); } return ageFmt(n) + 'তম'; }
+function ageSetText(id, val){ var el = document.getElementById(id); if(el) el.textContent = val; }
+function ageCalcTick(){ var st = window.__ageDobTs; if(!st) return; var now = new Date(); var t = ageTotals(new Date(st), now); ageSetText('ageTotYears', ageFmt(t.years)); ageSetText('ageTotMonths', ageFmt(t.months)); ageSetText('ageTotWeeks', ageFmt(t.weeks)); ageSetText('ageTotDays', ageFmt(t.days)); ageSetText('ageTotHours', ageFmt(t.hours)); ageSetText('ageTotMins', ageFmt(t.mins)); ageSetText('ageTotSecs', ageFmt(t.secs)); }
+function openAgeCalc(){ navPush(); currentView = 'ageCalc'; setNavActive(''); render(); }
+function ageCalcSave(){ var dEl = document.getElementById('ageDob'); var tEl = document.getElementById('ageTime'); var dv = dEl ? dEl.value : ''; if(!dv){ showToast(lang === 'en' ? 'Enter a valid date of birth' : 'সঠিক জন্ম তারিখ দিন'); return; } var parts = dv.split('-'); var dob = new Date(+parts[0], +parts[1] - 1, +parts[2], 0, 0, 0, 0); var tv = tEl ? tEl.value : ''; if(tv){ var tp = tv.split(':'); dob.setHours(+tp[0] || 0, +tp[1] || 0, 0, 0); } if(isNaN(dob.getTime())){ showToast(lang === 'en' ? 'Enter a valid date of birth' : 'সঠিক জন্ম তারিখ দিন'); return; } if(dob.getTime() > Date.now()){ showToast(lang === 'en' ? 'Date of birth cannot be in the future' : 'জন্ম তারিখ ভবিষ্যতে হতে পারে না'); return; } saveLS('lifestyle_agecalc_dob', { dob: dv, time: tv || '' }); render(); }
+function ageCalcClear(){ try{ localStorage.removeItem('lifestyle_agecalc_dob'); }catch(e){} render(); }
+function renderAgeCalcView(){
+  var L = (lang === 'en');
+  var saved = loadLS('lifestyle_agecalc_dob', null);
+  var dob = null;
+  if(saved && saved.dob){ var p = String(saved.dob).split('-'); dob = new Date(+p[0], +p[1] - 1, +p[2], 0, 0, 0, 0); if(saved.time){ var tp = String(saved.time).split(':'); dob.setHours(+tp[0] || 0, +tp[1] || 0, 0, 0); } if(isNaN(dob.getTime())) dob = null; }
+  var now = new Date();
+  var formHtml = '<div class="card p-3.5 mb-3">' +
+    '<div class="font-extrabold text-[14px] mb-2">' + (L ? 'Date of Birth' : 'জন্ম তারিখ') + '</div>' +
+    '<input id="ageDob" type="date" value="' + (saved && saved.dob ? saved.dob : '') + '" class="w-full p-2.5 rounded-xl border" style="border-color:#D8CDBB" />' +
+    '<div class="font-extrabold text-[14px] mt-3 mb-2">' + (L ? 'Birth time (optional)' : 'জন্ম সময় (ইচ্ছা হলে)') + '</div>' +
+    '<input id="ageTime" type="time" value="' + (saved && saved.time ? saved.time : '') + '" class="w-full p-2.5 rounded-xl border" style="border-color:#D8CDBB" />' +
+    '<div class="flex gap-2 mt-3"><button onclick="ageCalcSave()" class="flex-1 py-2.5 rounded-full font-extrabold text-[14px]" style="background:#1B4D8F;color:#fff">' + (L ? 'Save' : 'সেভ করুন') + '</button>' +
+    (dob ? '<button onclick="ageCalcClear()" class="px-4 py-2.5 rounded-full font-extrabold text-[14px]" style="background:#F5EFE6;color:#8B7355">' + (L ? 'Clear' : 'মুছুন') + '</button>' : '') + '</div></div>';
+  var resHtml = '';
+  if(!dob){
+    resHtml = '<div class="text-[13px] text-[#8B7355] text-center py-2">' + (L ? 'Enter your date of birth to see the calculation.' : 'জন্ম তারিখ দিন, হিসাব দেখুন।') + '</div>';
+  } else {
+    var ex = ageExact(dob, now); var tt = ageTotals(dob, now); var bds = ageNextBirthdays(dob, now);
+    window.__ageDobTs = dob.getTime();
+    var dobLines = '<div class="text-[13px] text-[#8B7355]">' + ageGregLabel(dob) + '</div>' +
+      '<div class="text-[13px] text-[#8B7355]">' + ageBnLabel(dob) + '</div>' +
+      (ageHijriLabel(dob) ? '<div class="text-[13px] text-[#8B7355]">' + ageHijriLabel(dob) + '</div>' : '');
+    resHtml = '<div class="card p-3.5 mb-3" style="background:#E8EEFF;border-color:#A8BFFF">' +
+      '<div class="text-[12px] text-[#8B7355]">' + (L ? 'Current Age' : 'বর্তমান বয়স') + '</div>' +
+      '<div class="font-extrabold text-[22px]" style="color:#1B4D8F">' + ageFmt(ex.y) + (L ? ' years ' : ' বছর ') + ageFmt(ex.m) + (L ? ' months ' : ' মাস ') + ageFmt(ex.d) + (L ? ' days' : ' দিন') + '</div>' +
+      '<div class="text-[13px] mt-1">' + (L ? 'Born on ' : 'জন্মেছিলেন ') + ageWeekday(dob) + '</div>' + dobLines + '</div>';
+    resHtml += '<div class="font-extrabold text-[15px] mt-1 mb-2">' + (L ? 'Total time lived so far' : 'এখন পর্যন্ত মোট অতিবাহিত সময়') + '</div>' +
+      '<div class="grid grid-cols-2 gap-2 mb-3">' +
+      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total years' : 'মোট বছর') + '</div><div id="ageTotYears" class="font-extrabold text-[16px]">' + ageFmt(tt.years) + '</div></div>' +
+      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total months' : 'মোট মাস') + '</div><div id="ageTotMonths" class="font-extrabold text-[16px]">' + ageFmt(tt.months) + '</div></div>' +
+      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total weeks' : 'মোট সপ্তাহ') + '</div><div id="ageTotWeeks" class="font-extrabold text-[16px]">' + ageFmt(tt.weeks) + '</div></div>' +
+      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total days' : 'মোট দিন') + '</div><div id="ageTotDays" class="font-extrabold text-[16px]">' + ageFmt(tt.days) + '</div></div>' +
+      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total hours' : 'মোট ঘণ্টা') + '</div><div id="ageTotHours" class="font-extrabold text-[16px]">' + ageFmt(tt.hours) + '</div></div>' +
+      '<div class="card p-2.5 text-center"><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total minutes' : 'মোট মিনিট') + '</div><div id="ageTotMins" class="font-extrabold text-[16px]">' + ageFmt(tt.mins) + '</div></div>' +
+      '</div>' +
+      '<div class="card p-3.5 mb-3 text-center" style="background:#FFF8E1;border-color:#FFE082"><div class="text-[12px] text-[#8B7355]">' + (L ? 'Total seconds (live)' : 'মোট সেকেন্ড (লাইভ)') + '</div><div id="ageTotSecs" class="font-extrabold text-[24px]" style="color:#8B5A00">' + ageFmt(tt.secs) + '</div></div>';
+    var bdRows = bds.map(function(b){
+      var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var daysLeft = Math.ceil((b.date.getTime() - today0.getTime()) / 86400000);
+      var bHj = ageHijriLabel(b.date);
+      return '<div class="card p-3 mb-2"><div class="font-extrabold text-[14px]">' + ageOrdinal(b.age) + (L ? ' Birthday' : ' জন্মদিন') + (daysLeft === 0 ? ' • ' + (L ? 'Today!' : 'আজই!') : ' • ' + ageFmt(daysLeft) + (L ? ' days left' : ' দিন বাকি')) + '</div>' +
+        '<div class="text-[13px]">' + ageGregLabel(b.date) + ' • ' + ageWeekday(b.date) + '</div>' +
+        '<div class="text-[13px] text-[#8B7355]">' + ageBnLabel(b.date) + '</div>' +
+        (bHj ? '<div class="text-[13px] text-[#8B7355]">' + bHj + '</div>' : '') + '</div>';
+    }).join('');
+    resHtml += '<div class="font-extrabold text-[15px] mt-1 mb-2">' + (L ? 'Upcoming Birthdays' : 'আগামী জন্মদিন') + '</div>' + bdRows;
+  }
+  document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
+    '<h2 class="font-extrabold text-[18px] mb-3">🎂 ' + (L ? 'Age Calculator' : 'বয়স ক্যালকুলেটর') + '</h2>' +
+    formHtml + resHtml + '</div>';
+  if(window.__ageTimer){ try{ clearInterval(window.__ageTimer); }catch(e){} window.__ageTimer = null; }
+  if(dob){ ageCalcTick(); window.__ageTimer = setInterval(ageCalcTick, 1000); }
+}
+
+
+/* ---------- EMI ক্যালকুলেটর (EMI Calculator) — Home কার্ড থেকে খোলে ---------- */
+var emiTab = 'home';
+function emiGroupIN(n){ var s = String(Math.round(n)); var neg = ''; if(s.charAt(0) === '-'){ neg = '-'; s = s.slice(1); } if(s.length <= 3) return neg + s; var last3 = s.slice(-3); var rest = s.slice(0, -3); var parts = []; while(rest.length > 2){ parts.unshift(rest.slice(-2)); rest = rest.slice(0, -2); } if(rest) parts.unshift(rest); return neg + parts.join(',') + ',' + last3; }
+function emiFmt(n){ var s = emiGroupIN(n); return (lang === 'en') ? s : ageBnNum(s); }
+function emiLoad(){ return loadLS('lifestyle_emi_calc', null); }
+function emiCalcSchedule(P, annualRate, n){
+  var r = annualRate / 1200;
+  var emi;
+  if(!r) emi = P / n;
+  else { var f = Math.pow(1 + r, n); emi = P * r * f / (f - 1); }
+  var rows = []; var out = P;
+  for(var k = 1; k <= n; k++){
+    var interest = out * r;
+    var principal = (k === n) ? out : (emi - interest);
+    if(principal < 0) principal = 0;
+    out = out - principal;
+    if(k === n) out = 0;
+    rows.push({ sl: k, interest: interest, principal: principal, outstanding: Math.max(0, out) });
+  }
+  var totalPay = 0, totalInt = 0;
+  rows.forEach(function(rw){ totalPay += rw.interest + rw.principal; totalInt += rw.interest; });
+  return { emi: emi, rows: rows, totalPay: totalPay, totalInt: totalInt };
+}
+function openEmiCalc(){ navPush(); currentView = 'emiCalc'; setNavActive(''); render(); }
+function emiSetTab(t){ emiTab = t; render(); }
+function emiSaveHome(){
+  var aEl = document.getElementById('emiAmount'); var rEl = document.getElementById('emiRate'); var nEl = document.getElementById('emiTenure');
+  var amount = aEl ? parseFloat(aEl.value) : NaN;
+  var rate = rEl ? parseFloat(rEl.value) : NaN;
+  var tenure = nEl ? parseInt(nEl.value, 10) : NaN;
+  if(!(amount > 0)){ showToast(lang === 'en' ? 'Enter a valid loan amount' : 'সঠিক লোনের টাকা দিন'); return; }
+  if(isNaN(rate) || rate < 0){ showToast(lang === 'en' ? 'Enter a valid interest rate' : 'সঠিক সুদের হার দিন'); return; }
+  if(!(tenure >= 1)){ showToast(lang === 'en' ? 'Enter a valid tenure in months' : 'সঠিক মেয়াদ (মাস) দিন'); return; }
+  var prev = emiLoad() || {};
+  var paid = prev.paid || 0;
+  if(paid > tenure) paid = tenure;
+  saveLS('lifestyle_emi_calc', { amount: amount, rate: rate, tenure: tenure, paid: paid });
+  render();
+}
+function emiClear(){ try{ localStorage.removeItem('lifestyle_emi_calc'); }catch(e){} emiTab = 'home'; render(); }
+function emiSetPaid(v){
+  var data = emiLoad(); if(!data) return;
+  var paid = parseInt(v, 10);
+  if(isNaN(paid)) paid = 0;
+  if(paid < 0) paid = 0;
+  if(paid > data.tenure) paid = data.tenure;
+  data.paid = paid;
+  saveLS('lifestyle_emi_calc', data);
+  render();
+}
+function renderEmiCalcView(){
+  var L = (lang === 'en');
+  var data = emiLoad();
+  var homeHtml = '<div class="card p-3.5 mb-3">' +
+    '<div class="font-extrabold text-[14px] mb-2">' + (L ? 'Loan Amount' : 'লোনের টাকা') + '</div>' +
+    '<input id="emiAmount" type="number" inputmode="decimal" value="' + (data ? data.amount : '') + '" placeholder="' + (L ? 'e.g. 500000' : 'যেমন: 500000') + '" class="w-full p-2.5 rounded-xl border" style="border-color:#D8CDBB" />' +
+    '<div class="font-extrabold text-[14px] mt-3 mb-2">' + (L ? 'Annual Interest Rate (%)' : 'বার্ষিক সুদের হার (%)') + '</div>' +
+    '<input id="emiRate" type="number" inputmode="decimal" step="0.01" value="' + (data ? data.rate : '') + '" placeholder="' + (L ? 'e.g. 9.5' : 'যেমন: 9.5') + '" class="w-full p-2.5 rounded-xl border" style="border-color:#D8CDBB" />' +
+    '<div class="font-extrabold text-[14px] mt-3 mb-2">' + (L ? 'Tenure (Months)' : 'মেয়াদ (মাস)') + '</div>' +
+    '<input id="emiTenure" type="number" inputmode="numeric" value="' + (data ? data.tenure : '') + '" placeholder="' + (L ? 'e.g. 36' : 'যেমন: 36') + '" class="w-full p-2.5 rounded-xl border" style="border-color:#D8CDBB" />' +
+    '<div class="flex gap-2 mt-3"><button onclick="emiSaveHome()" class="flex-1 py-2.5 rounded-full font-extrabold text-[14px]" style="background:#1B4D8F;color:#fff">' + (L ? 'Save' : 'সেভ করুন') + '</button>' +
+    (data ? '<button onclick="emiClear()" class="px-4 py-2.5 rounded-full font-extrabold text-[14px]" style="background:#F5EFE6;color:#8B7355">' + (L ? 'Clear' : 'মুছুন') + '</button>' : '') + '</div></div>';
+  if(data){
+    var schH = emiCalcSchedule(data.amount, data.rate, data.tenure);
+    homeHtml += '<div class="card p-3.5 mb-3" style="background:#FFF4E0;border-color:#F0C060">' +
+      '<div class="text-[12px] text-[#8B7355]">' + (L ? 'Monthly EMI' : 'মাসিক EMI') + '</div>' +
+      '<div class="font-extrabold text-[24px]" style="color:#8B5A00">' + (L ? 'Tk ' : '৳ ') + emiFmt(schH.emi) + '</div>' +
+      '<div class="grid grid-cols-2 gap-2 mt-2">' +
+      '<div><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total Payment' : 'মোট পরিশোধ') + '</div><div class="font-extrabold text-[15px]">' + (L ? 'Tk ' : '৳ ') + emiFmt(schH.totalPay) + '</div></div>' +
+      '<div><div class="text-[11px] text-[#8B7355]">' + (L ? 'Total Interest' : 'মোট সুদ') + '</div><div class="font-extrabold text-[15px]" style="color:#A94438">' + (L ? 'Tk ' : '৳ ') + emiFmt(schH.totalInt) + '</div></div>' +
+      '</div></div>';
+  }
+  var amortHtml = '';
+  if(!data){
+    amortHtml = '<div class="text-[13px] text-[#8B7355] text-center py-2">' + (L ? 'Enter your loan details on the Home tab first.' : 'প্রথমে Home ট্যাবে লোনের তথ্য দিন।') + '</div>' +
+      '<button onclick="emiSetTab(\'home\')" class="w-full py-2.5 rounded-full font-extrabold text-[14px] mb-3" style="background:#1B4D8F;color:#fff">' + (L ? 'Go to Home' : 'Home-এ যান') + '</button>';
+  } else {
+    var sch = emiCalcSchedule(data.amount, data.rate, data.tenure);
+    var paid = data.paid || 0;
+    var from = paid >= 1 ? Math.max(1, paid - 11) : 1;
+    var sumInt = 0;
+    for(var k = from; k <= paid; k++){ sumInt += sch.rows[k - 1].interest; }
+    var rangeTxt = paid >= 1 ? '(' + emiFmt(from) + (L ? ' to ' : ' থেকে ') + emiFmt(paid) + ')' : '';
+    var topHtml = '<div class="flex flex-wrap gap-2" style="position:sticky;top:0;z-index:40;background:#FFFBF7;margin:0 -16px 12px -16px;padding:10px 16px;box-shadow:0 2px 6px rgba(0,0,0,0.06);border-bottom:1px solid #EDEDED">' +
+      '<div style="flex:1;min-width:110px"><div class="text-[11px] text-[#8B7355] mb-1">' + (L ? 'Total EMI Paid' : 'মোট EMI পরিশোধ') + '</div>' +
+      '<input type="number" inputmode="numeric" value="' + paid + '" onchange="emiSetPaid(this.value)" class="w-full p-2.5 rounded-xl border font-extrabold" style="border-color:#D8CDBB" /></div>' +
+      '<div style="flex:1;min-width:110px"><div class="text-[11px] text-[#8B7355] mb-1">' + (L ? 'From (auto)' : 'শুরু (অটো)') + '</div>' +
+      '<input type="number" value="' + (paid >= 1 ? from : '') + '" readonly class="w-full p-2.5 rounded-xl border font-extrabold" style="border-color:#D8CDBB;background:#F5F5F5;color:#8B7355" /></div>' +
+      '<div style="flex:1;min-width:160px"><div class="text-[11px] text-[#8B7355] mb-1">' + (L ? 'Last 12 Months Interest Paid' : 'শেষ ১২ মাসে সুদ দেওয়া হয়েছে') + '</div>' +
+      '<div class="p-2.5 rounded-xl font-extrabold text-[15px]" style="border:1px dashed #D8AFA0;color:#A94438;background:#FFF8F5">' + (L ? 'Tk ' : '৳ ') + emiFmt(sumInt) + ' ' + rangeTxt + (L ? ' - Interest Only' : ' - শুধু সুদ') + '</div></div>' +
+      '</div>';
+    var rowsHtml = sch.rows.map(function(rw){
+      var inRange = (rw.sl >= from && rw.sl <= paid);
+      var isLastPaid = (rw.sl === paid && paid >= 1);
+      var rowStyle = inRange ? 'background:#FFF7CC;' : '';
+      var intCell = isLastPaid
+        ? '<td style="padding:8px 6px;text-align:right;background:#1F405F;color:#fff;font-weight:800">' + emiFmt(rw.interest) + '</td>'
+        : '<td style="padding:8px 6px;text-align:right;color:#A94438">' + emiFmt(rw.interest) + '</td>';
+      return '<tr onclick="emiSetPaid(' + rw.sl + ')" style="border-bottom:1px solid #EDEDED;cursor:pointer;' + rowStyle + '">' +
+        '<td style="padding:8px 6px;text-align:center;color:#1B4D8F;font-weight:700">' + emiFmt(rw.sl) + '</td>' +
+        intCell +
+        '<td style="padding:8px 6px;text-align:right;color:#1E7A4C">' + emiFmt(rw.principal) + '</td>' +
+        '<td style="padding:8px 6px;text-align:right;color:#555">' + emiFmt(rw.outstanding) + '</td></tr>';
+    }).join('');
+    amortHtml = topHtml + '<div style="overflow-x:auto;margin:0 -16px"><table style="width:100%;border-collapse:collapse;font-size:14px">' +
+      '<thead><tr style="background:#1F405F;color:#fff">' +
+      '<th style="padding:9px 6px">' + (L ? 'SL No' : 'ক্রমিক') + '</th>' +
+      '<th style="padding:9px 6px">' + (L ? 'Interest (Tk)' : 'সুদ (৳)') + '</th>' +
+      '<th style="padding:9px 6px">' + (L ? 'Principal (Tk)' : 'আসল (৳)') + '</th>' +
+      '<th style="padding:9px 6px">' + (L ? 'Outstanding (Tk)' : 'বাকি (৳)') + '</th>' +
+      '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
+  }
+  var tabBtn = function(key, icon, label){
+    var on = (emiTab === key);
+    return '<button onclick="emiSetTab(\'' + key + '\')" style="flex:1;padding:10px 4px;font-weight:800;border:none;cursor:pointer;background:' + (on ? '#1F405F' : '#fff') + ';color:' + (on ? '#fff' : '#6B7A8A') + '">' + icon + '<div style="font-size:13px;margin-top:2px">' + label + '</div></button>';
+  };
+  var tabBar = '<div style="position:sticky;bottom:0;z-index:50;display:flex;margin:16px -16px 0 -16px;border-top:1px solid #E5E5E5;box-shadow:0 -2px 8px rgba(0,0,0,0.06)">' +
+    tabBtn('home', '🏠', 'Home') +
+    tabBtn('amort', '📊', 'Amortization') + '</div>';
+  document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
+    '<h2 class="font-extrabold text-[18px] mb-3">🏦 ' + (L ? 'EMI Calculator' : 'EMI ক্যালকুলেটর') + '</h2>' +
+    (emiTab === 'amort' ? amortHtml : homeHtml) + tabBar + '</div>';
+}
 
 /* ---------- Islamic Lifestyle: full Islamic app inside this section (merged) ---------- */
 function openIslamic(){ navPush(); currentView = 'islamic'; setNavActive(''); render(); }
@@ -1807,13 +2039,14 @@ var FIVE_PRAYERS = [{"n": "ফজর — ভোরের নামাজ", "time
 
 var VARIOUS_NAMAZ = [{"n": "জুম্মা — শুক্রবারের নামাজ", "when": "কখন: প্রতি শুক্রবার, যোহরের সময়ে, মসজিদে জামাতে। জুম্মা পুরুষের উপর ফরজ (অপারগ হলে যোহর)। নারীরা চাইলে মসজিদে যেতে পারেন, না গেলে বাড়িতে যোহর পড়বেন।", "rakat": "মোট ১৪ রাকাত: ৪ সুন্নত (কাবলাল জুম্মা) + ২ ফরজ (ইমামের সাথে) + ৪ সুন্নত (বাদাল জুম্মা) + ২ সুন্নত + ২ নফল।", "steps": ["আগে গোসল করে পরিষ্কার কাপড় পরুন, সুগন্ধি লাগান। তাড়াতাড়ি মসজিদে যাওয়া সুন্নত — আগে গেলে বেশি সওয়াব।", "ইমাম খুতবা দেওয়ার আগে ৪ রাকাত সুন্নত পড়ুন।", "খুতবা চলাকালে চুপ করে মনোযোগ দিয়ে শুনুন — কথা বলবেন না, নামাজ পড়বেন না, ফোন ধরবেন না।", "ইমামের সাথে ২ রাকাত ফরজ জামাতে পড়ুন — ইমামের অনুসরণ করুন, নিজে কিরাত পড়বেন না।", "পরে ৪ + ২ সুন্নত (চাইলে ২ নফল) পড়ুন।", "জুম্মার দিন সূরা কাহফ তিলাওয়াত করা ও বেশি বেশি দরূদ পড়া সুন্নত।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) কাবলাল জুম্মা ৪ রাকাত সুন্নত — সাধারণ ৪ রাকাতের মতো পড়বেন। দাঁড়িয়ে নিয়ত মনে মনে: ‘জুম্মার ৪ রাকাত সুন্নত পড়ছি।’ তারপর তাকবিরে তাহরিমা — দুই হাত কান পর্যন্ত তুলে বলবেন: ‘আল্লাহু আকবর’ (আল্লাহ সবচেয়ে বড়)।", "২) হাত বাঁধা — ডান হাত বাম হাতের উপর রেখে নাভির নিচে (পুরুষ) / বুকের উপর (নারী) বাঁধবেন। মুখে ছানা: ‘সুবহানাকা আল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক’ (হে আল্লাহ! তুমি পবিত্র, তোমার প্রশংসাসহ; তোমার নাম বরকতময়, তোমার মর্যাদা সুউচ্চ; তুমি ছাড়া কোনো ইলাহ নেই)।", "৩) প্রতি রাকাতে — আউযুবিল্লাহ + বিসমিল্লাহ বলে সূরা ফাতিহা পড়বেন, তারপর আরেকটি সূরা মিলাবেন। ১ম-২য় রাকাতে ফাতিহা + সূরা, ৩য়-৪র্থ রাকাতে শুধু ফাতিহা।", "৪) রুকু — ‘আল্লাহু আকবর’ বলে কোমর থেকে ঝুঁকে দুই হাত দুই হাঁটুতে রাখবেন, পিঠ সোজা রাখবেন। মুখে ৩ বার (কমপক্ষে): ‘সুবহানা রব্বিয়াল আজিম’ (আমার মহান রব পবিত্র)।", "৫) রুকু থেকে ওঠা — ‘সামিআল্লাহু লিমান হামিদাহ’ (আল্লাহ তার প্রশংসা শুনেছেন, যে তার প্রশংসা করে) বলে সোজা দাঁড়াবেন, তারপর ‘রব্বানা লাকাল হামদ’ (হে আমাদের রব! সকল প্রশংসা তোমারই)।", "৬) সিজদা — ‘আল্লাহু আকবর’ বলে প্রথমে হাঁটু, তারপর হাত, তারপর কপাল-নাক মাটিতে রাখবেন। মুখে ৩ বার: ‘সুবহানা রব্বিয়াল আলা’ (আমার সর্বোচ্চ রব পবিত্র)। দুই সিজদার মাঝে বসে বলবেন: ‘রব্বিগফিরলি’ (হে আমার রব! আমাকে ক্ষমা করো)।", "৭) ২য় রাকাতের পর বৈঠক — বাম পায়ের উপর বসে ডান পা খাড়া রাখবেন, হাত দুই হাঁটুতে। মুখে তাশাহহুদ: ‘আত্তাহিয়্যাতু লিল্লাহি ওয়াস সালাওয়াতু ওয়াত তাইয়্যিবাত…’। তারপর ৩য় রাকাতের জন্য উঠবেন।", "৮) শেষ বৈঠক — তাশাহহুদ + দরূদে ইবরাহিম (‘আল্লাহুম্মা সাল্লি আলা মুহাম্মাদ…’) + দোয়া মাসূরা (‘আল্লাহুম্মা ইন্নি জালামতু নাফসি…’) পড়ে ডানে-বামে সালাম: ‘আসসালামু আলাইকুম ওয়া রহমাতুল্লাহ’ (তোমাদের উপর শান্তি ও আল্লাহর রহমত)।", "৯) খুতবা — ইমাম মিম্বরে উঠলে চুপ করে বসে মনোযোগ দিয়ে শুনবেন। এই সময় কথা বলা, নামাজ পড়া, ফোন ধরা যাবে না। খুতবার সময় কেউ কথা বললে ‘চুপ করো’ বলাও নিষেধ — ইশারায় বোঝাবেন।", "১০) ২ রাকাত ফরজ জামাতে — ইমামের পেছনে দাঁড়াবেন, নিয়ত মনে মনে: ‘জুম্মার ২ রাকাত ফরজ ইমামের সাথে পড়ছি।’ ইমাম জোরে কিরাত পড়বেন, আপনি চুপ করে শুনবেন — নিজে ফাতিহা/সূরা পড়বেন না। ইমাম রুকু-সিজদায় যা করবেন, আপনিও তাই করবেন।", "১১) বাদাল জুম্মা — ফরজের পর ৪ রাকাত সুন্নত + ২ রাকাত সুন্নত (চাইলে ২ নফল) — উপরের ৪ রাকাতের নিয়মেই পড়বেন।"], "tip": "নব মুসলিমের জন্য: খুতবা বুঝতে না পারলেও চুপ করে বসে থাকুন — এটাই নিয়ম। খুতবার সময় কেউ কথা বললে 'চুপ করো' বলাও নিষেধ — ইশারায় বোঝান। জুম্মার দিন যোহর আলাদা পড়তে হয় না।"}, {"n": "জানাজা — মৃত ব্যক্তির জন্য দোয়ার নামাজ", "when": "কখন: কেউ মারা গেলে, দাফনের আগে। এতে রুকু-সিজদা নেই, শুধু দাঁড়িয়ে ৪ তাকবির।", "rakat": "৪ তাকবিরে ১ বার দাঁড়িয়ে দোয়া।", "steps": ["ওজু করে কিবলামুখী হয়ে লাশের পেছনে কাতারে দাঁড়ান। পুরুষের লাশ হলে ইমাম লাশের বুক বরাবর দাঁড়ান।", "নিয়ত: 'এই মৃত ব্যক্তির জানাজার নামাজ পড়ছি।'", "১ম তাকবির (আল্লাহু আকবর) বলে হাত বেঁধে ছানা পড়ুন।", "২য় তাকবির বলে দরূদ শরিফ পড়ুন।", "৩য় তাকবির বলে মৃত ব্যক্তির জন্য দোয়া করুন — 'আল্লাহুম্মাগফির লিহাইয়্যিনা ওয়া মাইয়্যিতিনা ওয়া শাহিদিনা ওয়া গাইবিনা...' (জানাজার দোয়া বিভিন্ন দোয়া পেজে আছে)।", "৪র্থ তাকবির বলে ডানে-বামে সালাম ফিরিয়ে শেষ করুন।", "জানাজার পর দাফনে অংশ নেওয়া ও মৃতের পরিবারকে সান্ত্বনা দেওয়া সুন্নত।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) দাঁড়ানো — ওজু করে কিবলামুখী হয়ে লাশের পেছনে কাতারে দাঁড়াবেন। জুতা খুলে কাতারে দাঁড়ানো ভালো। নিয়ত মনে মনে: ‘এই মৃত ব্যক্তির জানাজার নামাজ আল্লাহর জন্য পড়ছি।’", "২) ১ম তাকবির — দুই হাত কান পর্যন্ত তুলে বলবেন: ‘আল্লাহু আকবর’। তারপর হাত বেঁধে ছানা পড়বেন: ‘সুবহানাকা আল্লাহুম্মা ওয়া বিহামদিকা ওয়া তাবারাকাসমুকা ওয়া তাআলা জাদ্দুকা ওয়া লা ইলাহা গাইরুক’। জানাজায় ছানার পর ফাতিহা পড়া হয় না।", "৩) ২য় তাকবির — হাত না তুলে শুধু মুখে বলবেন: ‘আল্লাহু আকবর’। তারপর দরূদে ইবরাহিম পড়বেন: ‘আল্লাহুম্মা সাল্লি আলা মুহাম্মাদিওঁ ওয়া আলা আলি মুহাম্মাদ…’।", "৪) ৩য় তাকবির — আবার শুধু মুখে: ‘আল্লাহু আকবর’। তারপর মৃত ব্যক্তির জন্য দোয়া করবেন: ‘আল্লাহুম্মাগফির লিহাইয়্যিনা ওয়া মাইয়্যিতিনা ওয়া শাহিদিনা ওয়া গাইবিনা ওয়া সগিরিনা ওয়া কাবিরিনা ওয়া জাকারিনা ওয়া উনসানা’ (হে আল্লাহ! আমাদের জীবিত-মৃত, উপস্থিত-অনুপস্থিত, ছোট-বড়, পুরুষ-নারী সবাইকে ক্ষমা করো)। মুখস্থ না থাকলে মনে মনে বলুন: ‘হে আল্লাহ! এই মানুষটাকে ক্ষমা করে দাও।’", "৫) ৪র্থ তাকবির — শুধু মুখে: ‘আল্লাহু আকবর’। তারপর ডানে-বামে সালাম ফিরাবেন: ‘আসসালামু আলাইকুম ওয়া রহমাতুল্লাহ’।", "৬) মনে রাখবেন — জানাজায় রুকু নেই, সিজদা নেই, পুরোটাই দাঁড়িয়ে ৪ তাকবির। তাকবিরে হাত তোলা হয় শুধু প্রথমবার, বাকি ৩ বার হাত বাঁধা অবস্থায় শুধু মুখে তাকবির।"], "tip": "জানাজার দোয়া মুখস্থ না থাকলে ৩য় তাকবিরের পর মনে মনে বলুন: 'হে আল্লাহ! এই মানুষটাকে ক্ষমা করে দাও।'"}, {"n": "ঈদের নামাজ — ঈদুল ফিতর ও ঈদুল আজহা", "when": "কখন: ঈদের দিন সকালে, সূর্য ওঠার কিছু পর থেকে দুপুরের আগ পর্যন্ত — ঈদগাহ বা মসজিদে, জামাতে।", "rakat": "২ রাকাত, অতিরিক্ত ৬ তাকবিরসহ, ইমামের সাথে।", "steps": ["ঈদের দিন গোসল করে নতুন/পরিষ্কার কাপড় পরুন, সুগন্ধি লাগান।", "ঈদুল ফিতরে নামাজের আগে মিষ্টি/খেজুর খান এবং ফিতরা আগেই আদায় করুন। ঈদুল আজহায় কুরবানি নামাজের পর।", "তাকবির বলতে বলতে ঈদগাহে যান — ঈদুল আজহার দিনগুলোতে তাকবিরে তাশরিক পড়া ওয়াজিব।", "এক রাস্তা দিয়ে যাওয়া, অন্য রাস্তা দিয়ে ফেরা সুন্নত।", "ইমামের পেছনে নিয়ত করে দাঁড়ান।", "১ম রাকাতে: তাকবিরে তাহরিমার পর আরও ৩ বার অতিরিক্ত তাকবির — প্রতিবার হাত ছেড়ে দিন। তারপর ফাতিহা + সূরা।", "২য় রাকাতে: ফাতিহা + সূরার পর রুকুর আগে আরও ৩ বার অতিরিক্ত তাকবির।", "নামাজের পর খুতবা শুনে তারপর উঠবেন — খুতবা শোনা সুন্নত।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) নিয়ত — ইমামের পেছনে দাঁড়িয়ে মনে মনে: ‘ঈদের ২ রাকাত ওয়াজিব নামাজ ইমামের সাথে পড়ছি।’ ইমাম তাকবিরে তাহরিমা বললে আপনিও হাত তুলে বলবেন: ‘আল্লাহু আকবর’, তারপর হাত বাঁধবেন।", "২) ছানা — হাত বেঁধে ছানা পড়বেন: ‘সুবহানাকা আল্লাহুম্মা ওয়া বিহামদিকা…’।", "৩) ১ম রাকাতে অতিরিক্ত ৩ তাকবির — ছানার পর ইমাম ৩ বার অতিরিক্ত তাকবির বলবেন। প্রতিবার আপনিও হাত কান পর্যন্ত তুলে ‘আল্লাহু আকবর’ বলে হাত ছেড়ে দেবেন (বাঁধবেন না)। ৩য় তাকবিরের পর হাত বেঁধে ফেলবেন।", "৪) কিরাত — তারপর ইমাম জোরে ফাতিহা + সূরা পড়বেন, আপনি চুপ করে শুনবেন। তারপর ইমামের সাথে রুকু (‘সুবহানা রব্বিয়াল আজিম’ ৩ বার) ও সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার) করবেন।", "৫) ২য় রাকাত — দাঁড়িয়ে ইমাম ফাতিহা + সূরা পড়বেন। সূরা শেষে রুকুতে যাওয়ার আগে আবার অতিরিক্ত ৩ বার তাকবির — প্রতিবার হাত তুলে ছেড়ে দেবেন। তারপর ৪র্থ তাকবির (‘আল্লাহু আকবর’) বলে রুকুতে যাবেন।", "৬) শেষ — ২য় রাকাতের শেষে বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা পড়ে ডানে-বামে সালাম ফিরাবেন। তারপর বসে খুতবা শুনবেন — খুতবা শেষ হওয়ার আগে উঠবেন না।", "৭) মনে রাখবেন — অতিরিক্ত তাকবিরে ভুল হয়ে গেলেও ঘাবড়াবেন না, ইমামকে অনুসরণ করুন। ঈদের নামাজে আজান-ইকামত হয় না।"], "tip": "অতিরিক্ত তাকবিরে ভুল হয়ে গেলেও ঘাবড়াবেন না — ইমামকে অনুসরণ করুন। ইমাম যা করছেন, আপনিও তাই করুন।"}, {"n": "তারাবি — রমজানের রাতের নামাজ", "when": "কখন: রমজান মাসে, এশার পর, বিতরের আগে।", "rakat": "২০ রাকাত (২+২ করে), তারপর ৩ রাকাত বিতর।", "steps": ["এশার ফরজ + সুন্নত পড়ে নিন।", "তারপর ২ রাকাত করে ২০ রাকাত তারাবি পড়ুন — প্রতি ৪ রাকাত পর একটু বসে বিশ্রাম নিন। 'তারাবিহ' মানেই বিশ্রাম।", "প্রতি ৪ রাকাত পর তারাবির দোয়া পড়া হয় (মসজিদে ইমাম পড়েন, শুনলেই হবে)।", "তারাবি শেষে ৩ রাকাত বিতর পড়ুন।", "তারাবি জামাতে পড়া উত্তম — খতমে তারাবিতে পুরো কুরআন শোনা যায়। তবে একা পড়লেও হবে (সূরা তারাবি)।", "২০ রাকাত লম্বা মনে হলে ২ রাকাত করে পড়ুন, যতটুকু পারেন পড়ুন — পুরো কুরআন শোনা জরুরি নয়।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) শুরু — এশার ফরজ (৪ রাকাত) + সুন্নত (২ রাকাত) আগে পড়ে নেবেন। তারপর নিয়ত মনে মনে: ‘তারাবির ২ রাকাত সুন্নত পড়ছি।’", "২) প্রতি ২ রাকাত — সাধারণ ২ রাকাতের নিয়মেই: তাকবিরে তাহরিমা (‘আল্লাহু আকবর’) → হাত বেঁধে ছানা → ফাতিহা + সূরা → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ বলে দাঁড়িয়ে ‘রব্বানা লাকাল হামদ’ → সিজদায় ‘সুবহানা রব্বিয়াল আলা’ ৩ বার (২ বার সিজদা, মাঝে বসে ‘রব্বিগফিরলি’) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৩) প্রতি ৪ রাকাত পর বিশ্রাম — ২+২ করে ৪ রাকাত হলে একটু বসে বিশ্রাম নেবেন, দরূদ/জিকির করবেন। ‘তারাবিহ’ মানেই বিশ্রাম। এভাবে মোট ২০ রাকাত।", "৪) জামাতে পড়লে — ইমাম যা পড়বেন চুপ করে শুনবেন, ইমামের সাথে রুকু-সিজদা করবেন। একা পড়লেও একই নিয়ম, শুধু নিজে কিরাত পড়বেন।", "৫) শেষে বিতর — তারাবির পর ৩ রাকাত বিতর পড়বেন (বিতরের নিয়ম এই পেজের বিতর অংশে)।"], "tip": "২০ রাকাত লম্বা মনে হলে ঘাবড়াবেন না — ২ রাকাত করে পড়ুন, যতটুকু পারেন পড়ুন। পুরো কুরআন শোনা জরুরি নয়।"}, {"n": "বিতর — রাতের শেষ নামাজ", "when": "কখন: এশার পর থেকে ফজরের আগ পর্যন্ত — রাতের শেষ নামাজ। বিতর ওয়াজিব।", "rakat": "৩ রাকাত।", "steps": ["নিয়ত: 'বিতরের ৩ রাকাত ওয়াজিব নামাজ পড়ছি।'", "প্রথম ২ রাকাত সাধারণ নামাজের মতো পড়ুন, ২য় রাকাতের পর বৈঠকে তাশাহহুদ পড়ে উঠুন।", "৩য় রাকাতে ফাতিহা + সূরা পড়ার পর হাত তুলে তাকবির বলুন, হাত বেঁধে দোয়া কুনুত পড়ুন: 'আল্লাহুম্মা ইন্না নাস্তাইনুকা...' (দোয়া কুনুত বিভিন্ন দোয়া পেজে আছে)।", "তারপর রুকু-সিজদা করে বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা পড়ে সালাম ফিরান।", "তাহাজ্জুদ পড়ার ইচ্ছা থাকলে বিতর তাহাজ্জুদের পরে পড়বেন — না হলে এশার সাথেই পড়ে নিন।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) নিয়ত — মনে মনে: ‘বিতরের ৩ রাকাত ওয়াজিব নামাজ পড়ছি।’ তাকবিরে তাহরিমা (‘আল্লাহু আকবর’) বলে হাত বাঁধবেন, ছানা পড়বেন।", "২) ১ম রাকাত — ফাতিহা + সূরা (যেমন সূরা আলা বা যেকোনো সূরা) → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → দাঁড়িয়ে ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে)।", "৩) ২য় রাকাত — দাঁড়িয়ে ফাতিহা + সূরা → রুকু → ২ সিজদা। তারপর বৈঠকে শুধু তাশাহহুদ (‘আত্তাহিয়্যাতু…’) পড়ে ৩য় রাকাতের জন্য উঠবেন (সালাম ফিরাবেন না)।", "৪) ৩য় রাকাত — দাঁড়িয়ে ফাতিহা + সূরা পড়ার পর হাত বাঁধা অবস্থায় তাকবির (‘আল্লাহু আকবর’) বলে আবার হাত বাঁধবেন। তারপর দোয়া কুনুত পড়বেন: ‘আল্লাহুম্মা ইন্না নাস্তাইনুকা ওয়া নাস্তাগফিরুকা ওয়া নু’মিনু বিকা ওয়া নাতাওয়াক্কালু আলাইকা ওয়া নুসনি আলাইকাল খাইর…’ (হে আল্লাহ! আমরা তোমারই সাহায্য চাই, তোমারই কাছে ক্ষমা চাই, তোমার উপর ঈমান আনি, তোমার উপর ভরসা করি…)।", "৫) শেষ — দোয়া কুনুতের পর রুকু → ২ সিজদা → শেষ বৈঠকে তাশাহহুদ + দরূদে ইবরাহিম + দোয়া মাসূরা → ডানে-বামে সালাম।", "৬) দোয়া কুনুত মুখস্থ না থাকলে — তাকবিরের পর দাঁড়িয়ে ৩ বার বলুন: ‘রব্বানা আতিনা ফিদ্দুনিয়া হাসানাতাওঁ ওয়া ফিল আখিরাতি হাসানাতাওঁ ওয়া কিনা আজাবান নার’ (হে আমাদের রব! দুনিয়াতে কল্যাণ দাও, আখিরাতেও কল্যাণ দাও, জাহান্নামের আজাব থেকে বাঁচাও)।"], "tip": "দোয়া কুনুত মুখস্থ না থাকলে তার বদলে ৩ বার 'আল্লাহুম্মাগফিরলি' বা যেকোনো ছোট দোয়া পড়ুন — পরে কুনুত মুখস্থ করে নেবেন। দোয়া কুনুত বিভিন্ন দোয়া পেজে আছে।"}, {"n": "ওযু — নামাজের আগে পবিত্রতা", "when": "কখন: প্রত্যেক নামাজের আগে। ওযু ছাড়া নামাজ হয় না। এক ওযু দিয়ে একাধিক নামাজ পড়া যায়, যতক্ষণ ওযু না ভাঙে।", "rakat": "ওযু নামাজ নয় — পবিত্রতার কাজ। প্রতিটা অঙ্গ ৩ বার ধোয়া সুন্নত, ১ বার ধুলেও ওযু হয়ে যায়।", "steps": ["নিয়ত করুন: 'আমি ওযু করছি।' বিসমিল্লাহ বলুন।", "দুই হাতের কবজি পর্যন্ত ৩ বার ধুন।", "৩ বার কুলি করুন, ৩ বার নাকে পানি দিয়ে ঝেড়ে ফেলুন।", "মুখমণ্ডল ৩ বার ধুন — কপালের চুলের গোড়া থেকে থুতনি পর্যন্ত, এক কান থেকে আরেক কান পর্যন্ত।", "ডান হাত কনুইসহ ৩ বার, তারপর বাম হাত কনুইসহ ৩ বার ধুন।", "ভেজা হাতে মাথা মাসেহ করুন ১ বার — সামনে থেকে পেছনে, আবার সামনে। একই সাথে কান মাসেহ করুন।", "ডান পা গোড়ালিসহ ৩ বার, তারপর বাম পা গোড়ালিসহ ৩ বার ধুন। আঙুলের ফাঁক খিলাল করুন।", "ওযুর পর দোয়া পড়ুন: 'আশহাদু আল্লা ইলাহা ইল্লাল্লাহু ওয়া আশহাদু আন্না মুহাম্মাদান আবদুহু ওয়া রাসূলুহু।'", "ওযু ভেঙে যায়: প্রস্রাব-পায়খানা, বায়ু নির্গত হওয়া, গভীর ঘুম, অজ্ঞান হয়ে যাওয়া।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) নিয়ত — মনে মনে: ‘ওযু করছি, আল্লাহর জন্য পবিত্র হচ্ছি।’ শুরুতে বলবেন: ‘বিসমিল্লাহির রহমানির রহিম’ (আল্লাহর নামে শুরু করছি, যিনি পরম করুণাময়, অতি দয়ালু)।", "২) দুই হাত — দুই কবজি পর্যন্ত ৩ বার ধোবেন, আঙুলের ফাঁকে ফাঁকে পানি পৌঁছে দেবেন।", "৩) কুলি — ৩ বার মুখে পানি নিয়ে ভালো করে কুলি করবেন, মুখের ভেতরে সব জায়গায় পানি লাগাবেন।", "৪) নাক — ৩ বার নাকে পানি দিয়ে বাম হাতে নাক ঝেড়ে পরিষ্কার করবেন।", "৫) মুখ — কপালের চুলের গোড়া থেকে থুতনি পর্যন্ত, এক কান থেকে আরেক কান পর্যন্ত — পুরো মুখ ৩ বার ধোবেন। দাড়ি থাকলে আঙুল দিয়ে দাড়ির ভেতরে পানি পৌঁছে দেবেন।", "৬) দুই হাত — কনুইসহ ডান হাত ৩ বার, তারপর বাম হাত ৩ বার ধোবেন।", "৭) মাথা মাসেহ — দুই হাত ভিজিয়ে কপাল থেকে ঘাড়ের গোড়া পর্যন্ত একবার টেনে আনবেন, তারপর ফিরিয়ে আনবেন। তারপর দুই হাতের শাহাদাত আঙুল দিয়ে কানের ভেতর, বুড়ো আঙুল দিয়ে কানের বাইরে মাসেহ করবেন। ঘাড় মাসেহ করা সুন্নত।", "৮) দুই পা — টাখনুসহ ডান পা ৩ বার, তারপর বাম পা ৩ বার ধোবেন। পায়ের আঙুলের ফাঁকে পানি পৌঁছে দেবেন।", "৯) শেষে দোয়া — আকাশের দিকে তাকিয়ে (বা মনে মনে) পড়বেন: ‘আশহাদু আল্লা ইলাহা ইল্লাল্লাহু ওয়াহদাহু লা শারিকা লাহু ওয়া আশহাদু আন্না মুহাম্মাদান আবদুহু ওয়া রসূলুহ’ (আমি সাক্ষ্য দিচ্ছি আল্লাহ ছাড়া কোনো ইলাহ নেই, তিনি এক, তার কোনো শরিক নেই; আর মুহাম্মাদ (সা.) তার বান্দা ও রাসূল)।", "১০) মনে রাখবেন — ওযু ভেঙে যায়: প্রস্রাব-পায়খানা হলে, বায়ু বের হলে, গভীর ঘুম হলে, শরীর থেকে রক্ত/পুঁজ গড়িয়ে পড়লে।"], "tip": "পানি অপচয় করবেন না — নবী (সা.) অল্প পানি দিয়ে ওযু করতেন। পানি না পেলে বা অসুস্থতায় পানি ব্যবহারে ক্ষতি হলে তায়াম্মুম করবেন: পবিত্র মাটি/ধুলায় হাত মেরে মুখ ও হাত মাসেহ করা।"}, {"n": "সাহু সিজদা — নামাজে ভুল হলে", "when": "কখন: নামাজে কোনো ওয়াজিব ছুটে গেলে বা ভুল হলে — যেমন বৈঠক ভুলে যাওয়া, সূরা মিলাতে ভুলে যাওয়া, রাকাত কম-বেশি হওয়া।", "rakat": "শেষ বৈঠকে তাশাহহুদ পড়ে ২টি অতিরিক্ত সিজদা।", "steps": ["ভুল হলে নামাজ ভেঙে ফেলবেন না — শেষ পর্যন্ত পড়ে যান, সাহু সিজদা দিলেই ঠিক হয়ে যাবে।", "শেষ বৈঠকে তাশাহহুদ পড়ে শুধু ডান দিকে সালাম ফিরান।", "তারপর ২টি সিজদা করুন — প্রতিটায় 'সুবহানা রাব্বিয়াল আ'লা' ৩ বার।", "আবার বসে তাশাহহুদ + দরূদ + দোয়া মাসূরা পড়ে দুই দিকে সালাম ফিরান।", "কোনো ফরজ ছুটে গেলে (যেমন রুকু/সিজদা একদম বাদ) সাহু সিজদায় হবে না — নামাজ আবার পড়তে হবে।", "কত রাকাত পড়লাম সন্দেহ হলে কম রাকাত ধরে নিয়ে শেষে সাহু সিজদা দিন।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) কখন লাগে — নামাজে কোনো ওয়াজিব ছুটে গেলে (যেমন: ১ম বৈঠকে তাশাহহুদ না পড়ে উঠে যাওয়া, ফাতিহার পর সূরা মিলাতে ভুলে যাওয়া, ৩ রাকাতে বসে পড়া), বা কোনো কাজ বেশি/কম হয়ে গেলে।", "২) শেষ বৈঠকে — নামাজের শেষ রাকাতের বৈঠকে তাশাহহুদ (‘আত্তাহিয়্যাতু…’) পর্যন্ত পড়বেন।", "৩) ডান দিকে সালাম — শুধু ডান দিকে একবার সালাম ফিরাবেন: ‘আসসালামু আলাইকুম ওয়া রহমাতুল্লাহ’।", "৪) ২টি সাহু সিজদা — ‘আল্লাহু আকবর’ বলে ২ বার সিজদা করবেন, প্রতি সিজদায় ৩ বার: ‘সুবহানা রব্বিয়াল আলা’। দুই সিজদার মাঝে বসে ‘রব্বিগফিরলি’ বলবেন।", "৫) আবার বৈঠক — সিজদা থেকে উঠে আবার বসে পুরো তাশাহহুদ + দরূদে ইবরাহিম + দোয়া মাসূরা পড়ে ডানে-বামে দুই দিকে সালাম ফিরাবেন।", "৬) মনে রাখবেন — ফরজ ছুটে গেলে সাহু সিজদায় হবে না, সেই রাকাত আবার পড়তে হবে। সন্দেহ হলে কম রাকাত ধরে নিয়ে বাকিটা পড়ে সাহু সিজদা করবেন।"], "tip": "সাহু সিজদা নিয়ে দুশ্চিন্তা করবেন না — ভুল হতেই পারে। সন্দেহ হলেই সাহু সিজদা দিয়ে দিন, এতেই নামাজ শুদ্ধ হয়ে যায়।"}, {"n": "তাহাজ্জুদ — রাতের নফল নামাজ", "when": "কখন: গভীর রাতে, ঘুম থেকে উঠে, ফজরের আগে। শেষ রাতের তৃতীয়াংশ উত্তম — তখন আল্লাহ দোয়া কবুলের জন্য বিশেষভাবে নিকটবর্তী হন।", "rakat": "২ থেকে ১২ রাকাত (২+২ করে)।", "steps": ["ঘুম থেকে উঠে ওজু করে নিন।", "নিয়ত: 'তাহাজ্জুদের ২ রাকাত নফল পড়ছি।'", "২ রাকাত করে পড়ুন — সাধারণ নামাজের মতোই। চাইলে লম্বা কিরাত ও লম্বা সিজদা করুন।", "সিজদায় ও নামাজের পর মন খুলে দোয়া করুন — তাহাজ্জুদ দোয়া কবুলের সেরা সময়।", "শেষে বিতর পড়ুন (এশার সাথে আগে না পড়ে থাকলে)।", "নিয়মিত অল্প করে পড়া উত্তম — প্রতিদিন ২ রাকাত হলেও চলবে।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) সময় — এশার পর ঘুমিয়ে রাতে উঠে, ফজরের আগে পর্যন্ত। সবচেয়ে ভালো সময় রাতের শেষ তৃতীয়াংশ।", "২) নিয়ত — মনে মনে: ‘তাহাজ্জুদের ২ রাকাত নফল নামাজ পড়ছি।’ ২+২ করে পড়বেন — চাইলে ২, ৪, ৬, ৮ রাকাত।", "৩) প্রতি ২ রাকাত — সাধারণ ২ রাকাতের নিয়মেই: তাকবিরে তাহরিমা → ছানা → ফাতিহা + সূরা → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ + ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৪) সিজদায় দোয়া — তাহাজ্জুদের সিজদায় মন খুলে দোয়া করবেন, নিজের ভাষায়ও চাইতে পারেন। রাতের এই সময় দোয়া কবুলের সময়।", "৫) শেষে — তাহাজ্জুদ শেষে বিতর পড়বেন (যদি আগে না পড়ে থাকেন), তারপর দোয়া-ইস্তেগফার করবেন।"], "tip": "প্রতিদিন না পারলেও সপ্তাহে ১-২ দিন চেষ্টা করুন। তাহাজ্জুদের পর ফজরের জন্য জেগে থাকুন — ঘুমিয়ে গেলে ফজর কাযা হয়ে যেতে পারে।"}, {"n": "ইশরাক — সকালের নামাজ", "when": "কখন: সূর্য ওঠার ১৫-২০ মিনিট পর।", "rakat": "২ বা ৪ রাকাত।", "steps": ["ফজর জামাতে পড়ে নিজের জায়গায় বসে জিকির/তিলাওয়াত করুন।", "সূর্য ওঠার ১৫-২০ মিনিট পর ২ রাকাত নফল পড়ুন — নিয়ত: 'ইশরাকের ২ রাকাত নফল পড়ছি।'", "হাদিসে আছে, এভাবে পড়লে হজ ও ওমরাহর সওয়াব পাওয়া যায়।", "ফজরের পর মসজিদে/জায়গায় বসে থাকতে না পারলেও বাড়ি গিয়ে সূর্য ওঠার পর পড়ে নিতে পারেন।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) সময় — সূর্য ওঠার প্রায় ১৫-২০ মিনিট পর থেকে। সূর্য ওঠার সময় নামাজ পড়া যাবে না, তাই একটু অপেক্ষা করবেন।", "২) নিয়ত — মনে মনে: ‘ইশরাকের ২ রাকাত নফল নামাজ পড়ছি।’", "৩) ২ রাকাত — সাধারণ ২ রাকাতের নিয়মেই: তাকবিরে তাহরিমা → ছানা → ফাতিহা + সূরা (১ম রাকাতে সূরা দুহা/শামস, ২য় রাকাতে সূরা ফিল/কাউসার পড়া ভালো, যেকোনো সূরাও চলবে) → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ + ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৪) ফজরের পর বসে থাকা — ফজর পড়ে জায়নামাজে বসে জিকির-তিলাওয়াত করতে করতে সূর্য উঠলে ইশরাক পড়লে বেশি সওয়াব।"], "tip": "সূর্য ওঠার সময় (প্রায় ১৫ মিনিট) নামাজ পড়া নিষেধ — সূর্য একটু উপরে উঠলে তবেই পড়ুন।"}, {"n": "চাশত (দোহা) — সকালের নফল", "when": "কখন: সূর্য ভালোভাবে ওঠার পর থেকে যোহরের আগ পর্যন্ত। সকাল ৯টা-১১টা ভালো সময়।", "rakat": "২ থেকে ১২ রাকাত (২+২ করে)।", "steps": ["নিয়ত: 'চাশতের ২ রাকাত নফল পড়ছি।'", "২ রাকাত করে সাধারণ নামাজের মতো পড়ুন।", "চাশতকে 'দোহার নামাজ'ও বলে।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) সময় — সূর্য বেশ উপরে উঠে গরম হওয়ার পর থেকে যোহরের আগ পর্যন্ত।", "২) নিয়ত — মনে মনে: ‘চাশতের ২ রাকাত নফল নামাজ পড়ছি।’ ২+২ করে ২, ৪, ৮ বা ১২ রাকাত পর্যন্ত পড়া যায়।", "৩) প্রতি ২ রাকাত — সাধারণ ২ রাকাতের নিয়মেই: তাকবিরে তাহরিমা → ছানা → ফাতিহা + সূরা → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ + ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৪) মনে রাখবেন — এই নামাজকে সালাতুদ দোহাও বলা হয়। শরীরের জোড়াগুলোর সদকা হিসেবে এর কথা হাদিসে এসেছে।"], "tip": "অফিসের ফাঁকে ২ রাকাত পড়ে নিতে পারেন। প্রতিদিনের অভ্যাস করলে রিজিকে বরকতের আশা করা যায়।"}, {"n": "আওয়াবিন — মাগরিবের পরের নফল", "when": "কখন: মাগরিবের পর।", "rakat": "৬ রাকাত (২+২ করে)।", "steps": ["মাগরিবের ফরজ + সুন্নত পড়ে নিন।", "তারপর ২ রাকাত করে মোট ৬ রাকাত নফল পড়ুন।", "মাগরিবের ২ রাকাত নফলকে আওয়াবিনের মধ্যে গণ্য করা যায় কিনা এ নিয়ে মতভেদ আছে — সহজভাবে ৬ রাকাত পড়ুন।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) সময় — মাগরিবের ফরজ + ২ রাকাত সুন্নত পড়ার পর।", "২) নিয়ত — মনে মনে: ‘আওয়াবিনের ২ রাকাত নফল নামাজ পড়ছি।’ ২+২ করে ৬ রাকাত পড়া সুন্নত হিসেবে পরিচিত।", "৩) প্রতি ২ রাকাত — সাধারণ ২ রাকাতের নিয়মেই: তাকবিরে তাহরিমা → ছানা → ফাতিহা + সূরা → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ + ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৪) মনে রাখবেন — মাঝখানে দুনিয়াবি কথা না বলে একটানা পড়লে ভালো।"], "tip": "মতভেদ নিয়ে চিন্তা করবেন না — মাগরিবের পর নফল পড়াই মূল কথা।"}, {"n": "সালাতুত তাসবিহ — তাসবিহের নামাজ", "when": "কখন: যেকোনো সময় — তবে নিষিদ্ধ ৩ সময়ে নয় (সূর্য ওঠার সময়, ঠিক দুপুরে, সূর্য ডোবার সময়)।", "rakat": "৪ রাকাত। প্রতি রাকাতে ৭৫ বার তাসবিহ — মোট ৩০০ বার।", "steps": ["তাসবিহটা শিখে নিন: 'সুবহানাল্লাহি ওয়াল হামদুলিল্লাহি ওয়া লা ইলাহা ইল্লাল্লাহু ওয়াল্লাহু আকবর'।", "প্রতি রাকাতে গোনার নিয়ম: ছানার পর ১৫ বার, সূরার পর ১০ বার, রুকুতে ১০ বার, কাওমায় ১০ বার, সিজদায় ১০ বার, জলসায় ১০ বার, ২য় সিজদায় ১০ বার = ৭৫ বার।", "৪ রাকাতে মোট ৩০০ বার হবে।", "ভুলে গেলে যেখানে মনে পড়বে সেখান থেকে গুনে পূরণ করুন। আঙুলে বা তাসবিহ দিয়ে গুনতে পারেন।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) তাসবিহ — পুরো নামাজে মোট ৩০০ বার পড়বেন: ‘সুবহানাল্লাহি ওয়াল হামদু লিল্লাহি ওয়া লা ইলাহা ইল্লাল্লাহু ওয়াল্লাহু আকবর’ (আল্লাহ পবিত্র, সকল প্রশংসা আল্লাহর, আল্লাহ ছাড়া কোনো ইলাহ নেই, আল্লাহ সবচেয়ে বড়)।", "২) নিয়ত — মনে মনে: ‘সালাতুত তাসবিহের ৪ রাকাত নফল নামাজ পড়ছি।’", "৩) প্রতি রাকাতে ৭৫ বার — এইভাবে: ছানার পর দাঁড়িয়ে ১৫ বার → ফাতিহা + সূরার পর দাঁড়িয়ে ১০ বার → রুকুতে তাসবিহ (‘সুবহানা রব্বিয়াল আজিম’) পড়ার পর ১০ বার → রুকু থেকে দাঁড়িয়ে ১০ বার → ১ম সিজদায় তাসবিহ (‘সুবহানা রব্বিয়াল আলা’) পড়ার পর ১০ বার → দুই সিজদার মাঝে বসে ১০ বার → ২য় সিজদায় তাসবিহ পড়ার পর ১০ বার। মোট ৭৫ বার।", "৪) ৪ রাকাত — ১ম বৈঠকে (২য় রাকাতের পর) শুধু তাশাহহুদ পড়ে উঠবেন, শেষ বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা পড়ে ডানে-বামে সালাম।", "৫) গোনা — আঙুলে গুনবেন, আঙুল টিপে টিপে গুনলে নামাজ ভাঙে না — তবে মুখে গোনার সংখ্যা বলবেন না, মনে মনে রাখবেন। কোনো জায়গায় গুনতে ভুলে গেলে পরের জায়গায় সেটা পূরণ করে নেবেন।"], "tip": "প্রথমবার গুনতে ভুল হতে পারে — আঙুলে বা তাসবিহ দিয়ে গুনুন। সপ্তাহে/মাসে একবার পড়ার চেষ্টা করুন।"}, {"n": "ইস্তিখারা — সিদ্ধান্তের নামাজ", "when": "কখন: কোনো সিদ্ধান্ত নেওয়ার আগে — বিয়ে, চাকরি, ব্যবসা, ভ্রমণ।", "rakat": "২ রাকাত নফল + ইস্তিখারার দোয়া।", "steps": ["ওজু করে ২ রাকাত নফল নামাজ পড়ুন।", "সালামের পর ইস্তিখারার দোয়া পড়ুন (বিভিন্ন দোয়া পেজে আছে)। দোয়ার মধ্যে যেখানে কাজের কথা আসে, সেখানে নিজের কাজের নাম মনে মনে নিন।", "দোয়ার আগে-পরে দরূদ পড়ুন।", "তারপর পরামর্শ করে সিদ্ধান্ত নিন।", "স্বপ্ন দেখা জরুরি নয় — মন যেদিকে ঝুঁকে, সুবিধা যেদিকে হয়, সেটাই ইঙ্গিত। ভালো না লাগলে আবার পড়া যায়।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) কখন — কোনো ভালো কাজের (বিয়ে, চাকরি, ব্যবসা, ভ্রমণ) সিদ্ধান্ত নেওয়ার আগে। হারাম/স্পষ্ট গুনাহের কাজে ইস্তিখারা নেই।", "২) নিয়ত — মনে মনে: ‘ইস্তিখারার ২ রাকাত নফল নামাজ পড়ছি।’", "৩) ২ রাকাত — সাধারণ ২ রাকাতের নিয়মেই: তাকবিরে তাহরিমা → ছানা → ফাতিহা + সূরা → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ + ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৪) সালামের পর দোয়া — দরূদ পড়ে ইস্তিখারার দোয়া পড়বেন: ‘আল্লাহুম্মা ইন্নি আস্তাখিরুকা বিইলমিকা ওয়া আস্তাকদিরুকা বিকুদরাতিকা ওয়া আসআলুকা মিন ফাদলিকাল আজিম…’ (হে আল্লাহ! আমি তোমার জ্ঞান দ্বারা কল্যাণ চাই, তোমার কুদরত দ্বারা শক্তি চাই, তোমার মহান অনুগ্রহ চাই… এই কাজটা আমার জন্য ভালো হলে সহজ করে দাও, খারাপ হলে সরিয়ে দাও)।", "৫) তারপর — দোয়ায় কাজটার নাম মুখে/মনে উল্লেখ করবেন। স্বপ্ন দেখতেই হবে — এমন কোনো কথা নেই। মন যেদিকে ঝুঁকে যায়, বা কাজটা সহজ/কঠিন হয়ে যায় — সেটাই ইশারা।"], "tip": "ইস্তিখারা মানে আল্লাহর কাছে কল্যাণ চাওয়া — স্বপ্নে উত্তর আসতেই হবে এমন নয়। সিদ্ধান্তের পর ফলাফলে সন্তুষ্ট থাকুন।"}, {"n": "হাজতের নামাজ — প্রয়োজনের নামাজ", "when": "কখন: কোনো প্রয়োজন/বিপদে, যেকোনো সময় (নিষিদ্ধ ৩ সময় ছাড়া)।", "rakat": "২ রাকাত।", "steps": ["ওজু করে ২ রাকাত নফল পড়ুন।", "সালামের পর দরূদ পড়ে নিজের ভাষায় আল্লাহর কাছে চান — বাংলায় চাইলেও হবে।", "বিপদে প্রথমে নামাজ, তারপর চেষ্টা — এটাই মুমিনের পদ্ধতি।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) কখন — কোনো জরুরি প্রয়োজন, বিপদ, পরীক্ষা, অসুস্থতা — আল্লাহর কাছে কিছু চাইতে হলে।", "২) নিয়ত — মনে মনে: ‘হাজতের ২ রাকাত নফল নামাজ পড়ছি।’", "৩) ২ রাকাত — সাধারণ ২ রাকাতের নিয়মেই: তাকবিরে তাহরিমা → ছানা → ফাতিহা + সূরা → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ + ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৪) সালামের পর দোয়া — দরূদ পড়ে নিজের ভাষায় মন খুলে চাইবেন: ‘লা ইলাহা ইল্লাল্লাহুল হালিমুল কারিম, সুবহানাল্লাহি রব্বিল আরশিল আজিম, আলহামদু লিল্লাহি রব্বিল আলামিন’ (আল্লাহ ছাড়া কোনো ইলাহ নেই, তিনি সহনশীল, সম্মানিত; মহান আরশের রব আল্লাহ পবিত্র; সকল প্রশংসা জগতের রব আল্লাহর)। তারপর নিজের প্রয়োজনটা বলবেন।"], "tip": "কোনো দোয়া মুখস্থ না থাকলেও হবে — মন খুলে নিজের ভাষায় বলুন। আল্লাহ সব ভাষা বোঝেন।"}, {"n": "কাজা নামাজ — ছুটে যাওয়া নামাজ", "when": "কখন: কোনো ফরজ নামাজ সময়মতো পড়া না হলে, মনে পড়ামাত্রই। দেরি করা যাবে না।", "rakat": "ছুটে যাওয়া ফরজ + বিতর (সুন্নত কাযা করতে হয় না, ফজরের সুন্নত ছাড়া)।", "steps": ["নিয়ত: 'অমুক দিনের ফজরের ফরজ কাযা পড়ছি।' কোন দিনের কাযা তা জানা না থাকলে 'আমার জিম্মায় থাকা প্রথম ফজরের কাযা' বলুন।", "কাযা নামাজ সাধারণ নামাজের মতোই পড়তে হয় — শুধু কিরাতের নিয়ম একই।", "একাধিক দিনের কাযা থাকলে ক্রমানুসারে (ফজর-যোহর-আসর-মাগরিব-এশা) পড়ুন।", "অনেক দিনের কাযা জমে থাকলে প্রতিদিনের নামাজের সাথে ১ দিনের কাযা যোগ করে পড়ার অভ্যাস করুন।", "কাযার সাথে তাওবা করুন — আর কখনো নামাজ ছাড়বেন না বলে মন স্থির করুন।", "🔍 ধাপে ধাপে — শরীরে কী করবেন, মুখে কী বলবেন:", "১) নিয়ম — যে ওয়াক্ত ছুটে গেছে, মনে পড়লেই সেটা পড়ে নেবেন। নিয়ত মনে মনে: ‘ছুটে যাওয়া ফজর/যোহরের ২/৪ রাকাত ফরজ কাজা পড়ছি।’ শুধু ফরজ + বিতর কাজা হয়, সুন্নতের কাজা নেই (ফজরের সুন্নত ছাড়া, সূর্য ওঠার পর থেকে যোহরের আগে পর্যন্ত পড়া যায়)।", "২) প্রতি রাকাত — সাধারণ নামাজের নিয়মেই: তাকবিরে তাহরিমা → ছানা → ফাতিহা + সূরা (১ম-২য় রাকাতে), ৩য়-৪র্থ রাকাতে শুধু ফাতিহা → রুকুতে ‘সুবহানা রব্বিয়াল আজিম’ ৩ বার → ‘সামিআল্লাহু লিমান হামিদাহ’ + ‘রব্বানা লাকাল হামদ’ → ২ সিজদা (‘সুবহানা রব্বিয়াল আলা’ ৩ বার করে) → বৈঠকে তাশাহহুদ + দরূদ + দোয়া মাসূরা → ডানে-বামে সালাম।", "৩) ক্রম — অনেক ওয়াক্ত ছুটে থাকলে ধারাবাহিকভাবে পড়বেন: আগে ফজর, তারপর যোহর, আসর, মাগরিব, এশা + বিতর। এক দিনের কাজা একসাথে পড়লে এই ক্রম রাখবেন।", "৪) জামাত — কাজা একা পড়াই নিয়ম। মসজিদে গিয়ে জামাতে কাজা পড়া যায় না।"], "tip": "কাযা জমে গেছে বলে হতাশ হবেন না — আজ থেকেই শুরু করুন, প্রতিদিনের সাথে ১ দিনের কাযা যোগ করুন।"}];
 
-var SHORT_SURAHS = [{"t": "সূরা ফাতিহা — নামাজের সবচেয়ে জরুরি সূরা", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ﴿١﴾ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ﴿٢﴾ الرَّحْمَٰنِ الرَّحِيمِ ﴿٣﴾ مَالِكِ يَوْمِ الدِّينِ ﴿٤﴾ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ﴿٥﴾ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ ﴿٦﴾ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ ﴿٧﴾", "tr": "বিসমিল্লাহির রাহমানির রাহীম। আলহামদু লিল্লাহি রাব্বিল আলামীন। আর রাহমানির রাহীম। মালিকি ইয়াওমিদ্দীন। ইয়্যাকা না’বুদু ওয়া ইয়্যাকা নাসতাঈন। ইহদিনাস সিরাতাল মুসতাকীম। সিরাতাল্লাজীনা আন’আমতা আলাইহিম, গাইরিল মাগদূবি আলাইহিম ওয়ালাদ্দাল্লীন।", "mn": "পরম করুণাময়, অতি দয়ালু আল্লাহর নামে। সব প্রশংসা আল্লাহর — যিনি সব জগতের রব। তিনি পরম করুণাময়, অতি দয়ালু। বিচার দিনের মালিক। আমরা শুধু তোমারই ইবাদত করি, শুধু তোমারই সাহায্য চাই। আমাদের সোজা পথ দেখাও — তাদের পথ, যাদের উপর তুমি নিয়ামত দিয়েছো। তাদের পথ নয়, যাদের উপর তোমার গজব পড়েছে, আর পথভ্রষ্টদের পথও নয়।", "tip": "প্রতি রাকাতে এই সূরা পড়তেই হয়। নব মুসলিমের প্রথম মুখস্থ — এটাই।"}, {"t": "সূরা ইখলাস", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ هُوَ اللَّهُ أَحَدٌ ﴿١﴾ اللَّهُ الصَّمَدُ ﴿٢﴾ لَمْ يَلِدْ وَلَمْ يُولَدْ ﴿٣﴾ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ﴿٤﴾", "tr": "কুল হুওয়াল্লাহু আহাদ। আল্লাহুস সামাদ। লাম ইয়ালিদ ওয়া লাম ইউলাদ। ওয়া লাম ইয়াকুল্লাহু কুফুওয়ান আহাদ।", "mn": "বলো: তিনিই আল্লাহ, এক। আল্লাহ অমুখাপেক্ষী। তিনি কাউকে জন্ম দেননি, তাঁকেও জন্ম দেওয়া হয়নি। আর তাঁর সমকক্ষ কেউ নেই।", "tip": "সবচেয়ে ছোট ও সহজ সূরা — নামাজে ফাতিহার পর এটা দিয়ে শুরু করুন।"}, {"t": "সূরা ফালাক", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ﴿١﴾ مِن شَرِّ مَا خَلَقَ ﴿٢﴾ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ﴿٣﴾ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ ﴿٤﴾ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ ﴿٥﴾", "tr": "কুল আঊজু বিরাব্বিল ফালাক। মিন শাররি মা খালাক। ওয়া মিন শাররি গাসিকিন ইজা ওয়াকাব। ওয়া মিন শাররিন নাফফাসাতি ফিল উকাদ। ওয়া মিন শাররি হাসিদিন ইজা হাসাদ।", "mn": "বলো: ভোরের রবের আশ্রয় চাই — তিনি যা সৃষ্টি করেছেন তার অনিষ্ট থেকে, অন্ধকার রাতের অনিষ্ট থেকে যখন তা ছেয়ে যায়, গিরায় ফুঁ দেওয়া জাদুকরদের অনিষ্ট থেকে, আর হিংসুকের অনিষ্ট থেকে যখন সে হিংসা করে।", "tip": "সকাল-সন্ধ্যায় ৩ বার করে পড়ার আমল আছে।"}, {"t": "সূরা নাস", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ النَّاسِ ﴿١﴾ مَلِكِ النَّاسِ ﴿٢﴾ إِلَٰهِ النَّاسِ ﴿٣﴾ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ ﴿٤﴾ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ ﴿٥﴾ مِنَ الْجِنَّةِ وَالنَّاسِ ﴿٦﴾", "tr": "কুল আঊজু বিরাব্বিন নাস। মালিকিন নাস। ইলাহিন নাস। মিন শাররিল ওয়াসওয়াসিল খান্নাস। আল্লাজী ইউওয়াসউইসু ফী সুদূরিন নাস। মিনাল জিন্নাতি ওয়ান নাস।", "mn": "বলো: মানুষের রবের আশ্রয় চাই, মানুষের বাদশাহের, মানুষের ইলাহের — কুমন্ত্রণাদানকারী শয়তানের অনিষ্ট থেকে, যে মানুষের বুকে কুমন্ত্রণা দেয় — জিন হোক বা মানুষ।", "tip": "ভয় লাগলে, খারাপ চিন্তা আসলে এই সূরা পড়ুন।"}, {"t": "সূরা কাউসার", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ ﴿١﴾ فَصَلِّ لِرَبِّكَ وَانْحَرْ ﴿٢﴾ إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ ﴿٣﴾", "tr": "ইন্না আ’তাইনাকাল কাউসার। ফাসাল্লি লিরাব্বিকা ওয়ানহার। ইন্না শানিআকা হুয়াল আবতার।", "mn": "নিশ্চয়ই আমি তোমাকে কাউসার (অনেক অনেক কল্যাণ) দিয়েছি। তাই তোমার রবের জন্য নামাজ পড়ো ও কোরবানি করো। নিশ্চয়ই তোমার শত্রুই শেকড়কাটা।", "tip": "মাত্র ৩ আয়াত — নামাজের জন্য খুব সহজ।"}, {"t": "সূরা আসর", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ وَالْعَصْرِ ﴿١﴾ إِنَّ الْإِنسَانَ لَفِي خُسْرٍ ﴿٢﴾ إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ ﴿٣﴾", "tr": "ওয়াল আসর। ইন্নাল ইনসানা লাফী খুসর। ইল্লাল্লাজীনা আমানূ ওয়া আমিলুস সালিহাতি ওয়া তাওয়াসাও বিল হাক্কি ওয়া তাওয়াসাও বিস সাবর।", "mn": "সময়ের শপথ! নিশ্চয়ই মানুষ ক্ষতির মধ্যে আছে — তারা ছাড়া, যারা ঈমান এনেছে, ভালো কাজ করেছে, একে অপরকে সত্যের উপদেশ দিয়েছে ও ধৈর্যের উপদেশ দিয়েছে।", "tip": "পুরো ইসলামের সারমর্ম — এই সূরাটা অর্থসহ মনে রাখুন।"}, {"t": "সূরা নাসর", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ إِذَا جَاءَ نَصْرُ اللَّهِ وَالْفَتْحُ ﴿١﴾ وَرَأَيْتَ النَّاسَ يَدْخُلُونَ فِي دِينِ اللَّهِ أَفْوَاجًا ﴿٢﴾ فَسَبِّحْ بِحَمْدِ رَبِّكَ وَاسْتَغْفِرْهُ ۚ إِنَّهُ كَانَ تَوَّابًا ﴿٣﴾", "tr": "ইজা জা-আ নাসরুল্লাহি ওয়াল ফাতহ। ওয়া রাআইতান নাসা ইয়াদখুলূনা ফী দীনিল্লাহি আফওয়াজা। ফাসাব্বিহ বিহামদি রাব্বিকা ওয়াসতাগফিরহু, ইন্নাহু কানা তাওয়্যাবা।", "mn": "যখন আল্লাহর সাহায্য ও বিজয় আসবে, আর তুমি দেখবে মানুষ দলে দলে আল্লাহর দ্বীনে ঢুকছে — তখন তোমার রবের প্রশংসাসহ তাসবিহ পড়ো ও তাঁর কাছে ক্ষমা চাও। নিশ্চয়ই তিনি বারবার তওবা কবুলকারী।", "tip": "নামাজে পড়ার মতো সহজ ৩ আয়াতের সূরা।"}, {"t": "সূরা কাফিরূন", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ يَا أَيُّهَا الْكَافِرُونَ ﴿١﴾ لَا أَعْبُدُ مَا تَعْبُدُونَ ﴿٢﴾ وَلَا أَنتُمْ عَابِدُونَ مَا أَعْبُدُ ﴿٣﴾ وَلَا أَنَا عَابِدٌ مَّا عَبَدتُّمْ ﴿٤﴾ وَلَا أَنتُمْ عَابِدُونَ مَا أَعْبُدُ ﴿٥﴾ لَكُمْ دِينُكُمْ وَلِيَ دِينِ ﴿٦﴾", "tr": "কুল ইয়া আইয়্যুহাল কাফিরূন। লা আ’বুদু মা তা’বুদূন। ওয়া লা আনতুম আবিদূনা মা আ’বুদ। ওয়া লা আনা আবিদুম মা আবাদতুম। ওয়া লা আনতুম আবিদূনা মা আ’বুদ। লাকুম দীনুকুম ওয়া লিয়া দীন।", "mn": "বলো: হে কাফিরগণ! তোমরা যার ইবাদত করো, আমি তার ইবাদত করি না। আর আমি যাঁর ইবাদত করি, তোমরা তাঁর ইবাদতকারী নও। তোমাদের দ্বীন তোমাদের, আমার দ্বীন আমার।", "tip": "ঘুমের আগে পড়ার আমল আছে।"}, {"t": "সূরা লাহাব", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ تَبَّتْ يَدَا أَبِي لَهَبٍ وَتَبَّ ﴿١﴾ مَا أَغْنَىٰ عَنْهُ مَالُهُ وَمَا كَسَبَ ﴿٢﴾ سَيَصْلَىٰ نَارًا ذَاتَ لَهَبٍ ﴿٣﴾ وَامْرَأَتُهُ حَمَّالَةَ الْحَطَبِ ﴿٤﴾ فِي جِيدِهَا حَبْلٌ مِّن مَّسَدٍ ﴿٥﴾", "tr": "তাব্বাত ইয়াদা আবী লাহাবিন ওয়া তাব্ব। মা আগনা আনহু মালুহু ওয়া মা কাসাব। সাইয়াসলা নারান জাতা লাহাব। ওয়ামরাআতুহু হাম্মালাতাল হাতাব। ফী জীদিহা হাবলুম মিম মাসাদ।", "mn": "আবু লাহাবের দুই হাত ধ্বংস হোক, আর সেও ধ্বংস হোক। তার ধন-সম্পদ ও উপার্জন কোনো কাজে আসেনি। সে শীঘ্রই লেলিহান আগুনে প্রবেশ করবে, আর তার স্ত্রীও — যে কাঠ বহনকারিণী। তার গলায় থাকবে পাকানো দড়ি।", "tip": "নামাজে পড়ার মতো ৫ আয়াতের সূরা।"}, {"t": "সূরা ফীল", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ أَلَمْ تَرَ كَيْفَ فَعَلَ رَبُّكَ بِأَصْحَابِ الْفِيلِ ﴿١﴾ أَلَمْ يَجْعَلْ كَيْدَهُمْ فِي تَضْلِيلٍ ﴿٢﴾ وَأَرْسَلَ عَلَيْهِمْ طَيْرًا أَبَابِيلَ ﴿٣﴾ تَرْمِيهِم بِحِجَارَةٍ مِّن سِجِّيلٍ ﴿٤﴾ فَجَعَلَهُمْ كَعَصْفٍ مَّأْكُولٍ ﴿٥﴾", "tr": "আলাম তারা কাইফা ফা’আলা রাব্বুকা বিআসহাবিল ফীল। আলাম ইয়াজ’আল কাইদাহুম ফী তাদলীল। ওয়া আরসালা আলাইহিম তাইরান আবাবীল। তারমীহিম বিহিজারাতিম মিন সিজ্জীল। ফাজা’আলাহুম কা’আসফিম মা’কূল।", "mn": "তুমি কি দেখোনি তোমার রব হাতিওয়ালাদের সাথে কেমন করেছিলেন? তিনি কি তাদের চক্রান্ত ব্যর্থ করে দেননি? আর তাদের উপর ঝাঁকে ঝাঁকে পাখি পাঠিয়েছিলেন, যারা তাদের উপর পোড়া মাটির পাথর ছুঁড়েছিল। ফলে তিনি তাদের চিবানো খড়ের মতো করে দিলেন।", "tip": "কাবা রক্ষার ঘটনা — অর্থসহ পড়লে মনে থাকে।"}, {"t": "সূরা কুরাইশ", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ لِإِيلَافِ قُرَيْشٍ ﴿١﴾ إِيلَافِهِمْ رِحْلَةَ الشِّتَاءِ وَالصَّيْفِ ﴿٢﴾ فَلْيَعْبُدُوا رَبَّ هَٰذَا الْبَيْتِ ﴿٣﴾ الَّذِي أَطْعَمَهُم مِّن جُوعٍ وَآمَنَهُم مِّنْ خَوْفٍ ﴿٤﴾", "tr": "লিঈলাফি কুরাইশ। ঈলাফিহিম রিহলাতাশ শিতা-ই ওয়াস সাইফ। ফালইয়া’বুদূ রাব্বা হাজাল বাইত। আল্লাজী আত’আমাহুম মিন জূ’ইন ওয়া আমানাহুম মিন খাওফ।", "mn": "কুরাইশদের আসক্তির জন্য — শীত ও গ্রীষ্মের সফরে তাদের আসক্তির জন্য — তারা এই ঘরের রবের ইবাদত করুক। যিনি ক্ষুধায় তাদের খাবার দিয়েছেন, আর ভয় থেকে নিরাপত্তা দিয়েছেন।", "tip": "নামাজে পড়ার মতো ৪ আয়াতের সূরা।"}, {"t": "সূরা মাউন", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ أَرَأَيْتَ الَّذِي يُكَذِّبُ بِالدِّينِ ﴿١﴾ فَذَٰلِكَ الَّذِي يَدُعُّ الْيَتِيمَ ﴿٢﴾ وَلَا يَحُضُّ عَلَىٰ طَعَامِ الْمِسْكِينِ ﴿٣﴾ فَوَيْلٌ لِّلْمُصَلِّينَ ﴿٤﴾ الَّذِينَ هُمْ عَن صَلَاتِهِمْ سَاهُونَ ﴿٥﴾ الَّذِينَ هُمْ يُرَاءُونَ ﴿٦﴾ وَيَمْنَعُونَ الْمَاعُونَ ﴿٧﴾", "tr": "আরাআইতাল্লাজী ইউকাজ্জিবু বিদ্দীন। ফাজালিকাল্লাজী ইয়াদু’উল ইয়াতীম। ওয়া লা ইয়াহুদ্দু আলা তা’আমিল মিসকীন। ফাওয়াইলুল লিল মুসাল্লীন। আল্লাজীনা হুম আন সালাতিহিম সাহূন। আল্লাজীনা হুম ইউরা-ঊন। ওয়া ইয়ামনা’ঊনাল মা’ঊন।", "mn": "তুমি কি দেখেছো তাকে, যে বিচার দিনকে মিথ্যা বলে? সে-ই তো এতিমকে ধাক্কা দেয়, আর মিসকিনকে খাওয়াতে উৎসাহ দেয় না। তাই ধ্বংস সেই নামাজিদের জন্য, যারা তাদের নামাজে অমনোযোগী, যারা লোক দেখায়, আর ছোটখাটো সাহায্যও আটকে রাখে।", "tip": "নামাজে অমনোযোগী হওয়ার ব্যাপারে সতর্ক করে — অর্থসহ মনে রাখুন।"}, {"t": "সূরা হাশর — শেষ তিন আয়াত (আয়াত ২২-২৪)", "ar": "هُوَ اللَّهُ الَّذِي لَا إِلَٰهَ إِلَّا هُوَ ۖ عَالِمُ الْغَيْبِ وَالشَّهَادَةِ ۖ هُوَ الرَّحْمَٰنُ الرَّحِيمُ ﴿٢٢﴾ هُوَ اللَّهُ الَّذِي لَا إِلَٰهَ إِلَّا هُوَ الْمَلِكُ الْقُدُّوسُ السَّلَامُ الْمُؤْمِنُ الْمُهَيْمِنُ الْعَزِيزُ الْجَبَّارُ الْمُتَكَبِّرُ ۚ سُبْحَانَ اللَّهِ عَمَّا يُشْرِكُونَ ﴿٢٣﴾ هُوَ اللَّهُ الْخَالِقُ الْبَارِئُ الْمُصَوِّرُ ۖ لَهُ الْأَسْمَاءُ الْحُسْنَىٰ ۚ يُسَبِّحُ لَهُ مَا فِي السَّمَاوَاتِ وَالْأَرْضِ ۖ وَهُوَ الْعَزِيزُ الْحَكِيمُ ﴿٢٤﴾", "tr": "হুওয়াল্লাহুল্লাজী লা ইলাহা ইল্লা হুওয়া, আলিমুল গাইবি ওয়াশ শাহাদাতি, হুওয়ার রাহমানুর রাহীম। হুওয়াল্লাহুল্লাজী লা ইলাহা ইল্লা হুওয়াল মালিকুল কুদ্দূসুস সালামুল মু’মিনুল মুহাইমিনুল আজীজুল জাব্বারুল মুতাকাব্বির। সুবহানাল্লাহি আম্মা ইউশরিকূন। হুওয়াল্লাহুল খালিকুল বারিউল মুসাওয়িরু, লাহুল আসমাউল হুসনা, ইউসাব্বিহু লাহু মা ফিস সামাওয়াতি ওয়াল আরদি, ওয়া হুওয়াল আজীজুল হাকীম।", "mn": "তিনিই আল্লাহ — তিনি ছাড়া কোনো ইলাহ নেই। তিনি গায়েব ও প্রকাশ্য সবকিছু জানেন। তিনিই পরম করুণাময়, অতি দয়ালু। তিনিই আল্লাহ — তিনি ছাড়া কোনো ইলাহ নেই। তিনিই বাদশাহ, অতি পবিত্র, শান্তিদাতা, নিরাপত্তাদাতা, রক্ষক, মহাপরাক্রমশালী, মহাপ্রতাপশালী, মহামহিম। তারা যা শরিক করে, আল্লাহ তা থেকে অনেক পবিত্র। তিনিই আল্লাহ — সৃষ্টিকর্তা, উদ্ভাবক, আকৃতিদাতা। সব সুন্দর নাম তাঁরই। আসমান ও জমিনে যা কিছু আছে, সবই তাঁর তসবিহ করে। আর তিনিই মহাপরাক্রমশালী, মহাজ্ঞানী।", "tip": "ফজর ও মাগরিবের পর এই তিন আয়াত পড়ার ফজিলত হাদিসে এসেছে — অর্থসহ মুখস্থ রাখুন।"}];
+var SHORT_SURAHS = [{"t": "সূরা ফাতিহা — নামাজের সবচেয়ে জরুরি সূরা", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ﴿١﴾ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ﴿٢﴾ الرَّحْمَٰنِ الرَّحِيمِ ﴿٣﴾ مَالِكِ يَوْمِ الدِّينِ ﴿٤﴾ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ﴿٥﴾ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ ﴿٦﴾ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ ﴿٧﴾", "tr": "বিসমিল্লাহির রাহমানির রাহীম। আলহামদু লিল্লাহি রাব্বিল আলামীন। আর রাহমানির রাহীম। মালিকি ইয়াওমিদ্দীন। ইয়্যাকা না’বুদু ওয়া ইয়্যাকা নাসতাঈন। ইহদিনাস সিরাতাল মুসতাকীম। সিরাতাল্লাজীনা আন’আমতা আলাইহিম, গাইরিল মাগদূবি আলাইহিম ওয়ালাদ্দাল্লীন।", "mn": "পরম করুণাময়, অতি দয়ালু আল্লাহর নামে। সব প্রশংসা আল্লাহর — যিনি সব জগতের রব। তিনি পরম করুণাময়, অতি দয়ালু। বিচার দিনের মালিক। আমরা শুধু তোমারই ইবাদত করি, শুধু তোমারই সাহায্য চাই। আমাদের সোজা পথ দেখাও — তাদের পথ, যাদের উপর তুমি নিয়ামত দিয়েছো। তাদের পথ নয়, যাদের উপর তোমার গজব পড়েছে, আর পথভ্রষ্টদের পথও নয়।", "tip": "প্রতি রাকাতে এই সূরা পড়তেই হয়। নব মুসলিমের প্রথম মুখস্থ — এটাই।"}, {"t": "সূরা ইখলাস", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ هُوَ اللَّهُ أَحَدٌ ﴿١﴾ اللَّهُ الصَّمَدُ ﴿٢﴾ لَمْ يَلِدْ وَلَمْ يُولَدْ ﴿٣﴾ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ﴿٤﴾", "tr": "কুল হুওয়াল্লাহু আহাদ। আল্লাহুস সামাদ। লাম ইয়ালিদ ওয়া লাম ইউলাদ। ওয়া লাম ইয়াকুল্লাহু কুফুওয়ান আহাদ।", "mn": "বলো: তিনিই আল্লাহ, এক। আল্লাহ অমুখাপেক্ষী। তিনি কাউকে জন্ম দেননি, তাঁকেও জন্ম দেওয়া হয়নি। আর তাঁর সমকক্ষ কেউ নেই।", "tip": "সবচেয়ে ছোট ও সহজ সূরা — নামাজে ফাতিহার পর এটা দিয়ে শুরু করুন।"}, {"t": "সূরা ফালাক", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ﴿١﴾ مِن شَرِّ مَا خَلَقَ ﴿٢﴾ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ﴿٣﴾ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ ﴿٤﴾ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ ﴿٥﴾", "tr": "কুল আঊজু বিরাব্বিল ফালাক। মিন শাররি মা খালাক। ওয়া মিন শাররি গাসিকিন ইজা ওয়াকাব। ওয়া মিন শাররিন নাফফাসাতি ফিল উকাদ। ওয়া মিন শাররি হাসিদিন ইজা হাসাদ।", "mn": "বলো: ভোরের রবের আশ্রয় চাই — তিনি যা সৃষ্টি করেছেন তার অনিষ্ট থেকে, অন্ধকার রাতের অনিষ্ট থেকে যখন তা ছেয়ে যায়, গিরায় ফুঁ দেওয়া জাদুকরদের অনিষ্ট থেকে, আর হিংসুকের অনিষ্ট থেকে যখন সে হিংসা করে।", "tip": "সকাল-সন্ধ্যায় ৩ বার করে পড়ার আমল আছে।"}, {"t": "সূরা নাস", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ أَعُوذُ بِرَبِّ النَّاسِ ﴿١﴾ مَلِكِ النَّاسِ ﴿٢﴾ إِلَٰهِ النَّاسِ ﴿٣﴾ مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ ﴿٤﴾ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ ﴿٥﴾ مِنَ الْجِنَّةِ وَالنَّاسِ ﴿٦﴾", "tr": "কুল আঊজু বিরাব্বিন নাস। মালিকিন নাস। ইলাহিন নাস। মিন শাররিল ওয়াসওয়াসিল খান্নাস। আল্লাজী ইউওয়াসউইসু ফী সুদূরিন নাস। মিনাল জিন্নাতি ওয়ান নাস।", "mn": "বলো: মানুষের রবের আশ্রয় চাই, মানুষের বাদশাহের, মানুষের ইলাহের — কুমন্ত্রণাদানকারী শয়তানের অনিষ্ট থেকে, যে মানুষের বুকে কুমন্ত্রণা দেয় — জিন হোক বা মানুষ।", "tip": "ভয় লাগলে, খারাপ চিন্তা আসলে এই সূরা পড়ুন।"}, {"t": "সূরা কাউসার", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ ﴿١﴾ فَصَلِّ لِرَبِّكَ وَانْحَرْ ﴿٢﴾ إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ ﴿٣﴾", "tr": "ইন্না আ’তাইনাকাল কাউসার। ফাসাল্লি লিরাব্বিকা ওয়ানহার। ইন্না শানিআকা হুয়াল আবতার।", "mn": "নিশ্চয়ই আমি তোমাকে কাউসার (অনেক অনেক কল্যাণ) দিয়েছি। তাই তোমার রবের জন্য নামাজ পড়ো ও কোরবানি করো। নিশ্চয়ই তোমার শত্রুই শেকড়কাটা।", "tip": "মাত্র ৩ আয়াত — নামাজের জন্য খুব সহজ।"}, {"t": "সূরা আসর", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ وَالْعَصْرِ ﴿١﴾ إِنَّ الْإِنسَانَ لَفِي خُسْرٍ ﴿٢﴾ إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ ﴿٣﴾", "tr": "ওয়াল আসর। ইন্নাল ইনসানা লাফী খুসর। ইল্লাল্লাজীনা আমানূ ওয়া আমিলুস সালিহাতি ওয়া তাওয়াসাও বিল হাক্কি ওয়া তাওয়াসাও বিস সাবর।", "mn": "সময়ের শপথ! নিশ্চয়ই মানুষ ক্ষতির মধ্যে আছে — তারা ছাড়া, যারা ঈমান এনেছে, ভালো কাজ করেছে, একে অপরকে সত্যের উপদেশ দিয়েছে ও ধৈর্যের উপদেশ দিয়েছে।", "tip": "পুরো ইসলামের সারমর্ম — এই সূরাটা অর্থসহ মনে রাখুন।"}, {"t": "সূরা নাসর", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ إِذَا جَاءَ نَصْرُ اللَّهِ وَالْفَتْحُ ﴿١﴾ وَرَأَيْتَ النَّاسَ يَدْخُلُونَ فِي دِينِ اللَّهِ أَفْوَاجًا ﴿٢﴾ فَسَبِّحْ بِحَمْدِ رَبِّكَ وَاسْتَغْفِرْهُ ۚ إِنَّهُ كَانَ تَوَّابًا ﴿٣﴾", "tr": "ইজা জা-আ নাসরুল্লাহি ওয়াল ফাতহ। ওয়া রাআইতান নাসা ইয়াদখুলূনা ফী দীনিল্লাহি আফওয়াজা। ফাসাব্বিহ বিহামদি রাব্বিকা ওয়াসতাগফিরহু, ইন্নাহু কানা তাওয়্যাবা।", "mn": "যখন আল্লাহর সাহায্য ও বিজয় আসবে, আর তুমি দেখবে মানুষ দলে দলে আল্লাহর দ্বীনে ঢুকছে — তখন তোমার রবের প্রশংসাসহ তাসবিহ পড়ো ও তাঁর কাছে ক্ষমা চাও। নিশ্চয়ই তিনি বারবার তওবা কবুলকারী।", "tip": "নামাজে পড়ার মতো সহজ ৩ আয়াতের সূরা।"}, {"t": "সূরা কাফিরূন", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ يَا أَيُّهَا الْكَافِرُونَ ﴿١﴾ لَا أَعْبُدُ مَا تَعْبُدُونَ ﴿٢﴾ وَلَا أَنتُمْ عَابِدُونَ مَا أَعْبُدُ ﴿٣﴾ وَلَا أَنَا عَابِدٌ مَّا عَبَدتُّمْ ﴿٤﴾ وَلَا أَنتُمْ عَابِدُونَ مَا أَعْبُدُ ﴿٥﴾ لَكُمْ دِينُكُمْ وَلِيَ دِينِ ﴿٦﴾", "tr": "কুল ইয়া আইয়্যুহাল কাফিরূন। লা আ’বুদু মা তা’বুদূন। ওয়া লা আনতুম আবিদূনা মা আ’বুদ। ওয়া লা আনা আবিদুম মা আবাদতুম। ওয়া লা আনতুম আবিদূনা মা আ’বুদ। লাকুম দীনুকুম ওয়া লিয়া দীন।", "mn": "বলো: হে কাফিরগণ! তোমরা যার ইবাদত করো, আমি তার ইবাদত করি না। আর আমি যাঁর ইবাদত করি, তোমরা তাঁর ইবাদতকারী নও। তোমাদের দ্বীন তোমাদের, আমার দ্বীন আমার।", "tip": "ঘুমের আগে পড়ার আমল আছে।"}, {"t": "সূরা লাহাব", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ تَبَّتْ يَدَا أَبِي لَهَبٍ وَتَبَّ ﴿١﴾ مَا أَغْنَىٰ عَنْهُ مَالُهُ وَمَا كَسَبَ ﴿٢﴾ سَيَصْلَىٰ نَارًا ذَاتَ لَهَبٍ ﴿٣﴾ وَامْرَأَتُهُ حَمَّالَةَ الْحَطَبِ ﴿٤﴾ فِي جِيدِهَا حَبْلٌ مِّن مَّسَدٍ ﴿٥﴾", "tr": "তাব্বাত ইয়াদা আবী লাহাবিন ওয়া তাব্ব। মা আগনা আনহু মালুহু ওয়া মা কাসাব। সাইয়াসলা নারান জাতা লাহাব। ওয়ামরাআতুহু হাম্মালাতাল হাতাব। ফী জীদিহা হাবলুম মিম মাসাদ।", "mn": "আবু লাহাবের দুই হাত ধ্বংস হোক, আর সেও ধ্বংস হোক। তার ধন-সম্পদ ও উপার্জন কোনো কাজে আসেনি। সে শীঘ্রই লেলিহান আগুনে প্রবেশ করবে, আর তার স্ত্রীও — যে কাঠ বহনকারিণী। তার গলায় থাকবে পাকানো দড়ি।", "tip": "নামাজে পড়ার মতো ৫ আয়াতের সূরা।"}, {"t": "সূরা ফীল", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ أَلَمْ تَرَ كَيْفَ فَعَلَ رَبُّكَ بِأَصْحَابِ الْفِيلِ ﴿١﴾ أَلَمْ يَجْعَلْ كَيْدَهُمْ فِي تَضْلِيلٍ ﴿٢﴾ وَأَرْسَلَ عَلَيْهِمْ طَيْرًا أَبَابِيلَ ﴿٣﴾ تَرْمِيهِم بِحِجَارَةٍ مِّن سِجِّيلٍ ﴿٤﴾ فَجَعَلَهُمْ كَعَصْفٍ مَّأْكُولٍ ﴿٥﴾", "tr": "আলাম তারা কাইফা ফা’আলা রাব্বুকা বিআসহাবিল ফীল। আলাম ইয়াজ’আল কাইদাহুম ফী তাদলীল। ওয়া আরসালা আলাইহিম তাইরান আবাবীল। তারমীহিম বিহিজারাতিম মিন সিজ্জীল। ফাজা’আলাহুম কা’আসফিম মা’কূল।", "mn": "তুমি কি দেখোনি তোমার রব হাতিওয়ালাদের সাথে কেমন করেছিলেন? তিনি কি তাদের চক্রান্ত ব্যর্থ করে দেননি? আর তাদের উপর ঝাঁকে ঝাঁকে পাখি পাঠিয়েছিলেন, যারা তাদের উপর পোড়া মাটির পাথর ছুঁড়েছিল। ফলে তিনি তাদের চিবানো খড়ের মতো করে দিলেন।", "tip": "কাবা রক্ষার ঘটনা — অর্থসহ পড়লে মনে থাকে।"}, {"t": "সূরা কুরাইশ", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ لِإِيلَافِ قُرَيْشٍ ﴿١﴾ إِيلَافِهِمْ رِحْلَةَ الشِّتَاءِ وَالصَّيْفِ ﴿٢﴾ فَلْيَعْبُدُوا رَبَّ هَٰذَا الْبَيْتِ ﴿٣﴾ الَّذِي أَطْعَمَهُم مِّن جُوعٍ وَآمَنَهُم مِّنْ خَوْفٍ ﴿٤﴾", "tr": "লিঈলাফি কুরাইশ। ঈলাফিহিম রিহলাতাশ শিতা-ই ওয়াস সাইফ। ফালইয়া’বুদূ রাব্বা হাজাল বাইত। আল্লাজী আত’আমাহুম মিন জূ’ইন ওয়া আমানাহুম মিন খাওফ।", "mn": "কুরাইশদের আসক্তির জন্য — শীত ও গ্রীষ্মের সফরে তাদের আসক্তির জন্য — তারা এই ঘরের রবের ইবাদত করুক। যিনি ক্ষুধায় তাদের খাবার দিয়েছেন, আর ভয় থেকে নিরাপত্তা দিয়েছেন।", "tip": "নামাজে পড়ার মতো ৪ আয়াতের সূরা।"}, {"t": "সূরা মাউন", "ar": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ أَرَأَيْتَ الَّذِي يُكَذِّبُ بِالدِّينِ ﴿١﴾ فَذَٰلِكَ الَّذِي يَدُعُّ الْيَتِيمَ ﴿٢﴾ وَلَا يَحُضُّ عَلَىٰ طَعَامِ الْمِسْكِينِ ﴿٣﴾ فَوَيْلٌ لِّلْمُصَلِّينَ ﴿٤﴾ الَّذِينَ هُمْ عَن صَلَاتِهِمْ سَاهُونَ ﴿٥﴾ الَّذِينَ هُمْ يُرَاءُونَ ﴿٦﴾ وَيَمْنَعُونَ الْمَاعُونَ ﴿٧﴾", "tr": "আরাআইতাল্লাজী ইউকাজ্জিবু বিদ্দীন। ফাজালিকাল্লাজী ইয়াদু’উল ইয়াতীম। ওয়া লা ইয়াহুদ্দু আলা তা’আমিল মিসকীন। ফাওয়াইলুল লিল মুসাল্লীন। আল্লাজীনা হুম আন সালাতিহিম সাহূন। আল্লাজীনা হুম ইউরা-ঊন। ওয়া ইয়ামনা’ঊনাল মা’ঊন।", "mn": "তুমি কি দেখেছো তাকে, যে বিচার দিনকে মিথ্যা বলে? সে-ই তো এতিমকে ধাক্কা দেয়, আর মিসকিনকে খাওয়াতে উৎসাহ দেয় না। তাই ধ্বংস সেই নামাজিদের জন্য, যারা তাদের নামাজে অমনোযোগী, যারা লোক দেখায়, আর ছোটখাটো সাহায্যও আটকে রাখে।", "tip": "নামাজে অমনোযোগী হওয়ার ব্যাপারে সতর্ক করে — অর্থসহ মনে রাখুন।"}];
 function duaCard(d){
+  var btn = '<div class="mt-2 text-[12px] text-[#8B7355]">🔇 অডিও পরে যোগ হবে — অডিও পাঠালে এখানে বাটন বসে যাবে</div>';
   return '<div class="card p-3.5 mb-2">' +
     '<div class="font-extrabold text-[15px] mb-2">' + d.t + '</div>' +
     '<div dir="rtl" style="text-align:right;font-size:21px;line-height:2;color:#1B5E20;font-weight:600">' + d.ar + '</div>' +
     '<div class="text-[13px] font-bold mt-2" style="color:#2D2A26">' + d.tr + '</div>' +
-    '<div class="text-[12px] text-[#8B7355] mt-1">' + d.mn + '</div></div>';
+    '<div class="text-[12px] text-[#8B7355] mt-1">' + d.mn + '</div>' + btn + '</div>';
 }
 
 function guideCard(h){
@@ -1835,7 +2068,8 @@ function surahCard(d){
     '<div dir="rtl" style="text-align:right;font-size:21px;line-height:2;color:#1B5E20;font-weight:600">' + d.ar + '</div>' +
     '<div class="text-[13px] font-bold mt-2" style="color:#2D2A26">' + d.tr + '</div>' +
     '<div class="text-[12px] text-[#8B7355] mt-1">' + d.mn + '</div>' +
-    '<div class="text-[12px] mt-2 p-2" style="background:#FFFBF7;border-radius:10px">💡 <b>মনে রাখার টিপস:</b> ' + d.tip + '</div></div>';
+    '<div class="text-[12px] mt-2 p-2" style="background:#FFFBF7;border-radius:10px">💡 <b>মনে রাখার টিপস:</b> ' + d.tip + '</div>' +
+    '<div class="mt-2 text-[12px] text-[#8B7355]">🔇 অডিও পরে যোগ হবে — অডিও পাঠালে এখানে বাটন বসে যাবে</div></div>';
 }
 
 function folderCard(ic, title, sub, click, num){
@@ -2195,67 +2429,6 @@ function backupImport(input){
   }catch(e){}
 }
 
-/* ================= মোনাজাত ================= */
-var MONAJAT_ITEMS = [
-  { t: "নামাজের পরের মোনাজাত — রাব্বানা আতিনা", en: "Munajat after Prayer — Rabbana Atina", ar: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ", tr: "রাব্বানা আতিনা ফিদ্দুনিয়া হাসানাহ, ওয়া ফিল আখিরাতি হাসানাহ, ওয়া কিনা আযাবান নার।", mn: "হে আমাদের রব! আমাদের দুনিয়াতে কল্যাণ দাও, আখিরাতেও কল্যাণ দাও, আর জাহান্নামের আজাব থেকে আমাদের রক্ষা করো।", ref: "সূরা আল-বাকারা ২:২০১" },
-  { t: "গুনাহ মাফের মোনাজাত — রাব্বানা জালামনা", en: "Munajat for Forgiveness — Rabbana Zalamna", ar: "رَبَّنَا ظَلَمْنَا أَنْفُسَنَا وَإِنْ لَمْ تَغْفِرْ لَنَا وَتَرْحَمْنَا لَنَكُونَنَّ مِنَ الْخَاسِرِينَ", tr: "রাব্বানা জালামনা আনফুসানা, ওয়া ইল্লাম তাগফির লানা ওয়া তারহামনা লানাকুনান্না মিনাল খাসিরিন।", mn: "হে আমাদের রব! আমরা নিজেদের উপর জুলুম করেছি। তুমি যদি আমাদের মাফ না করো আর দয়া না করো, তাহলে আমরা ক্ষতিগ্রস্তদের মধ্যে পড়ে যাবো।", ref: "সূরা আল-আরাফ ৭:২৩" },
-  { t: "ঈমানের উপর অটল থাকার মোনাজাত", en: "Munajat to Stay Firm in Faith", ar: "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً ۚ إِنَّكَ أَنْتَ الْوَهَّابُ", tr: "রাব্বানা লা তুজিগ কুলুবানা বা’দা ইজ হাদাইতানা, ওয়া হাব লানা মিল্লাদুনকা রাহমাহ, ইন্নাকা আনতাল ওয়াহহাব।", mn: "হে আমাদের রব! হেদায়েত দেওয়ার পর আমাদের অন্তরকে বাঁকা করে দিও না। তোমার পক্ষ থেকে আমাদের রহমত দান করো — নিশ্চয়ই তুমিই মহাদাতা।", ref: "সূরা আলে ইমরান ৩:৮" },
-  { t: "মা-বাবার জন্য মোনাজাত", en: "Munajat for Parents", ar: "رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا", tr: "রাব্বির হামহুমা কামা রাব্বায়ানি সাগিরা।", mn: "হে আমার রব! আমার মা-বাবার উপর দয়া করো — যেমন ছোটবেলায় তাঁরা আমাকে লালন-পালন করেছেন।", ref: "সূরা বনি ইসরাইল ১৭:২৪" },
-  { t: "ক্ষমা চাওয়ার মোনাজাত — আল্লাহুম্মা ইন্নাকা আফুউন", en: "Munajat for Pardon — Allahumma Innaka Afuwwun", ar: "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي", tr: "আল্লাহুম্মা ইন্নাকা আফুউন তুহিব্বুল আফওয়া ফা’ফু আন্নি।", mn: "হে আল্লাহ! তুমি তো ক্ষমাশীল, ক্ষমা করতে ভালোবাসো — তাই আমাকে ক্ষমা করে দাও।", ref: "জামে তিরমিজি, হাদিস নং ৩৫১৩" }
-];
-function openMonajat(){ navPush(); currentView = 'monajat'; setNavActive(''); render(); }
-function renderMonajatView(){
-  var L = (lang === 'en');
-  var tip = '<div class="card p-3.5 mb-2" style="background:#FFFBF7">' +
-    '<div class="font-extrabold text-[15px] mb-1">🙏 ' + (L ? 'How to make Munajat' : 'মোনাজাত কীভাবে করবেন') + '</div>' +
-    '<div class="text-[13px] mt-1">• ' + (L ? 'Raise both hands, palms facing up, with humility.' : 'দুই হাত তুলুন — হাতের তালু উপরের দিকে, বিনয়ের সাথে।') + '</div>' +
-    '<div class="text-[13px] mt-1">• ' + (L ? 'Start with praise of Allah, then send Durud on the Prophet (sa.).' : 'আল্লাহর প্রশংসা দিয়ে শুরু করুন, তারপর নবী (সা.)-এর উপর দরূদ পড়ুন।') + '</div>' +
-    '<div class="text-[13px] mt-1">• ' + (L ? 'Then ask for what you need — in Arabic or in your own language. Allah understands every language.' : 'তারপর নিজের প্রয়োজন চেয়ে নিন — আরবিতে বা নিজের ভাষায়। আল্লাহ সব ভাষা বোঝেন।') + '</div>' +
-    '<div class="text-[13px] mt-1">• ' + (L ? 'End again with Durud, then wipe your hands over your face.' : 'শেষে আবার দরূদ পড়ে হাত দিয়ে মুখ মুছে নিন।') + '</div></div>';
-  var cards = MONAJAT_ITEMS.map(function(d, i){
-    return '<div class="card p-3.5 mb-2">' +
-      '<div class="font-extrabold text-[15px] mb-1">' + (i + 1) + '. ' + (L ? d.en : d.t) + '</div>' +
-      '<div dir="rtl" style="text-align:right;font-size:21px;line-height:2;color:#1B5E20;font-weight:600">' + d.ar + '</div>' +
-      '<div class="text-[13px] font-bold mt-2" style="color:#2D2A26">' + d.tr + '</div>' +
-      '<div class="text-[12px] text-[#8B7355] mt-1">' + d.mn + '</div>' +
-      '<div class="text-[12px] mt-1 font-bold" style="color:#2E7D32">📖 ' + d.ref + '</div></div>' +
-      audioPlayerHtml('monajat:' + i, (L ? 'Listen — ' : 'শুনুন — ') + (L ? d.en : d.t));
-  }).join('');
-  document.getElementById('islApp').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="isl_goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
-    '<h2 class="font-extrabold text-[18px] mb-1">🙏 ' + (L ? 'Munajat' : 'মোনাজাত') + '</h2>' +
-    '<div class="text-[13px] text-[#8B7355] mb-3">' + (L ? 'Supplications after prayer — ask Allah for what you need.' : 'নামাজের পরের মোনাজাত — আল্লাহর কাছে নিজের প্রয়োজন চেয়ে নিন।') + '</div>' +
-    tip + cards + '</div>';
-}
-
-/* ================= নাতে রাসুল ================= */
-var NAAT_ITEMS = [
-  { t: "বালাগাল উলা বি কামালিহি", en: "Balaghal Ula Bi Kamalihi", ar: "بَلَغَ الْعُلَى بِكَمَالِهِ ۞ كَشَفَ الدُّجَى بِجَمَالِهِ ۞ حَسُنَتْ جَمِيعُ خِصَالِهِ ۞ صَلُّوا عَلَيْهِ وَآلِهِ", tr: "বালাগাল উলা বি কামালিহি — কাশাফাদ্দুজা বি জামালিহি — হাসুনাত জামিউ খিসালিহি — সাল্লু আলাইহি ওয়া আলিহি।", mn: "তিনি নিজের পরিপূর্ণতা দিয়ে সর্বোচ্চ শিখরে পৌঁছেছেন, তাঁর সৌন্দর্য দিয়ে অন্ধকার দূর করেছেন। তাঁর সব গুণই সুন্দর — তোমরা তাঁর ও তাঁর পরিবারের উপর দরূদ পাঠ করো।", ref: "শায়খ সাদি (রহ.)-এর বিখ্যাত কবিতা" },
-  { t: "তালাআল বাদরু আলাইনা", en: "Tala Al Badru Alayna", ar: "طَلَعَ الْبَدْرُ عَلَيْنَا ۞ مِنْ ثَنِيَّاتِ الْوَدَاعِ ۞ وَجَبَ الشُّكْرُ عَلَيْنَا ۞ مَا دَعَا لِلَّهِ دَاعِ", tr: "তালাআল বাদরু আলাইনা — মিন সানিয়্যাতিল ওয়াদা — ওয়াজাবাশ শুকরু আলাইনা — মা দাআ লিল্লাহি দা।", mn: "আমাদের উপর পূর্ণিমার চাঁদ উদিত হয়েছে — বিদায় উপত্যকা থেকে। যতদিন আল্লাহর দিকে আহ্বানকারী ডাকবে, ততদিন আমাদের উপর শুকরিয়া ওয়াজিব।", ref: "মদিনায় নবী (সা.)-এর আগমনে গাওয়া ঐতিহাসিক নাত" },
-  { t: "ইয়া নবী সালাম আলাইকা", en: "Ya Nabi Salam Alayka", ar: "يَا نَبِي سَلَامْ عَلَيْكَ ۞ يَا رَسُولْ سَلَامْ عَلَيْكَ ۞ يَا حَبِيبْ سَلَامْ عَلَيْكَ ۞ صَلَوَاتُ اللَّهِ عَلَيْكَ", tr: "ইয়া নবী সালাম আলাইকা — ইয়া রাসূল সালাম আলাইকা — ইয়া হাবিব সালাম আলাইকা — সালাওয়াতুল্লাহি আলাইকা।", mn: "হে নবী! আপনার উপর সালাম — হে রাসূল! আপনার উপর সালাম — হে হাবিব! আপনার উপর সালাম — আল্লাহর রহমত আপনার উপর।", ref: "প্রচলিত সালাত ও সালাম" },
-  { t: "মোস্তফা জানে রহমত", en: "Mustafa Jane Rahmat", ar: "مُصْطَفَى جَانِ رَحْمَتْ پَہ لَاکھوں سَلَامْ ۞ شَمْعِ بَزْمِ ہِدَایَتْ پَہ لَاکھوں سَلَامْ", tr: "মোস্তফা জানে রহমত পে লাখো সালাম — শাম’এ বাজমে হেদায়াত পে লাখো সালাম।", mn: "রহমতের প্রাণ মোস্তফা (সা.)-এর উপর লাখো সালাম — হেদায়েতের মজলিসের প্রদীপের উপর লাখো সালাম।", ref: "আলা হযরত আহমদ রেজা খান (রহ.)-এর বিখ্যাত নাত" }
-];
-function openNaat(){ navPush(); currentView = 'naat'; setNavActive(''); render(); }
-function renderNaatView(){
-  var L = (lang === 'en');
-  var note = '<div class="card p-3.5 mb-2" style="background:#FFFBF7">' +
-    '<div class="text-[13px]">' + (L ? 'Naat is poetry in praise and love of the Prophet Muhammad (sa.). Read it, listen to it, and send Durud on him.' : 'নাত হলো নবী মুহাম্মদ (সা.)-এর প্রশংসা ও ভালোবাসায় লেখা কবিতা। পড়ুন, শুনুন, আর তাঁর উপর দরূদ পাঠ করুন।') + '</div></div>';
-  var cards = NAAT_ITEMS.map(function(d, i){
-    return '<div class="card p-3.5 mb-2">' +
-      '<div class="font-extrabold text-[15px] mb-1">' + (i + 1) + '. ' + (L ? d.en : d.t) + '</div>' +
-      '<div dir="rtl" style="text-align:right;font-size:21px;line-height:2;color:#1B5E20;font-weight:600">' + d.ar + '</div>' +
-      '<div class="text-[13px] font-bold mt-2" style="color:#2D2A26">' + d.tr + '</div>' +
-      '<div class="text-[12px] text-[#8B7355] mt-1">' + d.mn + '</div>' +
-      '<div class="text-[12px] mt-1 font-bold" style="color:#2E7D32">📖 ' + d.ref + '</div></div>' +
-      audioPlayerHtml('naat:' + i, (L ? 'Listen — ' : 'শুনুন — ') + (L ? d.en : d.t));
-  }).join('');
-  document.getElementById('islApp').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="isl_goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
-    '<h2 class="font-extrabold text-[18px] mb-1">🌹 ' + (L ? 'Naat-e-Rasul' : 'নাতে রাসুল') + '</h2>' +
-    '<div class="text-[13px] text-[#8B7355] mb-3">' + (L ? 'Poetry in praise of the Prophet Muhammad (sa.).' : 'নবী মুহাম্মদ (সা.)-এর প্রশংসায় লেখা নাত।') + '</div>' +
-    note + cards + '</div>';
-}
-
 /* ================= আজান ================= */
 var AZAN_LINES = [
   { ar: "اللَّهُ أَكْبَرُ", tr: "আল্লাহু আকবর", mn: "আল্লাহ সবচেয়ে বড়", rep: "৪ বার" },
@@ -2294,7 +2467,8 @@ function renderAzanView(){
     '<div class="font-extrabold text-[15px] mb-1">🤲 ' + (L ? 'Dua after the Azan' : 'আজানের পরের দোয়া') + '</div>' +
     '<div dir="rtl" style="text-align:right;font-size:21px;line-height:2;color:#1B5E20;font-weight:600">' + AZAN_AFTER_DUA.ar + '</div>' +
     '<div class="text-[13px] font-bold mt-2" style="color:#2D2A26">' + AZAN_AFTER_DUA.tr + '</div>' +
-    '<div class="text-[12px] text-[#8B7355] mt-1">' + AZAN_AFTER_DUA.mn + '</div></div>';
+    '<div class="text-[12px] text-[#8B7355] mt-1">' + AZAN_AFTER_DUA.mn + '</div>' +
+    '<div class="text-[12px] mt-2 p-2" style="background:#FFFBF7;border-radius:10px">💡 <b>' + (L ? 'For new Muslims:' : 'নব মুসলিমের জন্য:') + '</b> ' + (L ? 'Dua between the Azan and the Iqamah is accepted — ask Allah for what you need in that time.' : 'আজান ও ইকামতের মাঝের দোয়া কবুল হয় — এই সময়ে আল্লাহর কাছে নিজের প্রয়োজন চেয়ে নিন।') + '</div></div>';
   document.getElementById('islApp').innerHTML = '<div class="px-4 pt-4">' +
     '<button onclick="isl_goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-1">📢 ' + (L ? 'Azan' : 'আজান') + '</h2>' +
@@ -2337,8 +2511,6 @@ function renderIslamicView(){
     { ic: '📢', act: 'openAzan()', t1: L ? 'Azan' : 'আজান', t2: L ? 'Azan text, reply & dua after Azan • Listen to Azan' : 'আজানের লেখা, জবাব ও পরের দোয়া • আজান শুনুন' },
     { ic: '🌙', act: 'openRoza()', t1: L ? 'Roza / Sawm' : 'রোজা/সাওম', t2: L ? 'Niyyah, Iftar duas, fasting rules, Sehri-Iftar calendar' : 'নিয়ত, ইফতারের দোয়া, রোজার নিয়ম, সেহরি-ইফতার ক্যালেন্ডার' },
     { ic: '📗', act: 'openSurahs()', t1: L ? 'Short Surahs' : 'ছোট ছোট সূরা', t2: L ? 'Surah Fatiha + short Surahs' : 'সূরা ফাতিহা + ছোট সূরাগুলো' },
-    { ic: '🙏', act: 'openMonajat()', t1: L ? 'Munajat' : 'মোনাজাত', t2: L ? 'Supplications after prayer • 5 munajats' : 'নামাজের পরের মোনাজাত • ৫টি মোনাজাত' },
-    { ic: '🌹', act: 'openNaat()', t1: L ? 'Naat-e-Rasul' : 'নাতে রাসুল', t2: L ? 'Poetry in praise of the Prophet (sa.) • 4 naats' : 'নবী (সা.)-এর প্রশংসায় নাত • ৪টি নাত' },
     { ic: '🕋', act: 'openQibla()', t1: L ? 'Qibla & Prayer Times' : 'কিবলা ও নামাজের সময়', t2: L ? "Today's 5 prayer times + Qibla direction" : 'আজকের ৫ ওয়াক্তের সময় + কিবলার দিক' },
     { ic: '🌙', act: 'openIftar()', t1: L ? 'Iftar Calendar' : 'ইফতার ক্যালেন্ডার', t2: L ? 'Sehri & Iftar times for the whole Ramadan' : 'পুরো রমজানের সেহরি-ইফতার সময়' },
     { ic: '🗓️', act: 'openCalendar()', t1: L ? 'Calendar' : 'ক্যালেন্ডার', t2: L ? 'Bengali, English & Arabic calendars' : 'বাংলা, ইংরেজি ও আরবি ক্যালেন্ডার' },
@@ -2409,8 +2581,6 @@ function openBookmark(key){
   if(p[0] === 'surah'){ openSurahItem(+p[1]); return; }
   if(p[0] === 'namaz'){ openVariousNamazItem(+p[1]); return; }
   if(p[0] === 'azan'){ openAzan(); return; }
-  if(p[0] === 'monajat'){ openMonajat(); return; }
-  if(p[0] === 'naat'){ openNaat(); return; }
   if(p[0] === 'roza'){ openRoza(); return; }
   if(p[0] === 'prayer'){ openFivePrayersItem(+p[1]); return; }
 }
@@ -2444,8 +2614,6 @@ function searchIndex(){
   out.push({ key: 'prayer:0', title: (lang === 'en' ? 'How to pray 2 rakats' : '২ রাকাত নামাজ — ধাপে ধাপে'), section: (lang === 'en' ? '5 daily prayers' : '৫ ওয়াক্ত নামাজ') });
   FIVE_PRAYERS.forEach(function(h, i){ out.push({ key: 'prayer:' + (i + 1), title: h.n, section: (lang === 'en' ? '5 daily prayers' : '৫ ওয়াক্ত নামাজ') }); });
   SHORT_SURAHS.forEach(function(d, i){ out.push({ key: 'surah:' + i, title: d.t, section: (lang === 'en' ? 'Surah' : 'সূরা') }); });
-  MONAJAT_ITEMS.forEach(function(d, i){ out.push({ key: 'monajat', title: d.t, section: (lang === 'en' ? 'Munajat' : 'মোনাজাত') }); });
-  NAAT_ITEMS.forEach(function(d, i){ out.push({ key: 'naat', title: d.t, section: (lang === 'en' ? 'Naat-e-Rasul' : 'নাতে রাসুল') }); });
   return out;
 }
 function searchResultsHtml(q){
@@ -2694,46 +2862,34 @@ function calSetTab(tab){ calTab = tab; calSelected = null; render(); }
 function calSelect(iso){ calSelected = new Date(iso + 'T00:00:00'); render(); }
 function calMove(dir){
   var c = calCursor;
-  calCursor = new Date(c.getFullYear(), c.getMonth() + dir, 1);
+  var bp = bengaliParts(c), nm = bp.m + dir, ny = bp.y;
+  if(nm < 0){ nm = 11; ny--; } if(nm > 11){ nm = 0; ny++; }
+  calCursor = bengaliMonthStart(ny, nm);
   calSelected = null; render();
 }
 function renderCalendarView(){
   var L = (lang === 'en');
   var today = dayStart(new Date());
-  var gy = calCursor.getFullYear(), gm = calCursor.getMonth();
-  var start = new Date(gy, gm, 1), len = new Date(gy, gm + 1, 0).getDate();
-  var firstDt = start;
-  var bMonths = [], hMonths = [];
-  for(var k = 0; k < len; k++){
-    var dd = new Date(gy, gm, k + 1);
-    var bpk = bengaliParts(dd), hpk = hijriParts(dd);
-    if(!bMonths.length || bMonths[bMonths.length - 1].m !== bpk.m || bMonths[bMonths.length - 1].y !== bpk.y) bMonths.push({ m: bpk.m, name: bpk.mName, y: bpk.y });
-    if(!hMonths.length || hMonths[hMonths.length - 1].m !== hpk.m || hMonths[hMonths.length - 1].y !== hpk.y) hMonths.push({ m: hpk.m, name: (HIJRI_BN_MONTHS[hpk.m - 1] || hpk.mName), y: hpk.y });
-  }
-  function rangeStr(list, suffix){
-    var sameYear = list.every(function(x){ return x.y === list[0].y; });
-    if(sameYear) return list.map(function(x){ return x.name; }).join(' – ') + ' ' + bnNum(list[0].y) + suffix;
-    return list.map(function(x){ return x.name + ' ' + bnNum(x.y); }).join(' – ') + suffix;
-  }
-  var title = EN_GREG_MONTHS[gm] + ' ' + gy;
-  var subTitle = '<div style="color:#063E23;font-weight:800">' + rangeStr(bMonths, '') + '</div><div style="color:#C62828;font-weight:800">' + rangeStr(hMonths, ' ' + (L ? 'AH' : 'হিজরি')) + '</div>';
+  var bp0 = bengaliParts(calCursor);
+  var start = bengaliMonthStart(bp0.y, bp0.m), len = bnMonthLens(bp0.y)[bp0.m];
+  var firstDt = start, hp0 = hijriParts(firstDt);
+  var title = bp0.mName + ' ' + bnNum(bp0.y);
+  var subTitle = '<div style="color:#0B2A8A;font-weight:800">' + EN_GREG_MONTHS[firstDt.getMonth()] + ' ' + firstDt.getFullYear() + '</div><div style="color:#6B2D00;font-weight:800">' + (HIJRI_BN_MONTHS[hp0.m - 1] || hp0.mName) + ' ' + bnNum(hp0.y) + ' ' + (L ? 'AH' : 'হিজরি') + '</div>';
   var wd = L ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] : ['রবি','সোম','মঙ্গল','বুধ','বৃহ','শুক্র','শনি'];
   var head = wd.map(function(w){ return '<div class="text-center text-[12px] font-extrabold" style="color:#8B7355">' + w + '</div>'; }).join('');
   var cells = '';
   for(var i = 0; i < start.getDay(); i++) cells += '<div></div>';
   for(var d = 1; d <= len; d++){
     var dt = new Date(start.getTime() + (d - 1) * 86400000);
-    var hp = hijriParts(dt), bp = bengaliParts(dt);
+    var hp = hijriParts(dt);
     var isT = dt.getTime() === today.getTime();
-    var isS = calSelected && dt.getTime() === dayStart(calSelected).getTime();
     var cls = 'cal-cell' + (isT ? ' cal-today' : '');
     var iso = dt.getFullYear() + '-' + (dt.getMonth() + 1 < 10 ? '0' : '') + (dt.getMonth() + 1) + '-' + (dt.getDate() < 10 ? '0' : '') + dt.getDate();
-    var c1 = isT ? '#000' : '#0B2A8A', c2 = isT ? '#000' : '#063E23', c3 = isT ? '#000' : '#C62828';
-    var cellStyle = isT ? ' style="background:#063E23;border:3px solid ' + (isS ? '#FFD700' : '#063E23') + '"' : (isS ? ' style="background:#E8F5EC;border:3px solid #063E23"' : '');
-    cells += '<div class="' + cls + '" onclick="isl_calSelect(\'' + iso + '\')"' + cellStyle + '>' +
-      '<div style="font-weight:' + ((isT || isS) ? '900' : '800') + ';font-size:16px;color:' + c1 + '">' + dt.getDate() + '</div>' +
-      '<div style="font-size:11px;color:' + c2 + ';font-weight:' + ((isT || isS) ? '900' : '800') + '">' + bnNum(bp.d) + '</div>' +
-      '<div style="font-size:11px;color:' + c3 + ';font-weight:' + ((isT || isS) ? '900' : '800') + '">' + bnNum(hp.d) + '</div></div>';
+    var c1 = isT ? '#fff' : '#063E23', c2 = isT ? '#fff' : '#0B2A8A', c3 = isT ? '#fff' : '#6B2D00';
+    cells += '<div class="' + cls + '" onclick="isl_calSelect(\'' + iso + '\')"' + (isT ? ' style="background:#063E23;border:2px solid #063E23"' : '') + '>' +
+      '<div style="font-weight:800;font-size:15px;color:' + c1 + '">' + bnNum(d) + '</div>' +
+      '<div style="font-size:11px;color:' + c2 + ';font-weight:800">' + dt.getDate() + '</div>' +
+      '<div style="font-size:11px;color:' + c3 + ';font-weight:800">' + bnNum(hp.d) + '</div></div>';
   }
   var loc = userLoc || { lat: 23.8103, lon: 90.4125 };
   var sel = calSelected ? dayStart(calSelected) : today;
@@ -2748,16 +2904,16 @@ function renderCalendarView(){
     '<button onclick="isl_goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<h2 class="font-extrabold text-[18px] mb-2">🗓️ ' + (L ? 'Calendar' : 'ক্যালেন্ডার') + '</h2>' +
     '<div class="flex gap-2 mb-3 flex-wrap">' +
-      '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#DCE6FF;color:#0B2A8A;border:1.5px solid #0B2A8A">● English</span>' +
       '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#D8EFE0;color:#063E23;border:1.5px solid #063E23">● ' + (L ? 'Bangla' : 'বাংলা') + '</span>' +
-      '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#FDE8E8;color:#C62828;border:1.5px solid #C62828">● ' + (L ? 'Arabic (Hijri)' : 'আরবি (হিজরি)') + '</span></div>' +
+      '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#DCE6FF;color:#0B2A8A;border:1.5px solid #0B2A8A">● English</span>' +
+      '<span class="px-3 py-1.5 rounded-full text-[12px] font-extrabold" style="background:#FBE9D0;color:#6B2D00;border:1.5px solid #6B2D00">● ' + (L ? 'Arabic (Hijri)' : 'আরবি (হিজরি)') + '</span></div>' +
     '<div class="flex items-center justify-between mb-2"><button onclick="isl_calMove(-1)" class="px-3 py-2 rounded-full font-extrabold" style="background:#F3E8D3">◀</button>' +
-    '<div class="text-center"><div class="font-extrabold text-[18px]" style="color:#0B2A8A">' + title + '</div><div class="text-[12px] font-bold">' + subTitle + '</div></div>' +
+    '<div class="text-center"><div class="font-extrabold text-[16px]" style="color:#063E23">' + title + '</div><div class="text-[12px] font-bold">' + subTitle + '</div></div>' +
     '<button onclick="isl_calMove(1)" class="px-3 py-2 rounded-full font-extrabold" style="background:#F3E8D3">▶</button></div>' +
     '<div class="cal-grid mb-1">' + head + '</div><div class="cal-grid">' + cells + '</div>' +
     '<div class="card p-3 mt-3"><div class="font-extrabold text-[14px] mb-1" style="color:#0B2A8A">📅 ' + gregLabel(sel, true) + '</div>' +
     '<div class="text-[13px]" style="color:#063E23;font-weight:800">🗓️ ' + bengaliLabel(sel) + '</div>' +
-    '<div class="text-[13px]" style="color:#C62828;font-weight:800">🌙 ' + hijriLabel(sel, false) + '</div>' +
+    '<div class="text-[13px]" style="color:#6B2D00;font-weight:800">🌙 ' + hijriLabel(sel, false) + '</div>' +
     '<div class="text-[13px] mt-1">⏰ ' + (L ? 'Sehri ends: ' : 'সেহরি শেষ: ') + fmtTime(pt.fajr) + ' • ' + (L ? 'Iftar: ' : 'ইফতার: ') + fmtTime(pt.maghrib) + '</div>' +
     '<div class="text-[12px] mt-1" style="color:#8B7355">' + (L ? 'Tap any date — the card and the events list below update on this same screen.' : 'যেকোনো তারিখে ট্যাপ করলে এই স্ক্রিনেই নিচে ঐ দিনের কার্ড ও ঘটনার লিস্ট বদলে যাবে।') + '</div></div>' + evHtml + '</div>';
 }
@@ -2920,7 +3076,7 @@ function renderCalDateView(){
     '<div class="card p-3.5 mb-3">' +
       '<div class="font-extrabold text-[15px] mb-1" style="color:#0B4D2E">🗓️ ' + bengaliLabel(dt) + '</div>' +
       '<div class="font-extrabold text-[15px] mb-1" style="color:#1D4ED8">📅 ' + gregLabel(dt, L) + '</div>' +
-      '<div class="font-extrabold text-[15px]" style="color:#C62828">🌙 ' + hijriLabel(dt, L) + '</div>' +
+      '<div class="font-extrabold text-[15px]" style="color:#9A6B00">🌙 ' + hijriLabel(dt, L) + '</div>' +
       '<div class="text-[13px] mt-2">⏰ ' + (L ? 'Sehri ends: ' : 'সেহরি শেষ: ') + fmtTime(pt.fajr) + ' • ' + (L ? 'Iftar: ' : 'ইফতার: ') + fmtTime(pt.maghrib) + '</div></div>' +
     '<div class="font-extrabold text-[15px] mb-2">🗓️ ' + (L ? 'On this date in history' : 'এই তারিখে ইতিহাসে') + '</div>' + evHtml +
     '<div class="font-extrabold text-[15px] mt-4 mb-2">🌍 ' + (L ? 'From the beginning of the world to today' : 'সৃষ্টির শুরু থেকে আজ পর্যন্ত') + '</div>' +
@@ -3117,6 +3273,14 @@ function appGoBack(){
 /* merged: popstate owned by Lifestyle */
 
 function render(){
+  var _sy = 0, _sv = '';
+  try{ _sy = window.scrollY || 0; _sv = currentView; }catch(e){}
+  renderIslCore();
+  /* Same view re-render (refresh) -> pin screen EXACTLY where it was, same task, before paint. View changed -> navigation: leave it, nav handler decides. */
+  if(currentView === _sv && currentView === __lastRenderedView){ __scrollToY(_sy); }
+  try{ __lastRenderedView = currentView; }catch(e){}
+}
+function renderIslCore(){
   window.__navDir = '';
   try{ var _ap = document.getElementById('islApp'); if(_ap) _ap.classList.remove('nav-anim-fwd','nav-anim-back'); }catch(e){}
   try{ localStorage.setItem('islamic_view_state', JSON.stringify({ v: currentView, dfk: duasFolderKey, di: duaIdx, vni: variousNamazIdx, fpi: fivePrayersIdx, si: surahIdx, hfk: hadithFolderKey, hi: hadithIdx, sq: searchQuery, ct: calTab })); }catch(e){}
@@ -3142,8 +3306,6 @@ function render(){
   if(currentView === 'fivePrayers'){ renderFivePrayersView(); return; }
   if(currentView === 'fivePrayersItem'){ renderFivePrayersItemView(); return; }
   if(currentView === 'azan'){ renderAzanView(); return; }
-  if(currentView === 'monajat'){ renderMonajatView(); return; }
-  if(currentView === 'naat'){ renderNaatView(); return; }
   if(currentView === 'surahs'){ renderSurahsView(); return; }
   if(currentView === 'surahItem'){ renderSurahItemView(); return; }
   renderIslamicView();
@@ -3172,7 +3334,7 @@ window.islEnter = function(){
       var __nt = ''; try{ __nt = (performance.getEntriesByType('navigation')[0] || {}).type; }catch(e){}
       if(__nt === 'reload' || __nt === 'back_forward'){
         var __rs = JSON.parse(localStorage.getItem('islamic_view_state') || 'null');
-        var __views = ['islamic','duas','duasFolder','duaItem','variousNamaz','variousNamazItem','fivePrayers','fivePrayersItem','surahs','surahItem','hadith','hadithFolder','hadithItem','tasbih','bookmarks','search','qibla','iftar','roza','settings','calendar','calDate','azan','monajat','naat'];
+        var __views = ['islamic','duas','duasFolder','duaItem','variousNamaz','variousNamazItem','fivePrayers','fivePrayersItem','surahs','surahItem','hadith','hadithFolder','hadithItem','tasbih','bookmarks','search','qibla','iftar','roza','settings','calendar','calDate','azan'];
         if(__rs && typeof __rs.v === 'string' && __views.indexOf(__rs.v) >= 0){
           currentView = __rs.v;
           if(typeof __rs.dfk === 'string') duasFolderKey = __rs.dfk;
@@ -3212,15 +3374,12 @@ window.isl_backupImport = backupImport;
 window.isl_calMove = calMove;
 window.isl_calSelect = calSelect;
 window.isl_calSetTab = calSetTab;
-window.isl_goBackStep = function(){ try{ history.back(); }catch(e){ try{ appGoBack(); }catch(_){} } }; // in-app back uses the same popstate path as the phone Back button
-window.islHandleBack = function(){ try{ return appGoBack(); }catch(e){ return false; } }; // bridge: outer Back delegates to the Islamic stack while inside this section (outer goBackStep looks for this)
+window.isl_goBackStep = goBackStep;
 /* runtime-built card/folder handlers (same names as the standalone app) */
 window.openDuas = openDuas;
 window.openVariousNamaz = openVariousNamaz;
 window.openFivePrayers = openFivePrayers;
 window.openAzan = openAzan;
-window.openMonajat = openMonajat;
-window.openNaat = openNaat;
 window.openRoza = openRoza;
 window.openSurahs = openSurahs;
 window.openQibla = openQibla;
@@ -3261,7 +3420,7 @@ function openForm(type){
   document.getElementById('fDate').value = today();
   document.getElementById('fNote').value = '';
   const med = document.getElementById('fMedium');
-  med.innerHTML = MEDIUMS.filter(m => type === 'expense' || m.id !== 'Credit').map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
+  med.innerHTML = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
   med.value = (type === 'income') ? 'Bank' : 'Cash'; // Income default = Bank Account (changeable); Expense default = Cash
   document.getElementById('selCatBox').classList.add('hidden');
   catSearch = '';
@@ -3415,7 +3574,7 @@ function renderCats(){
       : '<div class="text-center text-[13px] text-[#8B7355] py-3">' + t('noMatch') + '</div>';
   } else {
     /* FLAT: all expense items directly, no group screen, no group label */
-    const expList = EXPENSE_FLAT.map((it,j) => ({ it: it, j: j })).filter(x => selSub != null ? x.j === selSub : catMatches(x.it.en, x.it.bn)).sort((a,b) => catScore(a.it.en, a.it.bn) - catScore(b.it.en, b.it.bn));
+    const expList = EXPENSE_FLAT.map((it,j) => ({ it: it, j: j })).filter(x => catMatches(x.it.en, x.it.bn)).sort((a,b) => catScore(a.it.en, a.it.bn) - catScore(b.it.en, b.it.bn));
     area.innerHTML = expList.length ? '<div class="grid grid-cols-2 gap-2">' + expList.map(x =>
       '<div class="cat-btn ' + (selSub === x.j ? 'sel' : '') + '" onclick="pickSub(' + x.j + ')">' + x.it.icon + ' ' + (lang === 'en' ? x.it.en : x.it.bn) + '</div>').join('') + '</div>'
       : '<div class="text-center text-[13px] text-[#8B7355] py-3">' + t('noMatch') + '</div>';
@@ -3846,11 +4005,10 @@ function historyListHtml(rows){
   const singleRowHtml = r => {
     if(r.kind === 'bank' && typeof r.entryIdx === 'number' && (state.bankLoans || [])[r.entryIdx]){ return bankLoanCardHtml((state.bankLoans || [])[r.entryIdx]); }
     const _dp = String(r.date || '').split('-'); const _dmy = (_dp.length === 3 && _dp[0].length === 4) ? _dp[2] + '-' + _dp[1] + '-' + _dp[0] : r.date; const sub = [_dmy, r.medium, (r.note || '').slice(0, 20)].filter(Boolean).join(' • ');
-    const isCredit = r.kind === 'expense' && r.medium === 'Credit';
     const catEsc = String(r.catEn || r.title || '').replace(/'/g, "\\'");
     const rowClick = (r.kind === 'given' || r.kind === 'return') ? ' onclick="openPersonDetail(\'given\',' + r.personIdx + ')" style="cursor:pointer"' : (r.kind === 'taken' || r.kind === 'repayment') ? ' onclick="openPersonDetail(\'taken\',' + r.personIdx + ')" style="cursor:pointer"' : r.kind === 'bank' ? ' onclick="openEmiChecklist(' + r.entryIdx + ')" style="cursor:pointer"' : (r.kind === 'income' || r.kind === 'expense') ? ' onclick="histGoCat(\'' + r.kind + '\',\'' + catEsc + '\')" style="cursor:pointer"' : '';
-    return '<div class="flex gap-2 py-2.5 mb-2 bg-white border-b border-[#F3E8D3]"' + rowClick + '><div class="flex-1" style="min-width:0' + (isCredit ? ';color:#C62828' : '') + '"><div class="font-bold text-[14px]">' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] ' + (isCredit ? 'text-[#C62828]' : 'text-[#8B7355]') + '">' + escA(sub) + '</div></div>' +
-      '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (isCredit ? 'text-red-600' : (r.sign >= 0 ? 'text-green-700' : 'text-red-600')) + '">' + (r.sign >= 0 ? '+' : '-') + fmt(r.amount) + '</div>' +
+    return '<div class="flex gap-2 py-2.5 mb-2 bg-white border-b border-[#F3E8D3]"' + rowClick + '><div class="flex-1" style="min-width:0"><div class="font-bold text-[14px]">' + escA(r.icon ? r.icon + ' ' + r.title : r.title) + '</div><div class="text-[12px] text-[#8B7355]">' + escA(sub) + '</div></div>' +
+      '<div class="shrink-0 flex flex-col items-end gap-1"><div class="font-extrabold text-[14px] ' + (r.sign >= 0 ? 'text-green-700' : 'text-red-600') + '">' + (r.sign >= 0 ? '+' : '-') + fmt(r.amount) + '</div>' +
       '<div class="flex gap-1 flex-nowrap"><button onclick="event.stopPropagation();editHistoryRow(\'' + r.key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
       '<button onclick="event.stopPropagation();deleteHistoryRow(\'' + r.key + '\')" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div></div>';
   };
@@ -4025,7 +4183,7 @@ function updatePersonSaveBtn(){
   btn.textContent = ok ? label + ' • ' + bnDigits(fmt(amt)) : label;
 }
 function fillLoanChannels(from, to){
-  const opts = MEDIUMS.filter(m => m.id !== 'Credit').map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
+  const opts = MEDIUMS.map(m => '<option value="' + m.id + '">' + (lang === 'en' ? m.en : m.bn) + '</option>').join('');
   const f = document.getElementById('leFromChannel'), tt = document.getElementById('leToChannel');
   if(f){ f.innerHTML = opts; f.value = from || 'Cash'; }
   if(tt){ tt.innerHTML = opts; tt.value = to || 'Cash'; }
@@ -4837,7 +4995,7 @@ function statementEntriesTable(rows, colsMode){
   if(colsMode === 'noPerson'){
     // Expense / Income: no Person column
     body = rows.length ? rows.map(r =>
-      '<tr style="page-break-inside:avoid' + ((r.from === 'Credit' || r.to === 'Credit') ? ';color:#C62828' : '') + '"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
       '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
@@ -4851,7 +5009,7 @@ function statementEntriesTable(rows, colsMode){
   } else if(colsMode === 'noCategory'){
     // Given / Taken / Return / Repayment / Bank Loan: no Category column
     body = rows.length ? rows.map(r =>
-      '<tr style="page-break-inside:avoid' + ((r.from === 'Credit' || r.to === 'Credit') ? ';color:#C62828' : '') + '"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
       '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
@@ -4865,7 +5023,7 @@ function statementEntriesTable(rows, colsMode){
   } else {
     // All: Person + Category both
     body = rows.length ? rows.map(r =>
-      '<tr style="page-break-inside:avoid' + ((r.from === 'Credit' || r.to === 'Credit') ? ';color:#C62828' : '') + '"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
       '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
@@ -5765,7 +5923,6 @@ function pdfStatementJpegs(){
   const LH = 18, CLH = 15, CPAD = 5, CPADX = 6;
   const mctx = document.createElement('canvas').getContext('2d');
   let cols, headerRows, rows, totalRow, emptyRow;
-  let rowIsCredit = [];
   if(data.marketSections){     cols = [{ w: 38, align: 'left' }, { w: 62, align: 'left' }];     headerRows = [[ { text: 'Field / ফিল্ড', span: 1, align: 'left' }, { text: 'Value / মান', span: 1, align: 'left' } ]];     rows = [];     data.marketSections.forEach(function(sec){ rows.push(['--- ' + sec.title + ' ---', '']); sec.rows.forEach(function(r){ rows.push([r.label, r.value]); }); });     if(!rows.length) rows.push(['কোনো তথ্য পূরণ করা হয়নি / No data filled yet.', '']);     totalRow = [ { text: 'Total (' + data.records + ' fields)', span: 1, align: 'left' }, { text: '', span: 1, align: 'left' } ];     emptyRow = [{ text: t('noData'), span: 2, align: 'center' }];   } else if(data.loansRows){
     cols = [{ w: 26, align: 'left' }, { w: 20, align: 'left' }, { w: 18, align: 'right' }, { w: 18, align: 'right' }, { w: 18, align: 'right' }];
     const retLabel = data.loansKind === 'given' ? 'Returned' : 'Repaid';
@@ -5869,7 +6026,6 @@ function pdfStatementJpegs(){
       ];
       emptyRow = [{ text: t('noData'), span: 7, align: 'center' }];
     }
-    rowIsCredit = data.entriesRows.map(r => r.from === 'Credit' || r.to === 'Credit');
   }
   const colW = cols.map(c => c.w / 100 * CW);
   const sumW = colW.reduce((a, b) => a + b, 0);
@@ -6008,7 +6164,7 @@ function pdfStatementJpegs(){
       y += headerRowHeights[hi];
     }
     for(let ri of pg.rows){
-      tableRows.push({ top: y, height: dataRowHeights[ri], kind: 'data', cells: rows[ri], isCredit: rowIsCredit[ri] || false });
+      tableRows.push({ top: y, height: dataRowHeights[ri], kind: 'data', cells: rows[ri] });
       y += dataRowHeights[ri];
     }
     if(pg.total){
@@ -6035,7 +6191,7 @@ function pdfStatementJpegs(){
       const font = (tr.kind === 'header' || tr.kind === 'total') ? FB : F;
       ctx.font = font;
       ctx.textBaseline = 'top';
-      ctx.fillStyle = (tr.kind === 'data' && tr.isCredit) ? '#C62828' : '#000';
+      ctx.fillStyle = '#000';
       if(tr.kind === 'data'){
         for(let i = 0; i < tr.cells.length; i++){
           const align = cols[i].align;
@@ -6312,7 +6468,7 @@ function loansPeopleFiltered(){
 }
 function renderLoansView(){
   const title = loansPageTitle();
-  const backBtn = '<button onclick="isl_goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>';
+  const backBtn = '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>';
   const controls = '<div class="flex gap-2 mb-3">' +
     '<button onclick="' + (loansKind === 'bank' ? 'openLoanEntryForm(\'addbank\',\'bank\',\'\')' : 'openAddPerson(\'' + loansKind + '\')') + '" class="flex-1 py-2.5 rounded-full bg-[#E3F2FD] font-bold text-[13px]">' + (loansKind === 'bank' ? t('addBankLoanBtn') : t('addPerson')) + '</button>' +
     '<button onclick="loansDownloadPdf()" class="px-4 py-2.5 rounded-full bg-[#EAF7EA] font-bold text-[13px]">📄 ' + t('pdfBtn') + '</button>' +
@@ -6397,7 +6553,7 @@ function renderPersonView(){
     return entryRow(e, payKey + ':' + personIdx + ':p:' + realIdx);
   }).join('') : '<div class="text-[13px] text-[#8B7355] py-3">' + t('noData') + '</div>';
   document.getElementById('app').innerHTML = '<div class="px-4 pt-4">' +
-    '<button onclick="isl_goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
+    '<button onclick="goBackStep()" class="text-[26px] font-extrabold leading-none mb-1 px-1">' + t('backBtn') + '</button>' +
     '<div class="flex justify-between items-start gap-2"><div style="min-width:0"><div class="font-extrabold text-[20px]">' + escA(person.name || '') + '</div><div class="text-[13px] text-[#8B7355]">' + escA(person.mobile || '') + contactBtnsHtml(person.mobile) + '</div>' + dueBadgeHtml(person) + '</div>' +
     '<div class="flex gap-1 shrink-0 flex-nowrap"><button onclick="openEditPerson()" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#EDE6D6] text-[#1A1A1A] text-[14px] font-bold whitespace-nowrap">' + t('editBtn') + '</button>' +
     '<button onclick="deletePerson()" class="px-5 py-2.5 rounded-[3px] bg-white border border-[#FADBD8] text-[#C0392B] text-[14px] font-bold whitespace-nowrap">' + t('deleteBtn') + '</button></div></div>' +
@@ -6677,10 +6833,12 @@ function exportCsv(){
 
 /* ---------- Refresh: no shake, screen stays exactly where it was ---------- */
 try{ if('scrollRestoration' in history) history.scrollRestoration = 'manual'; }catch(e){}
-var __scrollSavePending = false, __scrollRestored = false;
+var __scrollSavePending = false, __scrollRestored = false, __restoring = false, __userScrolled = false, __lastRenderedView = null;
 function __saveScrollPos(){ try{ localStorage.setItem('lifestyle_scroll_pos', JSON.stringify({ y: window.scrollY || 0, v: currentView })); }catch(e){} }
-window.addEventListener('scroll', function(){ if(__scrollSavePending) return; __scrollSavePending = true; requestAnimationFrame(function(){ __scrollSavePending = false; __saveScrollPos(); }); }, { passive: true });
+function __scrollToY(y){ __restoring = true; try{ window.scrollTo(0, y); }catch(e){} setTimeout(function(){ __restoring = false; }, 200); }
+window.addEventListener('scroll', function(){ if(__restoring) return; __userScrolled = true; if(__scrollSavePending) return; __scrollSavePending = true; requestAnimationFrame(function(){ __scrollSavePending = false; __saveScrollPos(); }); }, { passive: true });
 window.addEventListener('pagehide', __saveScrollPos);
+window.addEventListener('beforeunload', __saveScrollPos);
 document.addEventListener('visibilitychange', function(){ if(document.hidden) __saveScrollPos(); });
 function __restoreScrollPos(force){
   try{
@@ -6688,13 +6846,13 @@ function __restoreScrollPos(force){
     if(!s || typeof s.y !== 'number' || s.y <= 0) return;
     if(s.v !== currentView) return;
     if(!force && __scrollRestored && window.scrollY !== s.y) return; // user already moved: never yank back
-    window.scrollTo(0, s.y); __scrollRestored = true;
+    __scrollToY(s.y); __scrollRestored = true;
   }catch(e){}
 }
 restoreViewState();
 render();
 __restoreScrollPos(true);
-window.addEventListener('load', function(){ __restoreScrollPos(false); });
+window.addEventListener('load', function(){ if(!__userScrolled) __restoreScrollPos(true); });
 initCloud();
 
 /* ---------- Live clock: updates Time/Date/Day every second ---------- */
@@ -6736,10 +6894,10 @@ function appGoBack(){
 if(typeof window !== 'undefined' && window.addEventListener){
   window.addEventListener('popstate', function(){
   if(window.__exiting) return;
-  // Trap re-arm FIRST: Back must never drain history, even if handling below throws.
-  // Every Back re-arms before stepping back, so Back can never exit the app.
-  try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){}
-  try{ appGoBack(); }catch(e){}
+  window.__histDepth = Math.max(0, (window.__histDepth || 0) - 1);
+  var _r = appGoBack();
+  if(_r === 'exit'){ _r = true; } // Back দিয়ে অ্যাপ কখনো বন্ধ হবে না: 'exit' ফিরলেও ভেতরেই থাকবে।
+  if(_r){ try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){} }
 });
   try{ history.pushState({app: true}, ''); window.__histDepth = (window.__histDepth || 0) + 1; }catch(e){}
 }
@@ -6894,8 +7052,7 @@ const MEDIUMS = [
   {id:'Nagad', en:'Nagad', bn:'নগদ'},
   {id:'Rocket', en:'Rocket', bn:'রকেট'},
   {id:'Bank', en:'Bank Account', bn:'ব্যাংক একাউন্ট'},
-  {id:'Cash', en:'Cash', bn:'ক্যাশ'},
-  {id:'Credit', en:'Bought on Credit', bn:'বাকিতে ক্রয় করেছি'}
+  {id:'Cash', en:'Cash', bn:'ক্যাশ'}
 ];
 const BANKS = ['ইসলামী ব্যাংক','BRAC Bank','City Bank','Sonali Bank','Janata Bank','Dutch-Bangla','Eastern Bank','Custom'];
 
@@ -6926,7 +7083,7 @@ const T = {
     giveLoan:'Give Loan', takeLoan:'Take Loan', bankLoan:'Bank Loan', addNew:'Add New', history:'History',
     reports:'Reports', profile:'Profile', home:'HOME', searchPlaceholder:'Search transactions...',
     noData:'No data yet', backup:'', clearData:'', save:'Save', cancel:'Cancel',
-    edit:'Edit', delete:'Delete', itemDeleted:'Item deleted', amount:'Amount', date:'Date', category:'Category', note:'Note',
+    edit:'Edit', delete:'Delete', amount:'Amount', date:'Date', category:'Category', note:'Note',
     medium:'Channel', name:'Name', mobile:'Mobile No', addPayment:'+ Add Payment', addLoan:'+ Add Loan',
     addPerson:'+ Add Person', people:'People', balance:'Balance', given:'Given', taken:'Taken',
     youWillGet:'You will get', heWillGet:'He/She owes you', youOwe:'You owe', paid:'Paid', total:'Total',
@@ -6953,7 +7110,7 @@ const T = {
     giveLoan:'লোন প্রদান', takeLoan:'লোন গ্রহণ', bankLoan:'ব্যাংক লোন', addNew:'নতুন যোগ করুন',
     history:'ইতিহাস', reports:'রিপোর্ট', profile:'প্রোফাইল', home:'হোম', searchPlaceholder:'লেনদেন খুঁজুন...',
     noData:'এখনো কোন তথ্য নেই', backup:'ডাটা ব্যাকআপ', clearData:'ডাটা মুছুন', save:'সংরক্ষণ করুন',
-    cancel:'বাতিল', edit:'সম্পাদনা', delete:'মুছুন', itemDeleted:'আইটেম মোছা হয়েছে', amount:'পরিমাণ', date:'তারিখ', category:'খাত',
+    cancel:'বাতিল', edit:'সম্পাদনা', delete:'মুছুন', amount:'পরিমাণ', date:'তারিখ', category:'খাত',
     note:'মন্তব্য', medium:'মাধ্যম', name:'নাম', mobile:'মোবাইল নং', addPayment:'+ পরিশোধ যোগ করুন',
     addLoan:'+ লোন যোগ করুন', addPerson:'+ নতুন ব্যক্তি যোগ করুন', people:'ব্যক্তিগণ', balance:'বাকি',
     given:'প্রদান', taken:'গ্রহণ', youWillGet:'আপনি পাবেন', heWillGet:'সে আপনার কাছে দেনা',
@@ -7225,7 +7382,7 @@ function TransactionForm({ t, lang, type, initial, onSave, onCancel }){
       h('div', {className:'grid grid-cols-2 gap-3'},
         h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
         h(Field, {label: t.medium || 'Channel'}, h(Select, {value:channel, onChange:e=>setChannel(e.target.value)},
-          MEDIUMS.filter(m => type === 'expense' || m.id !== 'Credit').map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+          MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
         ))
       ),
       h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)}))
@@ -7265,10 +7422,10 @@ function LoanEntryForm({ t, lang, initial, onSave, onCancel }){
     h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
     h('div', {className:'grid grid-cols-2 gap-3'},
       h(Field, {label: lang==='en'?'From Channel':'প্রেরণের মাধ্যম'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
-        MEDIUMS.filter(m => m.id !== 'Credit').map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+        MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
       )),
       h(Field, {label: lang==='en'?'To Channel':'গ্রহণের মাধ্যম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
-        MEDIUMS.filter(m => m.id !== 'Credit').map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+        MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
       ))
     ),
     h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)})),
@@ -7297,10 +7454,10 @@ function PaymentForm({ t, lang, initial, onSave }){
     h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
     h('div', {className:'grid grid-cols-2 gap-3'},
       h(Field, {label: lang==='en'?'From Channel':'প্রেরণের মাধ্যম'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
-        MEDIUMS.filter(m => m.id !== 'Credit').map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+        MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
       )),
       h(Field, {label: lang==='en'?'To Channel':'গ্রহণের মাধ্যম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
-        MEDIUMS.filter(m => m.id !== 'Credit').map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+        MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
       ))
     ),
     h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)})),
@@ -7446,10 +7603,10 @@ function NewPersonForm({ t, lang, existingPeople, onSave }){
       h(Field, {label: t.date}, h(TextInput, {type:'date', value:date, onChange:e=>setDate(e.target.value)})),
       h('div', {className:'grid grid-cols-2 gap-3'},
         h(Field, {label: lang==='en'?'From Channel':'প্রেরণের মাধ্যম'}, h(Select, {value:fromChannel, onChange:e=>setFromChannel(e.target.value)},
-          MEDIUMS.filter(m => m.id !== 'Credit').map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+          MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
         )),
         h(Field, {label: lang==='en'?'To Channel':'গ্রহণের মাধ্যম'}, h(Select, {value:toChannel, onChange:e=>setToChannel(e.target.value)},
-          MEDIUMS.filter(m => m.id !== 'Credit').map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
+          MEDIUMS.map(m=>h('option', {key:m.id, value:m.id}, lang==='en'?m.en:m.bn))
         ))
       ),
       h(Field, {label: t.note}, h(TextArea, {value:note, onChange:e=>setNote(e.target.value)}))
@@ -8057,7 +8214,7 @@ function renderReportPages(o){
   function inRange(d){ return d && d >= from && d <= to; }
   function mediumLabel(id){
     if(!id) return '';
-    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account', Credit:'Bought on Credit', 'Bought on Credit':'Bought on Credit'};
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
     return map[id] || id;
   }
     function getFromTo(item){
@@ -8363,7 +8520,7 @@ function renderPersonLoanPages(o){
   function headingOld(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
   function mediumLabel(id){
     if(!id) return '';
-    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account', Credit:'Bought on Credit', 'Bought on Credit':'Bought on Credit'};
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
     return map[id] || id;
   }
     function getFromTo(item){
@@ -8769,7 +8926,7 @@ function renderAllLoansPages(o){
   function heading(str,color){ ensure(140); y+=30; font(48, true); ctx.fillStyle=color||'#2D2A26'; ctx.textAlign='left'; ctx.fillText(fit(str, W-M*2), M, y); y+=20; ctx.strokeStyle='#C9A86A'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(M,y); ctx.lineTo(W-M,y); ctx.stroke(); y+=50; }
   function mediumLabel(id){
     if(!id) return '';
-    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account', Credit:'Bought on Credit', 'Bought on Credit':'Bought on Credit'};
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
     return map[id] || id;
   }
     function getFromTo(item){
@@ -9041,7 +9198,7 @@ function renderHistoryPages(o){
   }
   function mediumLabel(id){
     if(!id) return '';
-    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account', Credit:'Bought on Credit', 'Bought on Credit':'Bought on Credit'};
+    const map={bKash:'bKash', Nagad:'Nagad', Rocket:'Rocket', Bank:'Bank Account', Cash:'Cash', 'Bank Account':'Bank Account'};
     return map[id] || id;
   }
     function getFromTo(item){
@@ -11614,7 +11771,7 @@ function RoutineSheet(props){
     render(); schedule();
   };
   window.rmDone=function(id){var a=load(); a.forEach(function(r){if(r.id===id) r.done=true}); save(a); render()};
-  window.rmDel=function(id){save(load().filter(function(r){return r.id!==id})); try{ if(typeof markDeleted==='function') markDeleted(id); }catch(e){} try{ if(typeof persist==='function') persist(); }catch(e){} render()}; // FIX: record tombstone like every other delete, else cloud merge resurrects the reminder
+  window.rmDel=function(id){save(load().filter(function(r){return r.id!==id})); render()};
   window.rmSnooze=function(id){var a=load(); a.forEach(function(r){if(r.id===id){r.when=new Date(Date.now()+10*60000).toISOString(); r.done=false; r.notified=false}}); save(a); render(); schedule()};
   function notify(r){
     var msg='এখন সময় হয়েছে: '+r.text;
