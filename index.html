@@ -26,6 +26,10 @@ button{transition:transform .12s ease}button:active{transform:scale(.97)}
 @keyframes tickPop{0%{transform:scale(.3);opacity:0}35%{transform:scale(1.12);opacity:1}55%{transform:scale(1)}80%{transform:scale(1);opacity:1}100%{transform:scale(1);opacity:0}}
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15);margin-left:auto;margin-right:auto;} #formSheet:not(.hidden){display:flex;flex-direction:column;overflow:hidden;height:92vh;} #formSheet .formSheetBody{overflow-y:auto;flex:1;min-height:0;} @media (min-width:768px){ .sheet{ max-width:42rem; } } @media (min-width:1024px){ .sheet{ max-width:56rem; } }
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+/* Market Survey fix: PDF Preview must sit ABOVE Market Survey BottomSheet (z-70). Only these two lines. */
+#pdfPreviewSheet{z-index:80}
+#pdfOverlay{z-index:75}
+
   .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#E3F2FD;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:100;white-space:nowrap;}
   .hidden{display:none;}
   input,select,textarea{outline:none;}
@@ -4129,7 +4133,7 @@ function renderCats(){
       : '<div class="text-center text-[13px] text-[#8B7355] py-3">' + t('noMatch') + '</div>';
   } else {
     /* FLAT: all expense items directly, no group screen, no group label */
-    const expList = EXPENSE_FLAT.map((it,j) => ({ it: it, j: j })).filter(x => catMatches(x.it.en, x.it.bn)).sort((a,b) => catScore(a.it.en, a.it.bn) - catScore(b.it.en, b.it.bn));
+    const expList = EXPENSE_FLAT.map((it,j) => ({ it: it, j: j })).filter(x => selSub !== null ? x.j === selSub : catMatches(x.it.en, x.it.bn)).sort((a,b) => catScore(a.it.en, a.it.bn) - catScore(b.it.en, b.it.bn));
     area.innerHTML = expList.length ? '<div class="grid grid-cols-2 gap-2">' + expList.map(x =>
       '<div class="cat-btn ' + (selSub === x.j ? 'sel' : '') + '" onclick="pickSub(' + x.j + ')">' + x.it.icon + ' ' + (lang === 'en' ? x.it.en : x.it.bn) + '</div>').join('') + '</div>'
       : '<div class="text-center text-[13px] text-[#8B7355] py-3">' + t('noMatch') + '</div>';
@@ -5554,7 +5558,7 @@ function statementEntriesTable(rows, colsMode){
   if(colsMode === 'noPerson'){
     // Expense / Income: no Person column
     body = rows.length ? rows.map(r =>
-      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<tr style="page-break-inside:avoid' + (r.isCredit ? ';color:#C0392B;font-weight:700' : '') + '"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
       '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
@@ -5568,7 +5572,7 @@ function statementEntriesTable(rows, colsMode){
   } else if(colsMode === 'noCategory'){
     // Given / Taken / Return / Repayment / Bank Loan: no Category column
     body = rows.length ? rows.map(r =>
-      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<tr style="page-break-inside:avoid' + (r.isCredit ? ';color:#C0392B;font-weight:700' : '') + '"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
       '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.from || '') + '</td>' +
@@ -5582,7 +5586,7 @@ function statementEntriesTable(rows, colsMode){
   } else {
     // All: Person + Category both
     body = rows.length ? rows.map(r =>
-      '<tr style="page-break-inside:avoid"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
+      '<tr style="page-break-inside:avoid' + (r.isCredit ? ';color:#C0392B;font-weight:700' : '') + '"><td style="' + cell + ';white-space:nowrap">' + escA(fmtDMY(r.date)) + '</td>' +
       '<td style="' + cell + '">' + escA(r.person || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.category || '') + '</td>' +
       '<td style="' + cell + '">' + escA(r.note || '') + '</td>' +
@@ -9825,13 +9829,13 @@ function renderHistoryPages(o){
       ensure(h+10);
       drawCellRect(cDate.x,cDate.w,h,'#FFFFFF'); if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) drawCellRect(cPerson.x,cPerson.w,h,'#FFFFFF'); if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) drawCellRect(cCat.x,cCat.w,h,'#FFFFFF'); drawCellRect(cNote.x,cNote.w,h,'#FFFFFF'); if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { if(singleChannel){ drawCellRect(cChannel.x,cChannel.w,h,'#FFFFFF'); } else { drawCellRect(cFrom.x,cFrom.w,h,'#FFFFFF'); drawCellRect(cTo.x,cTo.w,h,'#FFFFFF'); } } } } drawCellRect(cAmt.x,cAmt.w,h,'#FFFFFF');
       const baseY=y;
-      ctx.fillStyle='#2D2A26'; ctx.textAlign='left';
+      ctx.fillStyle = item.isCredit ? '#C0392B' : '#2D2A26'; ctx.textAlign='left';
       ctx.fillText(fit(formatDateForPdf(item.date), cDate.w-20), cDate.x+10, baseY+22);
       if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) if(!hidePersonCol) personLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cPerson.w-20), cPerson.x+10, baseY+22+i*lineH); });
       if(!hideCategoryCol) if(!hideCategoryCol) if(!hideCategoryCol) catLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cCat.w-20), cCat.x+10, baseY+22+i*lineH); });
-      ctx.fillStyle='#5D4E37';
+      ctx.fillStyle = item.isCredit ? '#C0392B' : '#5D4E37';
       noteLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cNote.w-20), cNote.x+10, baseY+22+i*lineH); });
-      ctx.fillStyle='#2D2A26';
+      ctx.fillStyle = item.isCredit ? '#C0392B' : '#2D2A26';
       if(singleChannel){ fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cChannel.w-20), cChannel.x+10, baseY+22+i*lineH); }); } else { fromLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cFrom.w-20), cFrom.x+10, baseY+22+i*lineH); }); toLines.forEach((ln,i)=>{ ctx.fillText(fit(ln, cTo.w-20), cTo.x+10, baseY+22+i*lineH); }); }
       ctx.fillStyle = item.isCredit ? '#C0392B' : '#2D2A26'; ctx.textAlign='right';
       ctx.fillText(fit(fmtMoney(item.amount), cAmt.w-20), cAmt.x+cAmt.w-10, baseY+22);
