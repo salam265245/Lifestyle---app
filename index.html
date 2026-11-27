@@ -1762,9 +1762,9 @@ function renderMainCore(){
         '</div>' +
       '</div>' +
       '<div class="grid grid-cols-3 gap-3 mt-5">' +
-        '<div class="card p-3 cursor-pointer" style="min-height:96px;display:flex;flex-direction:column;justify-content:center" onclick="openHomeCard(\'monthIncome\')"><div class="money-lbl" style="min-height:30px">' + t('monthIncome') + '</div><div class="money-num text-green-700">' + fmt(tot.mIn) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" style="min-height:96px;display:flex;flex-direction:column;justify-content:center" onclick="openHomeCard(\'todayExpense\')"><div class="money-lbl" style="min-height:30px">' + t('todayExpense') + '</div><div class="money-num text-red-600">' + fmt(tot.tEx) + '</div></div>' +
-        '<div class="card p-3 cursor-pointer" style="min-height:96px;display:flex;flex-direction:column;justify-content:center" onclick="openHomeCard(\'monthExpense\')"><div class="money-lbl" style="min-height:30px">' + t('monthExpense') + '</div><div class="money-num text-red-600">' + fmt(tot.mEx) + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" style="background:#E8F5E9;border-color:#A5D6A7;min-height:96px;display:flex;flex-direction:column;justify-content:center" onclick="openHomeCard(\'monthIncome\')"><div class="money-lbl" style="min-height:30px;line-height:1.25">' + (lang==='en' ? 'Monthly <span style="font-size:18px;font-weight:800">\u09F3</span>' : 'মাসের <span style="font-size:18px;font-weight:800">\u09F3</span>') + '<br>' + (lang==='en' ? 'Income' : 'আয়') + '</div><div class="money-num text-green-700">' + Math.round(tot.mIn || 0).toLocaleString('en-US') + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" style="background:#FCE8E8;border-color:#F5B5B5;min-height:96px;display:flex;flex-direction:column;justify-content:center" onclick="openHomeCard(\'todayExpense\')"><div class="money-lbl" style="min-height:30px;line-height:1.25">' + (lang==='en' ? 'Today\'s <span style="font-size:18px;font-weight:800">\u09F3</span>' : 'আজকের <span style="font-size:18px;font-weight:800">\u09F3</span>') + '<br>' + (lang==='en' ? 'Expense' : 'ব্যয়') + '</div><div class="money-num text-red-600">' + Math.round(tot.tEx || 0).toLocaleString('en-US') + '</div></div>' +
+        '<div class="card p-3 cursor-pointer" style="background:#FFF3E0;border-color:#FFCC80;min-height:96px;display:flex;flex-direction:column;justify-content:center" onclick="openHomeCard(\'monthExpense\')"><div class="money-lbl" style="min-height:30px;line-height:1.25">' + (lang==='en' ? 'Monthly <span style="font-size:18px;font-weight:800">\u09F3</span>' : 'মাসের <span style="font-size:18px;font-weight:800">\u09F3</span>') + '<br>' + (lang==='en' ? 'Expense' : 'ব্যয়') + '</div><div class="money-num text-red-600">' + Math.round(tot.mEx || 0).toLocaleString('en-US') + '</div></div>' +
       '</div>' +
       '<div class="grid grid-cols-3 gap-3 mt-3">' +
         '<div class="card p-3 cursor-pointer" style="background:#FFF8E1;min-height:96px;display:flex;flex-direction:column;justify-content:center" onclick="openBazar(\'all\')"><div class="text-[11px] text-[#8B7355]">' + t('bazarList') + '</div><div class="font-extrabold text-[15px]">' + bz.all.n + ' ' + t('itemsLbl') + '</div><div class="font-extrabold text-[15px]">' + fmt(bz.all.sum) + '</div></div>' +
@@ -7422,6 +7422,27 @@ restoreViewState();
 render();
 __restoreScrollPos(true);
 window.addEventListener('load', function(){ if(!__userScrolled) __restoreScrollPos(true); });
+/* Refresh-only no-shake: kill the 1-frame jump from late renders (Cloud Sync / image / font load). Nothing else uses this. */
+(function(){
+  var isReload = false;
+  try{ var nt = (performance.getEntriesByType('navigation')[0] || {}).type; isReload = (nt === 'reload' || nt === 'back_forward'); }catch(e){}
+  if(!isReload) return;
+  try{
+    var st = document.createElement('style');
+    st.setAttribute('data-refresh-noshake', '1');
+    st.textContent = 'html{scrollbar-gutter:stable;scroll-behavior:auto !important}body{overflow-anchor:auto}#app,#islApp{overflow-anchor:auto}html.refresh-noshake *,html.refresh-noshake *::before,html.refresh-noshake *::after{animation-duration:0s !important;animation-delay:0s !important;transition-duration:0s !important;transition-delay:0s !important}';
+    document.head.appendChild(st);
+    document.documentElement.classList.add('refresh-noshake');
+    setTimeout(function(){ try{ document.documentElement.classList.remove('refresh-noshake'); }catch(e){} }, 900);
+  }catch(e){}
+  /* Cloud Sync can re-render 1-2 seconds after load and yank the screen: keep the saved position pinned until the user moves. */
+  var tries = 0;
+  var pin = setInterval(function(){
+    tries++;
+    try{ if(!__userScrolled) __restoreScrollPos(true); }catch(e){}
+    if(tries >= 30 || __userScrolled){ clearInterval(pin); }
+  }, 100);
+})();
 initCloud();
 
 /* ---------- Live clock: updates Time/Date/Day every second ---------- */
